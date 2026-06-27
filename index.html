@@ -478,10 +478,19 @@ async function apiDelete(id){
 }
 
 // ── RENDER OBJECTS ──
+function sortObjects(){
+  // 0 = зірочка (inwork), 1 = майстри (masters), 2 = решта
+  objects.sort((a,b)=>{
+    const rank=o=>o.inwork?0:o.masters?1:2;
+    return rank(a)-rank(b);
+  });
+}
+
 function render(){
   const col=document.getElementById('colLeft');
   col.innerHTML='';
   if(!objects.length){col.innerHTML='<div style="font-size:22px;color:#ccc;font-style:italic;padding:8px 0">Немає об\'єктів...</div>';return;}
+  sortObjects();
   objects.forEach((o,i)=>col.appendChild(buildItemWrap(o,i)));
   if(expandedId!==null){const el=document.getElementById('exp-'+expandedId);if(el){el.classList.add('open');el.innerHTML=buildSticker(objects[expandedId],expandedId);}}
 }
