@@ -748,7 +748,7 @@ async function deleteStickyNote(idx){
 function openAddModal(){
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-addr','f-area','f-link-project','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); 
   document.getElementById('f-stage').value='Підготовка';
   document.getElementById('f-status').value='active';
   document.getElementById('f-pack').value='Comf';
@@ -767,7 +767,6 @@ function openEditModal(i){
   document.getElementById('f-status').value=o.status||'active';
   document.getElementById('f-pack').value=o.pack||'Comf';
   document.getElementById('f-area').value=o.area||'';
-  document.getElementById('f-link-project').value=o.linkProject||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   document.getElementById('f-start').value=o.dateStart||'';
   document.getElementById('f-end').value=o.dateEnd||'';
@@ -792,7 +791,7 @@ async function saveCard(){
     completed:document.getElementById('f-completed').checked,
     masters:document.getElementById('f-masters').checked,
     mastersName:document.getElementById('f-masters-name').value.trim(),
-    linkProject:document.getElementById('f-link-project').value.trim(),
+    linkProject:editIdx!==null?(objects[editIdx].linkProject||''):'',
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     dateStart:document.getElementById('f-start').value,
     dateEnd:document.getElementById('f-end').value,
