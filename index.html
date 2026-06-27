@@ -184,6 +184,8 @@ body{
 /* ── NOTE REMINDER MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center}
 .overlay.open{display:flex}
+#addModal{cursor:default}
+#addModal .modal{cursor:auto}
 .modal{background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:22px;width:400px;max-width:95vw;display:flex;flex-direction:column;gap:11px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.14);font-family:'Caveat',cursive}
 .modal-sm{width:340px}
 .modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:2px}
@@ -779,7 +781,9 @@ function openEditModal(i){
 function closeAddModal(){document.getElementById('addModal').classList.remove('open')}
 
 async function saveCard(){
-  const btn=document.getElementById('btnSaveObj');btn.disabled=true;btn.textContent='Збереження...';
+  const btn=document.getElementById('btnSaveObj');
+  try{
+  btn.disabled=true;btn.textContent='Збереження...';
   const obj={
     name:document.getElementById('f-name').value.trim()||'Без назви',
     addr:document.getElementById('f-addr').value.trim(),
@@ -801,6 +805,11 @@ async function saveCard(){
   else{await apiSave(obj);objects.push(obj);}
   btn.disabled=false;btn.textContent='Зберегти';
   closeAddModal();expandedId=null;render();
+  }catch(err){
+    console.error('saveCard error:',err);
+    btn.disabled=false;btn.textContent='Зберегти';
+    alert('Помилка збереження: '+err.message);
+  }
 }
 
 async function deleteCard(i){
@@ -809,15 +818,10 @@ async function deleteCard(i){
   await apiDelete(id);
 }
 
-document.getElementById('addModal').addEventListener('click',function(e){
-  if(e.target===this && document.getElementById('btnSaveObj') && !document.getElementById('btnSaveObj').disabled){
-    closeAddModal();
-  }
+// addModal: ONLY close via "Скасувати" button — never on outside click (prevents accidental close while editing)
+document.getElementById('reminderModal').addEventListener('click',function(e){
+  if(e.target===this) closeReminderModal();
 });
-document.getElementById('reminderModal').addEventListener('click',function(e){if(e.target===this)closeReminderModal()});
-// Prevent clicks inside modal from bubbling to overlay
-document.querySelector('#addModal .modal').addEventListener('click',function(e){e.stopPropagation();});
-document.querySelector('#reminderModal .modal').addEventListener('click',function(e){e.stopPropagation();});
 
 setInterval(render,30000);
 
