@@ -365,8 +365,7 @@ body{
       <div class="form-row"><label>Фініш</label><input id="f-end" type="date"></div>
     </div>
     <div class="fsec">Посилання</div>
-    <div class="form-row"><label>Проєкт</label><input id="f-link-project" placeholder="https://..."></div>
-    <div class="form-row"><label>Папка</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
       <button class="btn-save" id="btnSaveObj" onclick="saveCard()">Зберегти</button>
@@ -657,11 +656,9 @@ function buildSticker(o,i){
   const stageOpts=STAGES.map(s=>`<option value="${s}"${s===o.stage?' selected':''}>${s}</option>`).join('');
   const startStr=fmtDateShort(o.dateStart);
   const endStr=fmtDateShort(o.dateEnd);
-  const linksHtml=[
-    o.linkProject?`<a class="sticker-link" href="${o.linkProject}" target="_blank">📄 Проєкт</a>`:'',
-    o.addr?`<a class="sticker-link" href="${mapsUrl(o.addr)}" target="_blank">📍 Маршрут</a>`:'',
-    o.linkFolder?`<a class="sticker-link" href="${o.linkFolder}" target="_blank">📁 Папка</a>`:''
-  ].filter(Boolean).join('');
+  const linksHtml=o.linkFolder
+    ?`<a class="sticker-link" href="${o.linkFolder}" target="_blank">📁 Папка Фінал</a>`
+    :'';
   return`<div class="sticker">
     <div class="sticker-title">${o.name||'—'}</div>
     <div class="sticker-fields">
