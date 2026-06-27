@@ -340,7 +340,7 @@ body{
         <select id="f-pack"><option value="Comf">Comf</option><option value="Inv">Inv</option><option value="Prem">Prem</option><option value="ДП">ДП</option></select>
       </div>
       <div class="form-row"><label>Етап</label>
-        <select id="f-stage"><option>Підготовка</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Фінішуємо</option></select>
+        <select id="f-stage"><option>Підготовка</option><option>Розробка проєкту</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Фінішуємо</option></select>
       </div>
       <div class="form-row"><label>Статус</label>
         <select id="f-status">
@@ -809,8 +809,15 @@ async function deleteCard(i){
   await apiDelete(id);
 }
 
-document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal()});
+document.getElementById('addModal').addEventListener('click',function(e){
+  if(e.target===this && document.getElementById('btnSaveObj') && !document.getElementById('btnSaveObj').disabled){
+    closeAddModal();
+  }
+});
 document.getElementById('reminderModal').addEventListener('click',function(e){if(e.target===this)closeReminderModal()});
+// Prevent clicks inside modal from bubbling to overlay
+document.querySelector('#addModal .modal').addEventListener('click',function(e){e.stopPropagation();});
+document.querySelector('#reminderModal .modal').addEventListener('click',function(e){e.stopPropagation();});
 
 setInterval(render,30000);
 
