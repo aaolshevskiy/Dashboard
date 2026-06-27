@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CRM Об'єкти</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;min-height:100vh}
+body{
+  font-family:'Caveat',cursive;
+  background:#b8b8b8;
+  min-height:100vh;
+  padding:16px;
+  display:flex;align-items:flex-start;justify-content:center;
+}
+
+/* ── BOARD ── */
+.board-outer{
+  width:100%;max-width:1440px;
+  background:#a8a8a8;
+  border-radius:6px;padding:12px;
+  box-shadow:0 4px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.15);
+  position:relative;
+}
+.board-outer::before{content:'';position:absolute;inset:0;border-radius:6px;border:2px solid rgba(255,255,255,.18);pointer-events:none;z-index:10}
+.corner{position:absolute;width:26px;height:26px;z-index:20}
+.corner.tl{top:6px;left:6px;border-top:4px solid #777;border-left:4px solid #777;border-radius:3px 0 0 0}
+.corner.tr{top:6px;right:6px;border-top:4px solid #777;border-right:4px solid #777;border-radius:0 3px 0 0}
+.corner.bl{bottom:6px;left:6px;border-bottom:4px solid #777;border-left:4px solid #777;border-radius:0 0 0 3px}
+.corner.br{bottom:6px;right:6px;border-bottom:4px solid #777;border-right:4px solid #777;border-radius:0 0 3px 0}
+.magnet{position:absolute;width:16px;height:16px;border-radius:50%;z-index:20;background:radial-gradient(circle at 35% 35%,#d0d8e0,#6a7a88);border:2px solid #556070;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.3)}
+.magnet.tm{top:3px;left:50%;transform:translateX(-50%)}
+.magnet.bm{bottom:3px;left:50%;transform:translateX(-50%)}
+.magnet.lm{left:3px;top:50%;transform:translateY(-50%)}
+.magnet.rm{right:3px;top:50%;transform:translateY(-50%)}
+
+.board-inner{
+  background:#f8f7f2;
+  border-radius:3px;
+  padding:20px 24px 0;
+  min-height:calc(100vh - 56px);
+  display:flex;flex-direction:column;
+  position:relative;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.03);
+}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px}
+.board-title{font-size:32px;font-weight:700;color:#1a1a1a}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sync-status{font-size:17px;color:#bbb}
+.sync-status.ok{color:#2a7a3a}
+.sync-status.err{color:#c0392b}
+.sync-status.syncing{color:#8a6a1a}
+.add-btn{font-family:'Caveat',cursive;font-size:20px;font-weight:600;padding:4px 18px;background:transparent;border:2.5px solid #1a1a1a;border-radius:3px;color:#1a1a1a;cursor:pointer}
+.add-btn:hover{background:rgba(0,0,0,.04)}
+
+/* ── LAYOUT: 2/3 left + 1/3 right ── */
+.board-body{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:0 32px;
+  flex:1;
+  align-items:start;
+}
+@media(max-width:700px){
+  .board-body{grid-template-columns:1fr}
+  .col-right{margin-top:24px}
+}
+
+/* ── LIST ── */
+.list-item-wrap{margin-bottom:2px}
+.list-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:2px 0;line-height:1.4}
+.list-row-right{flex-shrink:0;margin-left:auto;padding-left:6px}
+.note-icon-btn{font-family:'Caveat',cursive;font-size:20px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0 2px;line-height:1;vertical-align:middle}
+.note-icon-btn:hover{color:#1a1a8a}
+.note-input-wrap{margin-left:28px;margin-top:2px;margin-bottom:4px}
+.add-note-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.note-input-field{font-family:'Caveat',cursive;font-size:19px;border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#1a1a1a;padding:1px 2px;flex:1;min-width:100px}
+.note-input-field::placeholder{color:#ccc}
+.note-input-field:focus{border-bottom-color:#888}
+.note-submit-btn{font-family:'Caveat',cursive;font-size:18px;color:#bbb;cursor:pointer;border:none;background:transparent;padding:0 3px;flex-shrink:0}
+.note-submit-btn:hover{color:#1a1a8a}
+.dt-mini-btn{font-family:'Caveat',cursive;font-size:15px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0;text-decoration:underline;text-underline-offset:2px;flex-shrink:0}
+.dt-mini-btn:hover{color:#888}
+.list-star{font-size:28px;color:#1a1a1a;flex-shrink:0;width:24px;text-align:center}
+.list-star-empty{width:24px;flex-shrink:0}
+.list-star.crossed{color:#bbb;text-decoration:line-through}
+.list-name{font-size:28px;font-weight:700;color:#1a1a8a;cursor:pointer;flex-shrink:0}
+.list-name:hover{text-decoration:underline;text-decoration-style:wavy;text-underline-offset:4px}
+.list-name.done{color:#bbb;text-decoration:line-through;text-decoration-thickness:3px}
+.list-addr-wrap{font-size:24px;color:#1a1a1a}
+.list-addr-wrap a{color:#1a1a1a;text-decoration:none}
+.list-addr-wrap a:hover{text-decoration:underline}
+.list-pack{font-size:24px;color:#1a1a1a;font-weight:700}
+.inline-select{font-family:'Caveat',cursive;font-size:22px;color:#888;border:none;border-bottom:1.5px dashed #ddd;background:transparent;outline:none;cursor:pointer;padding:0 2px}
+.inline-select:focus{border-bottom-color:#1a1a8a;color:#1a1a8a}
+.m-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2.5px solid #1a1a1a;font-size:18px;font-weight:700;color:#1a1a1a;margin-left:5px;flex-shrink:0;vertical-align:middle}
+.reminder-dot{width:9px;height:9px;border-radius:50%;background:#c0392b;flex-shrink:0;display:inline-block;margin-left:3px;vertical-align:middle}
+
+/* ── NOTES UNDER OBJECT ── */
+.obj-notes{margin-left:28px;margin-bottom:2px;margin-top:0}
+.obj-note-item{display:flex;align-items:baseline;gap:5px;padding:1px 0;line-height:1.4;flex-wrap:wrap;cursor:pointer}
+.obj-note-item:hover .obj-note-text{text-decoration:underline;text-decoration-style:dotted}
+.obj-note-text{font-size:20px;line-height:1.35;color:#1a1a1a}
+.obj-note-text.c0{color:#1a1a1a}
+.obj-note-text.c1{color:#1a1a1a}
+.obj-note-text.overdue{color:#c0392b!important}
+.obj-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
+.obj-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
+.obj-note-del:hover{color:#c0392b;border-color:#c0392b}
+
+.note-datetime-row{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-left:28px;margin-top:1px}
+.note-datetime-row.vis{display:flex}
+.note-datetime-row input[type=date]{font-family:'Caveat',cursive;font-size:16px;border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#888;padding:1px 2px;width:130px}
+.note-dt-label{font-size:14px;color:#bbb}
+
+/* ── STICKER (expanded) ── */
+.exp-wrap{display:none;margin:6px 0 10px 28px;position:relative;z-index:5}
+.exp-wrap.open{display:block}
+.sticker{
+  background:#fffacd;
+  border:1px solid #e0cc3a;
+  width:240px;height:240px;
+  padding:14px 15px 14px;
+  position:relative;
+  transform:rotate(-1.5deg);
+  box-shadow:3px 4px 14px rgba(0,0,0,.14),inset 0 -2px 0 rgba(0,0,0,.04);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sticker::before{content:'';position:absolute;top:0;left:0;right:0;height:7px;background:linear-gradient(to bottom,rgba(200,180,30,.3),transparent);pointer-events:none}
+.sticker-title{font-size:19px;font-weight:700;color:#1a1a1a;border-bottom:1.5px dashed rgba(0,0,0,.12);padding-bottom:5px;margin-bottom:6px;flex-shrink:0}
+.sticker-fields{display:flex;flex-direction:column;gap:3px;flex:1;overflow:hidden}
+.sticker-row{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+.sticker-label{font-size:13px;color:#b8a820;flex-shrink:0}
+.sticker-val{font-size:17px;color:#1a1a1a;font-weight:600}
+.sticker-select{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);background:transparent;outline:none;cursor:pointer;font-weight:600;max-width:130px}
+.sticker-select:focus{border-bottom-color:#8a7000}
+.sticker-input{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);background:transparent;outline:none;width:100%}
+.sticker-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.sticker-link{font-size:15px;color:#8a7000;text-decoration:none;border-bottom:1px solid #c8a820}
+.sticker-link:hover{opacity:.7}
+.sticker-divider{border:none;border-top:1.5px dashed rgba(0,0,0,.1);margin:5px 0}
+.sticker-actions{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.sticker-btn{font-family:'Caveat',cursive;font-size:14px;padding:2px 8px;border:1.5px solid rgba(0,0,0,.15);border-radius:3px;background:rgba(255,255,255,.5);color:#555;cursor:pointer;white-space:nowrap}
+.sticker-btn:hover{background:rgba(255,255,255,.85)}
+.sticker-btn.red:hover{color:#c0392b;border-color:#c0392b}
+.sticker-btn.col{font-size:13px;color:#aaa}
+
+/* ── RIGHT COL: sticky notes ── */
+.col-right{display:flex;flex-direction:column;gap:0;min-height:300px}
+.sticky-notes-label{font-size:16px;color:#bbb;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.sticky-notes-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;transition:all .2s}
+.sticky-note-wrap{position:relative}
+.sticky-note{
+  background:#fffacd;
+  border:1px solid #e0cc3a;
+  width:100%;
+  padding:12px 14px 40px;
+  position:relative;
+  box-shadow:2px 3px 10px rgba(0,0,0,.12),inset 0 -1px 0 rgba(0,0,0,.04);
+  min-height:80px;
+  transition:transform .2s;
+}
+.sticky-note:nth-child(odd){transform:rotate(-0.8deg)}
+.sticky-note:nth-child(even){transform:rotate(0.6deg)}
+.sticky-note::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(to bottom,rgba(200,180,30,.25),transparent);pointer-events:none}
+.sticky-note-text{font-size:28px;font-weight:600;color:#1a1a1a;line-height:1.3;word-break:break-word;width:100%;cursor:text;outline:none;min-height:32px}
+.sticky-note-text:focus{background:rgba(255,255,255,.5);border-radius:2px}
+.sticky-note-del{position:absolute;bottom:8px;right:10px;font-family:'Caveat',cursive;font-size:13px;color:#ccc;cursor:pointer;border:none;background:transparent}
+.sticky-note-del:hover{color:#c0392b}
+.sticky-note-time{position:absolute;bottom:10px;left:12px;font-size:14px;color:#c8a820}
+
+.sticky-add-area{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sticky-add-input{font-family:'Caveat',cursive;font-size:24px;border:none;border-bottom:1.5px dashed #bbb;background:transparent;outline:none;color:#1a1a1a;flex:1;min-width:80px;padding:2px 0}
+.sticky-add-input::placeholder{color:#ccc;font-style:italic}
+.sticky-add-btn{font-family:'Caveat',cursive;font-size:20px;color:#bbb;cursor:pointer;border:none;background:transparent}
+.sticky-add-btn:hover{color:#1a1a8a}
+
+/* ── NOTE REMINDER MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:22px;width:400px;max-width:95vw;display:flex;flex-direction:column;gap:11px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.14);font-family:'Caveat',cursive}
+.modal-sm{width:340px}
+.modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:2px}
+.fsec{font-size:13px;color:#bbb;margin-top:4px;padding-bottom:3px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #f0f0f0}
+.form-row{display:flex;flex-direction:column;gap:3px}
+.form-row label{font-size:16px;color:#888}
+.form-row input,.form-row select,.form-row textarea{width:100%;font-size:19px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;color:#1a1a1a;padding:3px 2px;outline:none}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-bottom-color:#1a1a8a}
+.form-row textarea{resize:vertical;min-height:44px;border:1.5px solid #e0e0e0;border-radius:4px;padding:5px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.toggle-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 0}
+.tpill-lbl{display:flex;align-items:center;gap:4px;cursor:pointer}
+.tpill-lbl input[type=checkbox]{display:none}
+.tpill{padding:3px 12px;border:1.5px solid #ddd;border-radius:20px;font-family:'Caveat',cursive;font-size:17px;color:#888;cursor:pointer;transition:all .15s}
+.tpill-lbl input:checked+.tpill.star{border-color:#f0a500;color:#f0a500;background:rgba(240,165,0,.08)}
+.tpill-lbl input:checked+.tpill.done{border-color:#888;color:#888;text-decoration:line-through;background:rgba(0,0,0,.04)}
+.tpill-lbl input:checked+.tpill.masters{border-color:#1a1a1a;color:#1a1a1a;background:rgba(0,0,0,.04)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;padding-top:10px;border-top:1px solid #f0f0f0}
+.btn-cancel{font-family:'Caveat',cursive;font-size:18px;padding:4px 14px;border:1.5px solid #ddd;border-radius:6px;background:transparent;color:#888;cursor:pointer}
+.btn-cancel:hover{background:#f8f8f8}
+.btn-save{font-family:'Caveat',cursive;font-size:18px;font-weight:700;padding:4px 18px;border:1.5px solid #1a1a8a;border-radius:6px;background:transparent;color:#1a1a8a;cursor:pointer}
+.btn-save:hover{background:rgba(26,26,138,.05)}
+.btn-save:disabled{border-color:#ddd;color:#ddd;cursor:not-allowed}
+.err-msg{font-size:15px;color:#c0392b;display:none}
+
+/* ── MARKER DRAWING AT BOTTOM ── */
+.board-drawing{display:flex;justify-content:center;padding:10px 0 8px;margin-top:auto}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sticker{width:200px;height:200px}
+  .board-title{font-size:26px}
+  .list-name{font-size:24px}
+}
+@media(max-width:600px){
+  body{padding:8px}
+  .board-inner{padding:14px 14px 0}
+  .board-body{grid-template-columns:1fr}
+  .sticker{width:95%;height:auto;min-height:180px}
+}
+</style>
+</head>
+<body>
+<div class="board-outer">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div class="magnet tm"></div><div class="magnet bm"></div>
+  <div class="magnet lm"></div><div class="magnet rm"></div>
+
+  <div class="board-inner">
+    <div class="topbar">
+      <div class="board-title">Об'єкти в роботі</div>
+      <div class="topbar-right">
+        <div class="sync-status" id="syncStatus"><span id="syncText">завантаження...</span></div>
+        <button class="add-btn" onclick="openAddModal()">+ Додати</button>
+      </div>
+    </div>
+
+    <div class="board-body">
+      <!-- LEFT: objects list -->
+      <div id="colLeft"></div>
+
+      <!-- RIGHT: sticky notes -->
+      <div class="col-right">
+        <div class="sticky-notes-label">нотатки</div>
+        <div class="sticky-notes-list" id="stickyList"></div>
+        <div class="sticky-add-area">
+          <input class="sticky-add-input" id="stickyInput" placeholder="нова нотатка..."
+            onkeydown="if(event.key==='Enter')addStickyNote()">
+          <button class="sticky-add-btn" onclick="addStickyNote()">↵</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAWING -->
+    <div class="board-drawing">
+      <svg width="260" height="90" viewBox="0 0 260 90" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.35">
+        <!-- Mom (left, big circle head, triangle dress) -->
+        <circle cx="52" cy="22" r="12" stroke="#1a1a1a" stroke-width="2.2" fill="none"/>
+        <line x1="52" y1="34" x2="52" y2="58" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="52" y1="42" x2="38" y2="54" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="52" y1="42" x2="66" y2="52" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="52" y1="58" x2="40" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="52" y1="58" x2="64" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- hair lines mom -->
+        <path d="M42 16 Q44 8 52 10 Q60 8 62 16" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- smile mom -->
+        <path d="M47 27 Q52 31 57 27" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <circle cx="48" cy="23" r="1.5" fill="#1a1a1a"/>
+        <circle cx="56" cy="23" r="1.5" fill="#1a1a1a"/>
+
+        <!-- Dad (middle, bigger) -->
+        <circle cx="118" cy="20" r="13" stroke="#1a1a1a" stroke-width="2.2" fill="none"/>
+        <line x1="118" y1="33" x2="118" y2="60" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="118" y1="42" x2="102" y2="55" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="118" y1="42" x2="134" y2="55" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="118" y1="60" x2="107" y2="78" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="118" y1="60" x2="129" y2="78" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- hair dad (short) -->
+        <path d="M106 17 Q108 8 118 9 Q128 8 130 17" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- smile dad -->
+        <path d="M113 25 Q118 30 123 25" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <circle cx="114" cy="21" r="1.5" fill="#1a1a1a"/>
+        <circle cx="122" cy="21" r="1.5" fill="#1a1a1a"/>
+
+        <!-- Daughter 1 (smaller, left of dad) -->
+        <circle cx="175" cy="26" r="9" stroke="#1a1a1a" stroke-width="1.8" fill="none"/>
+        <line x1="175" y1="35" x2="175" y2="54" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="175" y1="43" x2="164" y2="52" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="175" y1="43" x2="186" y2="52" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="175" y1="54" x2="168" y2="70" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="175" y1="54" x2="182" y2="70" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- pigtail daughter1 -->
+        <path d="M167 22 Q165 14 175 16 Q185 14 183 22" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <line x1="169" y1="18" x2="163" y2="12" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="181" y1="18" x2="187" y2="12" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M171 30 Q175 33 179 30" stroke="#1a1a1a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <circle cx="172" cy="27" r="1.2" fill="#1a1a1a"/>
+        <circle cx="178" cy="27" r="1.2" fill="#1a1a1a"/>
+
+        <!-- Daughter 2 (smallest, far right) -->
+        <circle cx="224" cy="30" r="8" stroke="#1a1a1a" stroke-width="1.8" fill="none"/>
+        <line x1="224" y1="38" x2="224" y2="56" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="224" y1="45" x2="215" y2="53" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="224" y1="45" x2="233" y2="53" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="224" y1="56" x2="218" y2="72" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="224" y1="56" x2="230" y2="72" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- pigtail daughter2 -->
+        <path d="M217 26 Q216 18 224 20 Q232 18 231 26" stroke="#1a1a1a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <line x1="219" y1="22" x2="214" y2="16" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="229" y1="22" x2="234" y2="16" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M220 33 Q224 36 228 33" stroke="#1a1a1a" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <circle cx="221" cy="30" r="1.1" fill="#1a1a1a"/>
+        <circle cx="227" cy="30" r="1.1" fill="#1a1a1a"/>
+
+        <!-- Ground line -->
+        <path d="M30 82 Q145 78 255 82" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- OBJECT MODAL -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Новий об'єкт</div>
+    <div class="form-row"><label>Назва</label><input id="f-name" placeholder="ЖК Зоряний"></div>
+    <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Лесі Українки 12, Київ"></div>
+    <div class="f3">
+      <div class="form-row"><label>Пакет</label>
+        <select id="f-pack"><option value="Comf">Comf</option><option value="Inv">Inv</option><option value="Prem">Prem</option><option value="ДП">ДП</option></select>
+      </div>
+      <div class="form-row"><label>Етап</label>
+        <select id="f-stage"><option>Підготовка</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Фінішуємо</option></select>
+      </div>
+      <div class="form-row"><label>Статус</label>
+        <select id="f-status">
+          <option value="active">В роботі</option><option value="launch">На запуск</option>
+          <option value="finishing">Закінчуємо</option><option value="pause">На паузі</option>
+          <option value="frozen">Заморожено</option><option value="done">Закінчено</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="form-row"><label>Площа, м²</label><input id="f-area" type="number" placeholder="1200"></div>
+      <div class="form-row"><label>Майстри</label><input id="f-masters-name" placeholder="ТОВ Ремонт..."></div>
+    </div>
+    <div class="toggle-group">
+      <label class="tpill-lbl"><input type="checkbox" id="f-inwork"><span class="tpill star">★ В реалізації</span></label>
+      <label class="tpill-lbl"><input type="checkbox" id="f-completed"><span class="tpill done">Завершено</span></label>
+      <label class="tpill-lbl"><input type="checkbox" id="f-masters"><span class="tpill masters">М Знайти майстрів</span></label>
+    </div>
+    <div class="fsec">Дати</div>
+    <div class="f2">
+      <div class="form-row"><label>Старт</label><input id="f-start" type="date"></div>
+      <div class="form-row"><label>Фініш</label><input id="f-end" type="date"></div>
+    </div>
+    <div class="fsec">Посилання</div>
+    <div class="form-row"><label>Проєкт</label><input id="f-link-project" placeholder="https://..."></div>
+    <div class="form-row"><label>Папка</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
+      <button class="btn-save" id="btnSaveObj" onclick="saveCard()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE REMINDER MODAL -->
+<div class="overlay" id="reminderModal">
+  <div class="modal modal-sm">
+    <div class="modal-title">Нагадування</div>
+    <div style="font-size:18px;color:#888" id="reminderNoteText"></div>
+    <div class="form-row"><label>Дата нагадування</label><input id="r-date" type="date"></div>
+    <div class="err-msg" id="r-error">Вкажіть дату</div>
+    <div style="font-size:15px;color:#bbb">Час: 9:00 ранку</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeReminderModal()">Скасувати</button>
+      <button class="btn-save" onclick="saveReminder()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL="https://script.google.com/macros/s/AKfycbzYvYHPHj6p5wRP6o_nfVkHJzVZZQHoJBLe9FwbGNdZKZZ-RGCwitHfxj75qfduf8tW/exec";
+const MONTHS_GEN=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const STATUS_LABELS={active:'В роботі',launch:'На запуск',finishing:'Закінчуємо',pause:'На паузі',frozen:'Заморожено',done:'Закінчено'};
+const STAGES=['Підготовка','Розробка проєкту','Етап 1','Етап 2','Етап 3','Етап 4','Фінішуємо'];
+const STATUSES=['active','launch','finishing','pause','frozen','done'];
+
+let objects=[];
+let stickyNotes=[];
+let editIdx=null;
+let expandedId=null;
+let reminderCtx=null; // {objIdx, noteIdx}
+
+function fmtDateShort(iso){if(!iso)return null;const[y,m,d]=iso.split('-');return parseInt(d)+' '+MONTHS_GEN[parseInt(m)-1];}
+function fmtDT(iso){if(!iso)return'';const d=new Date(iso);return d.getDate()+' '+MONTHS_GEN[d.getMonth()]+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
+function isNoteActive(n){return n.time&&n.text&&new Date()>=new Date(n.time);}
+function hasActiveReminder(o){return(o.notes||[]).some(isNoteActive);}
+
+function setSyncStatus(state,text){document.getElementById('syncStatus').className='sync-status '+state;document.getElementById('syncText').textContent=text;}
+
+async function apiGet(){
+  setSyncStatus('syncing','завантаження...');
+  try{
+    const res=await fetch(API_URL+'?action=getAll');
+    const data=await res.json();
+    // separate sticky notes (id starts with 'sticky_')
+    const stickies=[];
+    const objs=[];
+    (data||[]).forEach(o=>{
+      if(String(o.id).startsWith('sticky_')){
+        stickies.push(o);
+      } else {
+        objs.push({...o,inwork:o.inwork===true||o.inwork==='true'||o.inwork==='TRUE',completed:o.completed===true||o.completed==='true'||o.completed==='TRUE',masters:o.masters===true||o.masters==='true'||o.masters==='TRUE'});
+      }
+    });
+    objects=objs;
+    stickyNotes=stickies;
+    setSyncStatus('ok','збережено ✓');
+    render();renderStickies();
+  }catch(e){setSyncStatus('err','помилка з\'єднання');}
+}
+async function apiSave(obj){
+  setSyncStatus('syncing','збереження...');
+  try{const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:obj})});const data=await res.json();if(data.id)obj.id=data.id;setSyncStatus('ok','збережено ✓');return true;}
+  catch(e){setSyncStatus('err','помилка збереження');return false;}
+}
+async function apiDelete(id){
+  try{await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});setSyncStatus('ok','збережено ✓');}
+  catch(e){setSyncStatus('err','помилка');}
+}
+
+// ── RENDER OBJECTS ──
+function render(){
+  const col=document.getElementById('colLeft');
+  col.innerHTML='';
+  if(!objects.length){col.innerHTML='<div style="font-size:22px;color:#ccc;font-style:italic;padding:8px 0">Немає об\'єктів...</div>';return;}
+  objects.forEach((o,i)=>col.appendChild(buildItemWrap(o,i)));
+  if(expandedId!==null){const el=document.getElementById('exp-'+expandedId);if(el){el.classList.add('open');el.innerHTML=buildSticker(objects[expandedId],expandedId);}}
+}
+
+function buildItemWrap(o,i){
+  const wrap=document.createElement('div');
+  wrap.className='list-item-wrap';wrap.id='wrap-'+i;
+  // ROW
+  const row=document.createElement('div');row.className='list-row';
+  // star
+  const star=document.createElement('span');
+  if(o.inwork){star.className='list-star'+(o.completed?' crossed':'');star.textContent='☆';}
+  else{star.className='list-star-empty';}
+  row.appendChild(star);
+  // name
+  const name=document.createElement('span');
+  name.className='list-name'+(o.completed?' done':'');
+  name.textContent=o.name||'—';
+  name.onclick=()=>toggleExpand(i);
+  row.appendChild(name);
+  // address
+  if(o.addr){
+    const aw=document.createElement('span');aw.className='list-addr-wrap';
+    aw.innerHTML=` (<a href="${mapsUrl(o.addr)}" target="_blank" onclick="event.stopPropagation()">${o.addr}</a>)`;
+    row.appendChild(aw);
+  }
+  // area, then pack, then stage
+  if(o.area){const a=document.createElement('span');a.style.cssText='font-size:22px;color:#888;flex-shrink:0';a.textContent=' '+o.area+'м²';row.appendChild(a);}
+  if(o.pack){const p=document.createElement('span');p.className='list-pack';p.textContent=' '+o.pack+'.';row.appendChild(p);}
+  // inline stage
+  const stageSel=document.createElement('select');stageSel.className='inline-select';
+  STAGES.forEach(s=>{const op=document.createElement('option');op.value=s;op.textContent=s;if(s===o.stage)op.selected=true;stageSel.appendChild(op);});
+  stageSel.onchange=async()=>{objects[i].stage=stageSel.value;await apiSave(objects[i]);};
+  const sw=document.createElement('span');sw.style.cssText='flex-shrink:0;margin-left:3px';sw.appendChild(stageSel);
+  row.appendChild(sw);
+  // M badge
+  if(o.masters){const m=document.createElement('span');m.className='m-badge';m.textContent='М';row.appendChild(m);}
+  // reminder dot
+  if(hasActiveReminder(o)){const dot=document.createElement('span');dot.className='reminder-dot';row.appendChild(dot);}
+
+  // INLINE ADD NOTE — right side of row
+  const rowRight=document.createElement('span');
+  rowRight.className='list-row-right';
+  rowRight.innerHTML=`<button class="note-icon-btn" onclick="event.stopPropagation();toggleNoteInput(${i})" title="Додати замітку">✎</button>`;
+  row.appendChild(rowRight);
+
+  wrap.appendChild(row);
+
+  // STICKER — right after the row, before notes
+  const expDiv=document.createElement('div');expDiv.className='exp-wrap';expDiv.id='exp-'+i;
+  wrap.appendChild(expDiv);
+
+  // NOTES — only visible when there are notes
+  const notesDiv=document.createElement('div');notesDiv.className='obj-notes';notesDiv.id='notes-'+i;notesDiv.innerHTML=buildNotesHTML(o,i);
+  wrap.appendChild(notesDiv);
+
+  // NOTE INPUT — hidden by default, shows below notes
+  const noteInputWrap=document.createElement('div');
+  noteInputWrap.className='note-input-wrap';
+  noteInputWrap.id='ni-wrap-'+i;
+  noteInputWrap.style.display='none';
+  noteInputWrap.innerHTML=`
+    <div class="add-note-row" id="addinline-${i}">
+      <input class="note-input-field" type="text" id="qi-text-${i}" placeholder="нова замітка..."
+        onkeydown="if(event.key==='Enter')submitQuickNote(${i})"
+        onclick="event.stopPropagation()">
+      <button class="note-submit-btn" onclick="event.stopPropagation();submitQuickNote(${i})">↵</button>
+      <button class="dt-mini-btn" id="dt-btn-${i}" onclick="event.stopPropagation();toggleDT(${i})">+ нагадати</button>
+    </div>
+    <div class="note-datetime-row" id="dt-row-${i}">
+      <span class="note-dt-label">нагадати:</span>
+      <input type="date" id="qi-date-${i}">
+      <span class="note-dt-label">(9:00)</span>
+    </div>`;
+  wrap.appendChild(noteInputWrap);
+  return wrap;
+}
+
+function buildNotesHTML(o,i){
+  const notes=o.notes||[];
+  if(!notes.length) return '';
+  let html='';
+  notes.forEach((n,ni)=>{
+    const active=isNoteActive(n);
+    const cl=active?'overdue':'';
+    const timeStr=n.time?` <span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
+    html+=`<div class="obj-note-item" onclick="openReminderModal(${i},${ni})">
+      <span class="obj-note-text ${cl}">— ${n.text}</span>${timeStr}
+      <button class="obj-note-del" onclick="event.stopPropagation();deleteNoteQuick(${i},${ni})">✕</button>
+    </div>`;
+  });
+  return html;
+}
+
+function toggleNoteInput(i){
+  const wrap=document.getElementById('ni-wrap-'+i);
+  if(!wrap)return;
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    const inp=document.getElementById('qi-text-'+i);
+    if(inp)setTimeout(()=>inp.focus(),50);
+  }
+}
+
+function toggleDT(i){
+  const row=document.getElementById('dt-row-'+i);
+  const btn=document.getElementById('dt-btn-'+i);
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+async function deleteNoteQuick(objIdx,ni){
+  objects[objIdx].notes.splice(ni,1);
+  document.getElementById('notes-'+objIdx).innerHTML=buildNotesHTML(objects[objIdx],objIdx);
+  if(expandedId===objIdx){const el=document.getElementById('exp-'+objIdx);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[objIdx],objIdx);}
+  await apiSave(objects[objIdx]);
+}
+
+async function submitQuickNote(i){
+  const textEl=document.getElementById('qi-text-'+i);
+  const text=(textEl?.value||'').trim();
+  const dateEl=document.getElementById('qi-date-'+i);
+  const date=dateEl?.value||'';
+  if(!text)return;
+  if(!objects[i].notes)objects[i].notes=[];
+  const time=date?date+'T09:00':'';
+  objects[i].notes.push({text,time});
+  // clear input and date, close wrap
+  if(textEl) textEl.value='';
+  if(dateEl) dateEl.value='';
+  const dtRow=document.getElementById('dt-row-'+i);
+  const dtBtn=document.getElementById('dt-btn-'+i);
+  if(dtRow) dtRow.classList.remove('vis');
+  if(dtBtn) dtBtn.textContent='+ нагадати';
+  const niWrap=document.getElementById('ni-wrap-'+i);
+  if(niWrap) niWrap.style.display='none';
+  document.getElementById('notes-'+i).innerHTML=buildNotesHTML(objects[i],i);
+  if(expandedId===i){const el=document.getElementById('exp-'+i);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[i],i);}
+  await apiSave(objects[i]);
+}
+
+// ── REMINDER MODAL (click on existing note) ──
+function openReminderModal(objIdx,ni){
+  reminderCtx={objIdx,ni};
+  const n=objects[objIdx].notes[ni];
+  document.getElementById('reminderNoteText').textContent='«'+n.text+'»';
+  document.getElementById('r-date').value=n.time?n.time.slice(0,10):'';
+  document.getElementById('r-error').style.display='none';
+  document.getElementById('reminderModal').classList.add('open');
+}
+function closeReminderModal(){document.getElementById('reminderModal').classList.remove('open');reminderCtx=null;}
+async function saveReminder(){
+  const date=document.getElementById('r-date').value;
+  if(!date){document.getElementById('r-error').style.display='block';return;}
+  document.getElementById('r-error').style.display='none';
+  const {objIdx,ni}=reminderCtx;
+  objects[objIdx].notes[ni].time=date+'T09:00';
+  document.getElementById('notes-'+objIdx).innerHTML=buildNotesHTML(objects[objIdx],objIdx);
+  if(expandedId===objIdx){const el=document.getElementById('exp-'+objIdx);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[objIdx],objIdx);}
+  closeReminderModal();
+  await apiSave(objects[objIdx]);
+}
+
+// ── STICKER (expanded card) ──
+function buildSticker(o,i){
+  const statusOpts=STATUSES.map(s=>`<option value="${s}"${s===o.status?' selected':''}>${STATUS_LABELS[s]}</option>`).join('');
+  const stageOpts=STAGES.map(s=>`<option value="${s}"${s===o.stage?' selected':''}>${s}</option>`).join('');
+  const startStr=fmtDateShort(o.dateStart);
+  const endStr=fmtDateShort(o.dateEnd);
+  const linksHtml=[
+    o.linkProject?`<a class="sticker-link" href="${o.linkProject}" target="_blank">📄 Проєкт</a>`:'',
+    o.addr?`<a class="sticker-link" href="${mapsUrl(o.addr)}" target="_blank">📍 Маршрут</a>`:'',
+    o.linkFolder?`<a class="sticker-link" href="${o.linkFolder}" target="_blank">📁 Папка</a>`:''
+  ].filter(Boolean).join('');
+  return`<div class="sticker">
+    <div class="sticker-title">${o.name||'—'}</div>
+    <div class="sticker-fields">
+      <div class="sticker-row"><span class="sticker-label">статус</span><select class="sticker-select" onchange="changeStatus(${i},this.value)">${statusOpts}</select></div>
+      <div class="sticker-row"><span class="sticker-label">етап</span><select class="sticker-select" onchange="changeStage(${i},this.value)">${stageOpts}</select></div>
+      ${o.mastersName?`<div class="sticker-row"><span class="sticker-label">майстри</span><span class="sticker-val" style="font-size:15px">${o.mastersName}</span></div>`:''}
+      ${o.area?`<div class="sticker-row"><span class="sticker-label">площа</span><span class="sticker-val">${o.area} м²</span></div>`:''}
+      ${(startStr||endStr)?`<div class="sticker-row">${startStr?`<span class="sticker-label">старт</span><span class="sticker-val" style="font-size:15px">${startStr}</span>`:''}${endStr?`<span class="sticker-label" style="margin-left:6px">фініш</span><span class="sticker-val" style="font-size:15px">${endStr}</span>`:''}</div>`:''}
+      ${linksHtml?`<div class="sticker-links">${linksHtml}</div>`:''}
+    </div>
+    <div class="sticker-divider"></div>
+    <div class="sticker-actions">
+      <button class="sticker-btn" onclick="openEditModal(${i})">✏ ред.</button>
+      <button class="sticker-btn red" onclick="deleteCard(${i})">✕</button>
+      <button class="sticker-btn col" onclick="closeExpand(${i})">↑</button>
+    </div>
+  </div>`;
+}
+
+async function changeStatus(i,val){objects[i].status=val;await apiSave(objects[i]);const el=document.getElementById('exp-'+i);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[i],i);}
+async function changeStage(i,val){objects[i].stage=val;await apiSave(objects[i]);const w=document.getElementById('wrap-'+i);if(w){const s=w.querySelector('.inline-select');if(s)s.value=val;}}
+
+function toggleExpand(i){
+  if(expandedId===i){closeExpand(i);return;}
+  if(expandedId!==null){const prev=document.getElementById('exp-'+expandedId);if(prev){prev.classList.remove('open');prev.innerHTML='';}}
+  expandedId=i;
+  const el=document.getElementById('exp-'+i);
+  if(el){el.innerHTML=buildSticker(objects[i],i);el.classList.add('open');}
+}
+function closeExpand(i){const el=document.getElementById('exp-'+i);if(el){el.classList.remove('open');el.innerHTML='';}if(expandedId===i)expandedId=null;}
+
+// ── STICKY NOTES ──
+function renderStickies(){
+  const list=document.getElementById('stickyList');
+  list.innerHTML='';
+  stickyNotes.forEach((sn,idx)=>{
+    const wrap=document.createElement('div');wrap.className='sticky-note-wrap';
+    const note=document.createElement('div');note.className='sticky-note';
+
+    // editable text
+    const textEl=document.createElement('div');
+    textEl.className='sticky-note-text';
+    textEl.contentEditable='true';
+    textEl.textContent=sn.name||'';
+    textEl.title='Клікніть щоб редагувати';
+    textEl.addEventListener('blur',async()=>{
+      const newText=textEl.textContent.trim();
+      if(newText!==stickyNotes[idx].name){
+        stickyNotes[idx].name=newText;
+        await apiSave(stickyNotes[idx]);
+      }
+    });
+    textEl.addEventListener('keydown',e=>{
+      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();textEl.blur();}
+    });
+
+    const del=document.createElement('button');
+    del.className='sticky-note-del';
+    del.textContent='✕ видалити';
+    del.onclick=()=>deleteStickyNote(idx);
+
+    note.appendChild(textEl);
+    note.appendChild(del);
+    wrap.appendChild(note);
+    list.appendChild(wrap);
+  });
+}
+
+async function addStickyNote(){
+  const inp=document.getElementById('stickyInput');
+  const text=inp.value.trim();if(!text)return;
+  const sn={id:'sticky_'+Date.now(),name:text,addr:'',stage:'',status:'',pack:'',area:'',notes:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  renderStickies();
+  await apiSave(sn);
+}
+
+async function deleteStickyNote(idx){
+  const id=stickyNotes[idx].id;
+  stickyNotes.splice(idx,1);
+  renderStickies();
+  await apiDelete(id);
+}
+
+// ── OBJECT CRUD ──
+function openAddModal(){
+  editIdx=null;
+  document.getElementById('modalTitle').textContent='Новий об\'єкт';
+  ['f-name','f-addr','f-area','f-link-project','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-stage').value='Підготовка';
+  document.getElementById('f-status').value='active';
+  document.getElementById('f-pack').value='Comf';
+  document.getElementById('f-inwork').checked=false;
+  document.getElementById('f-completed').checked=false;
+  document.getElementById('f-masters').checked=false;
+  document.getElementById('addModal').classList.add('open');
+}
+
+function openEditModal(i){
+  editIdx=i;const o=objects[i];
+  document.getElementById('modalTitle').textContent='Редагувати';
+  document.getElementById('f-name').value=o.name||'';
+  document.getElementById('f-addr').value=o.addr||'';
+  document.getElementById('f-stage').value=o.stage||'Підготовка';
+  document.getElementById('f-status').value=o.status||'active';
+  document.getElementById('f-pack').value=o.pack||'Comf';
+  document.getElementById('f-area').value=o.area||'';
+  document.getElementById('f-link-project').value=o.linkProject||'';
+  document.getElementById('f-link-folder').value=o.linkFolder||'';
+  document.getElementById('f-start').value=o.dateStart||'';
+  document.getElementById('f-end').value=o.dateEnd||'';
+  document.getElementById('f-inwork').checked=!!o.inwork;
+  document.getElementById('f-completed').checked=!!o.completed;
+  document.getElementById('f-masters').checked=!!o.masters;
+  document.getElementById('f-masters-name').value=o.mastersName||'';
+  document.getElementById('addModal').classList.add('open');
+}
+function closeAddModal(){document.getElementById('addModal').classList.remove('open')}
+
+async function saveCard(){
+  const btn=document.getElementById('btnSaveObj');btn.disabled=true;btn.textContent='Збереження...';
+  const obj={
+    name:document.getElementById('f-name').value.trim()||'Без назви',
+    addr:document.getElementById('f-addr').value.trim(),
+    stage:document.getElementById('f-stage').value,
+    status:document.getElementById('f-status').value,
+    pack:document.getElementById('f-pack').value,
+    area:document.getElementById('f-area').value,
+    inwork:document.getElementById('f-inwork').checked,
+    completed:document.getElementById('f-completed').checked,
+    masters:document.getElementById('f-masters').checked,
+    mastersName:document.getElementById('f-masters-name').value.trim(),
+    linkProject:document.getElementById('f-link-project').value.trim(),
+    linkFolder:document.getElementById('f-link-folder').value.trim(),
+    dateStart:document.getElementById('f-start').value,
+    dateEnd:document.getElementById('f-end').value,
+    notes:editIdx!==null?(objects[editIdx].notes||[]):[]
+  };
+  if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
+  else{await apiSave(obj);objects.push(obj);}
+  btn.disabled=false;btn.textContent='Зберегти';
+  closeAddModal();expandedId=null;render();
+}
+
+async function deleteCard(i){
+  if(!confirm('Видалити "'+objects[i].name+'"?'))return;
+  const id=objects[i].id;expandedId=null;objects.splice(i,1);render();
+  await apiDelete(id);
+}
+
+document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal()});
+document.getElementById('reminderModal').addEventListener('click',function(e){if(e.target===this)closeReminderModal()});
+
+setInterval(render,30000);
+
+const SEED_OBJECTS=[
+  {name:'Krakowskie Tarasy',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Inv',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Boleslawiec',addr:'Dankow',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:true,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Port Popowice',addr:'Wroclaw',stage:'Etap 1',status:'active',pack:'DP',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Zlota Praga',addr:'Warszawa',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Swiecice',addr:'Warszawa',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Moj Gajkow',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Bakowo 104m2',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'104',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Zielona Gora',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Siechnice',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Inv',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Siechnice Julia',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Jasna Marona',addr:'Lublin',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Giebultow x3',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Antoniewska',addr:'Warszawa',stage:'Pidhotovka',status:'done',pack:'Inv',area:'',inwork:false,completed:true,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+  {name:'Domy na Polanie',addr:'Wolowice',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
+];
+
+// fix stage values to match select options
+const STAGE_MAP={'Pidhotovka':'Pidhotovka','Etap 1':'Etap 1'};
+
+async function seedIfEmpty(){
+  if(objects.length>0||stickyNotes.length>0) return;
+  setSyncStatus('syncing','Dodaemo obiekty...');
+  for(const obj of SEED_OBJECTS){
+    obj.id='seed_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    await new Promise(r=>setTimeout(r,150));
+    await apiSave(obj);
+    objects.push({...obj});
+  }
+  setSyncStatus('ok','zbereheno');
+  render();
+}
+
+apiGet().then(()=>{ setTimeout(seedIfEmpty,800); });
+</script>
+</body>
+</html>
