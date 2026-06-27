@@ -410,19 +410,30 @@ function hasActiveReminder(o){return(o.notes||[]).some(isNoteActive);}
 
 function setSyncStatus(state,text){document.getElementById('syncStatus').className='sync-status '+state;document.getElementById('syncText').textContent=text;}
 
+function parseBool(v){ return v===true||v==='true'||v==='TRUE'||v===1||v==='1'; }
+
+function parseObj(o){
+  return {
+    ...o,
+    inwork:    parseBool(o.inwork),
+    completed: parseBool(o.completed),
+    masters:   parseBool(o.masters),
+    notes: Array.isArray(o.notes) ? o.notes : (()=>{ try{ return JSON.parse(o.notes||'[]'); }catch{ return []; } })()
+  };
+}
+
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
     const res=await fetch(API_URL+'?action=getAll');
     const data=await res.json();
-    // separate sticky notes (id starts with 'sticky_')
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
       if(String(o.id).startsWith('sticky_')){
         stickies.push(o);
       } else {
-        objs.push({...o,inwork:o.inwork===true||o.inwork==='true'||o.inwork==='TRUE',completed:o.completed===true||o.completed==='true'||o.completed==='TRUE',masters:o.masters===true||o.masters==='true'||o.masters==='TRUE'});
+        objs.push(parseObj(o));
       }
     });
     objects=objs;
@@ -433,8 +444,32 @@ async function apiGet(){
 }
 async function apiSave(obj){
   setSyncStatus('syncing','збереження...');
-  try{const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:obj})});const data=await res.json();if(data.id)obj.id=data.id;setSyncStatus('ok','збережено ✓');return true;}
-  catch(e){setSyncStatus('err','помилка збереження');return false;}
+  // Always send complete canonical object — never lose fields
+  const full={
+    id:         obj.id||'',
+    name:       obj.name||'',
+    addr:       obj.addr||'',
+    stage:      obj.stage||'',
+    status:     obj.status||'active',
+    pack:       obj.pack||'',
+    area:       obj.area||'',
+    inwork:     !!obj.inwork,
+    completed:  !!obj.completed,
+    masters:    !!obj.masters,
+    mastersName:obj.mastersName||'',
+    linkProject:obj.linkProject||'',
+    linkFolder: obj.linkFolder||'',
+    dateStart:  obj.dateStart||'',
+    dateEnd:    obj.dateEnd||'',
+    notes:      Array.isArray(obj.notes)?obj.notes:[]
+  };
+  try{
+    const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:full})});
+    const data=await res.json();
+    if(data.id) obj.id=data.id;
+    setSyncStatus('ok','збережено ✓');
+    return true;
+  }catch(e){setSyncStatus('err','помилка збереження');return false;}
 }
 async function apiDelete(id){
   try{await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});setSyncStatus('ok','збережено ✓');}
