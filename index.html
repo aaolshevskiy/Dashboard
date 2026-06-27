@@ -269,8 +269,10 @@ body{
         <line x1="52" y1="42" x2="66" y2="52" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
         <line x1="52" y1="58" x2="40" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
         <line x1="52" y1="58" x2="64" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <!-- hair lines mom -->
-        <path d="M42 16 Q44 8 52 10 Q60 8 62 16" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- long hair mom -->
+        <path d="M40 18 Q38 10 44 8 Q52 6 60 8 Q66 10 64 18" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40 18 Q36 28 37 40 Q38 50 40 58" stroke="#1a1a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path d="M64 18 Q68 28 67 40 Q66 50 64 58" stroke="#1a1a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
         <!-- smile mom -->
         <path d="M47 27 Q52 31 57 27" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
         <circle cx="48" cy="23" r="1.5" fill="#1a1a1a"/>
@@ -453,6 +455,11 @@ function buildItemWrap(o,i){
   wrap.className='list-item-wrap';wrap.id='wrap-'+i;
   // ROW
   const row=document.createElement('div');row.className='list-row';
+  // number
+  const num=document.createElement('span');
+  num.style.cssText='font-size:18px;color:#ccc;flex-shrink:0;min-width:26px;text-align:right;margin-right:2px;font-weight:400';
+  num.textContent=(i+1)+'.';
+  row.appendChild(num);
   // star
   const star=document.createElement('span');
   if(o.inwork){star.className='list-star'+(o.completed?' crossed':'');star.textContent='☆';}
