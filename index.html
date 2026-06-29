@@ -479,10 +479,28 @@ async function apiDelete(id){
 
 // ── RENDER OBJECTS ──
 function sortObjects(){
-  objects.sort((a,b)=>{
-    const rank=o=>o.inwork?0:o.masters?1:2;
-    return rank(a)-rank(b);
-  });
+  const rank=o=>{
+    const notes=o.notes||[];
+    const hasOverdue=notes.some(isNoteActive);
+    const hasNotes=notes.length>0;
+    // зірочка + М
+    if(o.inwork&&o.masters){
+      if(hasOverdue) return 0;  // зірочка+М+протерміновано
+      if(hasNotes)   return 1;  // зірочка+М+замітки
+      return 2;                 // зірочка+М без заміток
+    }
+    // тільки зірочка
+    if(o.inwork){
+      if(hasOverdue) return 0;  // зірочка+протерміновано (той самий топ)
+      if(hasNotes)   return 1;  // зірочка+замітки
+      return 3;                 // зірочка без заміток
+    }
+    // тільки М
+    if(o.masters)    return 4;
+    // решта
+    return 5;
+  };
+  objects.sort((a,b)=>rank(a)-rank(b));
 }
 
 function objIdx(id){
