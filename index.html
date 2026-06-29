@@ -391,6 +391,20 @@ body{
   </div>
 </div>
 
+<!-- NOTE EDIT MODAL -->
+<div class="overlay" id="noteEditModal">
+  <div class="modal modal-sm">
+    <div class="modal-title">Редагувати замітку</div>
+    <div class="form-row"><label>Текст</label><textarea id="ne-text" rows="3" style="font-size:19px;font-family:'Caveat',cursive;border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;resize:vertical;background:transparent;outline:none"></textarea></div>
+    <div class="form-row"><label>Нагадування (дата, час 9:00)</label><input id="ne-date" type="date" style="font-size:18px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;padding:2px;-webkit-appearance:none;appearance:none"></div>
+    <div class="err-msg" id="ne-err" style="font-size:14px;color:#c0392b;display:none">Введіть текст</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeNoteEditModal()">Скасувати</button>
+      <button class="btn-save" onclick="saveNoteEdit()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <!-- NOTE REMINDER MODAL -->
 <div class="overlay" id="reminderModal">
   <div class="modal modal-sm">
@@ -620,63 +634,56 @@ function buildNotesHTML(o,i){
     const active=isNoteActive(n);
     const cl=active?'overdue':'';
     const timeStr=n.time?`<span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
-    html+=`<div class="obj-note-item" id="note-item-${i}-${ni}">
-      <span class="obj-note-text ${cl}" ondblclick="startEditNote(${i},${ni})" title="Двічі клікніть щоб редагувати">— ${n.text}</span>
+    html+=`<div class="obj-note-item" id="note-item-${i}-${ni}" onclick="openNoteEditModal(${i},${ni})">
+      <span class="obj-note-text ${cl}">— ${n.text}</span>
       ${timeStr}
-      <button class="obj-note-del" style="font-size:11px;color:#ccc" onclick="openReminderModal(${i},${ni})" title="Нагадування">🔔</button>
-      <button class="obj-note-del" onclick="deleteNoteQuick(${i},${ni})">✕</button>
+      <button class="obj-note-del" onclick="event.stopPropagation();deleteNoteQuick(${i},${ni})">✕</button>
     </div>`;
   });
   return html;
 }
 
-function startEditNote(slot,ni){
+// ── NOTE EDIT MODAL ──
+let noteEditCtx=null;
+
+function openNoteEditModal(slot,ni){
   try{
     const wrap=document.getElementById('wrap-'+slot);
     const oid=wrap?wrap.dataset.objid:null;
     const ri=oid?objIdx(oid):slot;
     if(ri<0||ri>=objects.length)return;
     const n=objects[ri].notes[ni];
-    const item=document.getElementById('note-item-'+slot+'-'+ni);
-    if(!item)return;
-    // Replace text span with input
-    item.innerHTML=`
-      <input class="obj-note-edit-input" id="note-edit-${slot}-${ni}"
-        value="${n.text.replace(/"/g,'&quot;')}"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditNote(${slot},${ni});}if(event.key==='Escape')cancelEditNote(${slot},${ni},this.dataset.orig);"
-        data-orig="${n.text.replace(/"/g,'&quot;')}">
-      <button class="obj-note-del" style="color:#2a7a3a;border-color:#aed6a8" onclick="saveEditNote(${slot},${ni})">✓</button>
-      <button class="obj-note-del" onclick="cancelEditNote(${slot},${ni},'${n.text.replace(/'/g,"\'")}')">✕</button>`;
-    const inp=document.getElementById('note-edit-'+slot+'-'+ni);
-    if(inp){inp.focus();inp.select();}
-  }catch(err){console.error('startEditNote error:',err);}
+    noteEditCtx={ri,slot,ni};
+    document.getElementById('ne-text').value=n.text||'';
+    document.getElementById('ne-date').value=n.time?n.time.slice(0,10):'';
+    document.getElementById('ne-err').style.display='none';
+    document.getElementById('noteEditModal').classList.add('open');
+    setTimeout(()=>document.getElementById('ne-text').focus(),50);
+  }catch(err){console.error('openNoteEditModal:',err);}
 }
 
-async function saveEditNote(slot,ni){
+function closeNoteEditModal(){
+  document.getElementById('noteEditModal').classList.remove('open');
+  noteEditCtx=null;
+}
+
+async function saveNoteEdit(){
   try{
-    const inp=document.getElementById('note-edit-'+slot+'-'+ni);
-    const newText=inp?inp.value.trim():'';
-    if(!newText)return;
-    const wrap=document.getElementById('wrap-'+slot);
-    const oid=wrap?wrap.dataset.objid:null;
-    const ri=oid?objIdx(oid):slot;
-    if(ri<0||ri>=objects.length)return;
-    objects[ri].notes[ni].text=newText;
+    const text=document.getElementById('ne-text').value.trim();
+    if(!text){document.getElementById('ne-err').style.display='block';return;}
+    const date=document.getElementById('ne-date').value;
+    const {ri,slot,ni}=noteEditCtx;
+    objects[ri].notes[ni].text=text;
+    objects[ri].notes[ni].time=date?date+'T09:00':'';
     const notesEl=document.getElementById('notes-'+slot);
     if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
+    if(expandedId===slot){
+      const el=document.getElementById('exp-'+slot);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
+    }
+    closeNoteEditModal();
     apiSave(objects[ri]).catch(e=>console.error('save error',e));
-  }catch(err){console.error('saveEditNote error:',err);}
-}
-
-function cancelEditNote(slot,ni,origText){
-  try{
-    const wrap=document.getElementById('wrap-'+slot);
-    const oid=wrap?wrap.dataset.objid:null;
-    const ri=oid?objIdx(oid):slot;
-    if(ri<0||ri>=objects.length)return;
-    const notesEl=document.getElementById('notes-'+slot);
-    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
-  }catch(err){console.error('cancelEditNote:',err);}
+  }catch(err){console.error('saveNoteEdit:',err);}
 }
 
 function toggleNoteInput(i){
@@ -986,6 +993,9 @@ async function deleteCard(i){
 // addModal: ONLY close via "Скасувати" button — never on outside click (prevents accidental close while editing)
 document.getElementById('reminderModal').addEventListener('click',function(e){
   if(e.target===this) closeReminderModal();
+});
+document.getElementById('noteEditModal').addEventListener('click',function(e){
+  if(e.target===this) closeNoteEditModal();
 });
 
 setInterval(()=>{
