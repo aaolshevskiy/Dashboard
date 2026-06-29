@@ -96,7 +96,16 @@ body{
 .list-addr-wrap a{color:#1a1a1a;text-decoration:none}
 .list-addr-wrap a:hover{text-decoration:underline}
 .list-pack{font-size:24px;color:#1a1a1a;font-weight:700}
-.inline-select{font-family:'Caveat',cursive;font-size:22px;color:#888;border:none;border-bottom:1.5px dashed #ddd;background:transparent;outline:none;cursor:pointer;padding:0 2px}
+.inline-select{
+  font-family:'Caveat',cursive;font-size:22px;color:#888;
+  border:none;border-bottom:1.5px dashed #ddd;
+  background:transparent;outline:none;cursor:pointer;
+  padding:0 2px;
+  /* Safari/Chrome reset */
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  appearance:none;
+}
 .inline-select:focus{border-bottom-color:#1a1a8a;color:#1a1a8a}
 .m-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2.5px solid #1a1a1a;font-size:18px;font-weight:700;color:#1a1a1a;margin-left:5px;flex-shrink:0;vertical-align:middle}
 .reminder-dot{width:9px;height:9px;border-radius:50%;background:#c0392b;flex-shrink:0;display:inline-block;margin-left:3px;vertical-align:middle}
@@ -138,7 +147,12 @@ body{
 .sticker-row{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
 .sticker-label{font-size:13px;color:#b8a820;flex-shrink:0}
 .sticker-val{font-size:17px;color:#1a1a1a;font-weight:600}
-.sticker-select{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);background:transparent;outline:none;cursor:pointer;font-weight:600;max-width:130px}
+.sticker-select{
+  font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;
+  border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);
+  background:transparent;outline:none;cursor:pointer;font-weight:600;max-width:130px;
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+}
 .sticker-select:focus{border-bottom-color:#8a7000}
 .sticker-input{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);background:transparent;outline:none;width:100%}
 .sticker-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
@@ -192,7 +206,7 @@ body{
 .fsec{font-size:13px;color:#bbb;margin-top:4px;padding-bottom:3px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #f0f0f0}
 .form-row{display:flex;flex-direction:column;gap:3px}
 .form-row label{font-size:16px;color:#888}
-.form-row input,.form-row select,.form-row textarea{width:100%;font-size:19px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;color:#1a1a1a;padding:3px 2px;outline:none}
+.form-row input,.form-row select,.form-row textarea{width:100%;font-size:19px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;color:#1a1a1a;padding:3px 2px;outline:none;-webkit-appearance:none;-moz-appearance:none;appearance:none;}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-bottom-color:#1a1a8a}
 .form-row textarea{resize:vertical;min-height:44px;border:1.5px solid #e0e0e0;border-radius:4px;padding:5px}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -632,45 +646,67 @@ function toggleDT(i){
 }
 
 async function deleteNoteQuick(slot,ni){
-  const wrap=document.getElementById('wrap-'+slot);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):slot;
-  if(ri<0||ri>=objects.length)return;
-  objects[ri].notes.splice(ni,1);
-  const notesEl=document.getElementById('notes-'+slot);
-  if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
-  if(expandedId===slot){const el=document.getElementById('exp-'+slot);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],slot);}
-  await apiSave(objects[ri]);
+  try{
+    const wrap=document.getElementById('wrap-'+slot);
+    const oid=wrap?wrap.dataset.objid:null;
+    const ri=oid!==null?objIdx(oid):slot;
+    if(ri<0||ri>=objects.length)return;
+    objects[ri].notes.splice(ni,1);
+    const notesEl=document.getElementById('notes-'+slot);
+    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
+    if(expandedId===slot){
+      const el=document.getElementById('exp-'+slot);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
+    }
+    apiSave(objects[ri]).catch(e=>console.error('save error',e));
+  }catch(err){console.error('deleteNoteQuick error:',err);}
 }
 
 async function submitQuickNote(i){
-  // i is DOM slot — find real object by id stored in wrap
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  if(ri<0||ri>=objects.length)return;
+  try{
+    const wrap=document.getElementById('wrap-'+i);
+    if(!wrap){console.error('wrap-'+i+' not found');return;}
+    const oid=wrap.dataset.objid;
+    const ri=oid?objIdx(oid):i;
+    if(ri<0||ri>=objects.length){console.error('object not found for slot '+i+' oid '+oid);return;}
 
-  const textEl=document.getElementById('qi-text-'+i);
-  const text=(textEl?.value||'').trim();
-  const dateEl=document.getElementById('qi-date-'+i);
-  const date=dateEl?.value||'';
-  if(!text)return;
-  if(!objects[ri].notes)objects[ri].notes=[];
-  const time=date?date+'T09:00':'';
-  objects[ri].notes.push({text,time});
-  if(textEl) textEl.value='';
-  if(dateEl) dateEl.value='';
-  const dtRow=document.getElementById('dt-row-'+i);
-  const dtBtn=document.getElementById('dt-btn-'+i);
-  if(dtRow) dtRow.classList.remove('vis');
-  if(dtBtn) dtBtn.textContent='+ нагадати';
-  const niWrap=document.getElementById('ni-wrap-'+i);
-  if(niWrap) niWrap.style.display='none';
-  // Re-render only the notes block and sticker if open
-  const notesEl=document.getElementById('notes-'+i);
-  if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],i);
-  if(expandedId===i){const el=document.getElementById('exp-'+i);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],i);}
-  await apiSave(objects[ri]);
+    const textEl=document.getElementById('qi-text-'+i);
+    const text=(textEl?textEl.value:'').trim();
+    if(!text)return;
+
+    const dateEl=document.getElementById('qi-date-'+i);
+    const date=dateEl?dateEl.value:'';
+    const time=date?date+'T09:00':'';
+
+    if(!Array.isArray(objects[ri].notes)) objects[ri].notes=[];
+    objects[ri].notes.push({text,time});
+
+    // Clear UI without full re-render
+    if(textEl) textEl.value='';
+    if(dateEl) dateEl.value='';
+    const dtRow=document.getElementById('dt-row-'+i);
+    const dtBtn=document.getElementById('dt-btn-'+i);
+    if(dtRow) dtRow.classList.remove('vis');
+    if(dtBtn) dtBtn.textContent='+ нагадати';
+    const niWrap=document.getElementById('ni-wrap-'+i);
+    if(niWrap) niWrap.style.display='none';
+
+    // Update only notes block — no full render()
+    const notesEl=document.getElementById('notes-'+i);
+    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],i);
+
+    // Update sticker if open
+    if(expandedId===i){
+      const el=document.getElementById('exp-'+i);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],i);
+    }
+
+    // Save async — do not await to avoid UI freeze
+    apiSave(objects[ri]).catch(e=>console.error('save error',e));
+
+  }catch(err){
+    console.error('submitQuickNote error:',err);
+  }
 }
 
 // ── REMINDER MODAL (click on existing note) ──
@@ -691,12 +727,16 @@ async function saveReminder(){
   const date=document.getElementById('r-date').value;
   if(!date){document.getElementById('r-error').style.display='block';return;}
   document.getElementById('r-error').style.display='none';
-  const {objIdx,ni}=reminderCtx;
-  objects[objIdx].notes[ni].time=date+'T09:00';
-  document.getElementById('notes-'+objIdx).innerHTML=buildNotesHTML(objects[objIdx],objIdx);
-  if(expandedId===objIdx){const el=document.getElementById('exp-'+objIdx);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[objIdx],objIdx);}
+  const ri=reminderCtx.objIdx;   // real array index
+  const slot=reminderCtx.slot;   // DOM slot
+  const ni=reminderCtx.ni;
+  if(ri<0||ri>=objects.length)return;
+  objects[ri].notes[ni].time=date+'T09:00';
+  const notesEl=document.getElementById('notes-'+slot);
+  if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
+  if(expandedId===slot){const el=document.getElementById('exp-'+slot);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],slot);}
   closeReminderModal();
-  await apiSave(objects[objIdx]);
+  await apiSave(objects[ri]);
 }
 
 // ── STICKER (expanded card) ──
@@ -895,7 +935,12 @@ document.getElementById('reminderModal').addEventListener('click',function(e){
   if(e.target===this) closeReminderModal();
 });
 
-setInterval(render,30000);
+setInterval(()=>{
+  // Don't re-render if user is actively typing in a note input
+  const activeInput=document.activeElement;
+  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
+  if(!isTypingNote) render();
+},30000);
 
 const SEED_OBJECTS=[
   {name:'Krakowskie Tarasy',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Inv',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
