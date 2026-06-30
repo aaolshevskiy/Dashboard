@@ -510,27 +510,30 @@ async function apiDelete(id){
 // ── RENDER OBJECTS ──
 function sortObjects(){
   const rank=o=>{
-    const notes=o.notes||[];
+    const isCompleted = o.completed===true||o.completed==='true'||o.completed==='TRUE'||o.completed===1;
+    if(isCompleted) return 6; // завершені — завжди в самому низу
+    const isInwork = o.inwork===true||o.inwork==='true'||o.inwork==='TRUE'||o.inwork===1;
+    const isMasters = o.masters===true||o.masters==='true'||o.masters==='TRUE'||o.masters===1;
+    const notes=Array.isArray(o.notes)?o.notes:[];
     const hasOverdue=notes.some(isNoteActive);
     const hasNotes=notes.length>0;
-    // зірочка + М
-    if(o.inwork&&o.masters){
-      if(hasOverdue) return 0;  // зірочка+М+протерміновано
-      if(hasNotes)   return 1;  // зірочка+М+замітки
-      return 2;                 // зірочка+М без заміток
+    if(isInwork&&isMasters){
+      if(hasOverdue) return 0;
+      if(hasNotes)   return 1;
+      return 2;
     }
-    // тільки зірочка
-    if(o.inwork){
-      if(hasOverdue) return 0;  // зірочка+протерміновано (той самий топ)
-      if(hasNotes)   return 1;  // зірочка+замітки
-      return 3;                 // зірочка без заміток
+    if(isInwork){
+      if(hasOverdue) return 0;
+      if(hasNotes)   return 1;
+      return 3;
     }
-    // тільки М
-    if(o.masters)    return 4;
-    // решта
+    if(isMasters) return 4;
     return 5;
   };
-  objects.sort((a,b)=>rank(a)-rank(b));
+  // Stable sort with explicit numeric rank + original-index tiebreaker
+  const withIdx=objects.map((o,idx)=>({o,idx,r:rank(o)}));
+  withIdx.sort((a,b)=> a.r-b.r || a.idx-b.idx);
+  objects=withIdx.map(x=>x.o);
 }
 
 function objIdx(id){
