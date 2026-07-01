@@ -174,7 +174,11 @@ body{
   margin-bottom:20px;
   padding-bottom:14px;
   border-bottom:1.5px dashed rgba(0,0,0,0.1);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0 40px;
 }
+.random-notes-col{}
 .random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .random-note-item{
   display:flex;align-items:baseline;gap:6px;
@@ -278,19 +282,37 @@ body{
     </div>
 
     <div class="board-body">
-      <!-- RANDOM NOTES TOP STRIP -->
+            <!-- RANDOM NOTES TOP STRIP — 2 columns -->
       <div class="random-notes-zone" id="randomNotesZone">
-        <div class="random-notes-list" id="randomNotesList"></div>
-        <div class="random-add-row">
-          <input class="random-add-input" id="randomAddInput" placeholder="нова нотатка..."
-            onkeydown="if(event.key==='Enter')addRandomNote()">
-          <button class="random-add-btn" onclick="addRandomNote()">&#8629;</button>
-          <button class="random-dt-btn" id="randomDtBtn" onclick="toggleRandomDt()">+ нагадати</button>
+        <!-- LEFT COLUMN -->
+        <div class="random-notes-col">
+          <div class="random-notes-list" id="randomNotesList0"></div>
+          <div class="random-add-row">
+            <input class="random-add-input" id="randomAddInput0" placeholder="нова нотатка..."
+              onkeydown="if(event.key==='Enter')addRandomNote(0)">
+            <button class="random-add-btn" onclick="addRandomNote(0)">↵</button>
+            <button class="random-dt-btn" id="randomDtBtn0" onclick="toggleRandomDt(0)">+ нагадати</button>
+          </div>
+          <div class="random-dt-row" id="randomDtRow0">
+            <span class="random-dt-label">коли:</span>
+            <input type="date" id="randomDtDate0">
+            <span class="random-dt-label">(9:00)</span>
+          </div>
         </div>
-        <div class="random-dt-row" id="randomDtRow">
-          <span class="random-dt-label">коли:</span>
-          <input type="date" id="randomDtDate">
-          <span class="random-dt-label">(9:00)</span>
+        <!-- RIGHT COLUMN -->
+        <div class="random-notes-col">
+          <div class="random-notes-list" id="randomNotesList1"></div>
+          <div class="random-add-row">
+            <input class="random-add-input" id="randomAddInput1" placeholder="нова нотатка..."
+              onkeydown="if(event.key==='Enter')addRandomNote(1)">
+            <button class="random-add-btn" onclick="addRandomNote(1)">↵</button>
+            <button class="random-dt-btn" id="randomDtBtn1" onclick="toggleRandomDt(1)">+ нагадати</button>
+          </div>
+          <div class="random-dt-row" id="randomDtRow1">
+            <span class="random-dt-label">коли:</span>
+            <input type="date" id="randomDtDate1">
+            <span class="random-dt-label">(9:00)</span>
+          </div>
         </div>
       </div>
       <!-- OBJECTS LIST -->
@@ -482,7 +504,11 @@ async function apiGet(){
     const objs=[];
     (data||[]).forEach(o=>{
       if(String(o.id).startsWith('sticky_')){
-        stickies.push(o);
+        // Restore col from addr field (we store col there for stickies)
+        const sn={...o};
+        sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
+        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
+        stickies.push(sn);
       } else {
         objs.push(parseObj(o));
       }
@@ -706,10 +732,10 @@ async function saveNoteEdit(){
     const mode=document.getElementById('noteEditModal').dataset.mode;
 
     if(mode==='random'){
-      // Edit random sticky note
       const sn=stickyNotes[randomEditIdx];
       sn.name=text;
       sn.notes=date?[{text,time:date+'T09:00'}]:[];
+      // col preserved from original
       renderRandomNotes();
       closeNoteEditModal();
       apiSave(sn).catch(e=>console.error('save error',e));
@@ -908,10 +934,13 @@ function isRandomNoteActive(sn){
 }
 
 function renderRandomNotes(){
-  const list=document.getElementById('randomNotesList');
-  if(!list)return;
-  list.innerHTML='';
+  const list0=document.getElementById('randomNotesList0');
+  const list1=document.getElementById('randomNotesList1');
+  if(!list0||!list1)return;
+  list0.innerHTML='';list1.innerHTML='';
   stickyNotes.forEach((sn,idx)=>{
+    const col=sn.col===1?1:0; // col stored in sn.col
+    const list=col===1?list1:list0;
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
     const active=note&&note.time&&new Date()>=new Date(note.time);
     const timeStr=note&&note.time?fmtDT(note.time):'';
@@ -926,26 +955,27 @@ function renderRandomNotes(){
   });
 }
 
-function toggleRandomDt(){
-  const row=document.getElementById('randomDtRow');
-  const btn=document.getElementById('randomDtBtn');
+function toggleRandomDt(col){
+  const row=document.getElementById('randomDtRow'+col);
+  const btn=document.getElementById('randomDtBtn'+col);
   if(!row)return;
   if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
   else{row.classList.add('vis');btn.textContent='− прибрати';}
 }
 
-async function addRandomNote(){
-  const inp=document.getElementById('randomAddInput');
+async function addRandomNote(col){
+  col=col||0;
+  const inp=document.getElementById('randomAddInput'+col);
   const text=inp.value.trim();if(!text)return;
-  const date=document.getElementById('randomDtDate').value;
+  const date=document.getElementById('randomDtDate'+col).value;
   const time=date?date+'T09:00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,addr:'',stage:'',status:'',pack:'',area:'',notes:time?[{text,time}]:[]};
+  const sn={id:'sticky_'+Date.now(),name:text,col,addr:String(col),stage:'',status:'',pack:'',area:'',notes:time?[{text,time}]:[]};
   stickyNotes.push(sn);
   inp.value='';
-  document.getElementById('randomDtDate').value='';
-  const dtRow=document.getElementById('randomDtRow');
+  document.getElementById('randomDtDate'+col).value='';
+  const dtRow=document.getElementById('randomDtRow'+col);
   if(dtRow)dtRow.classList.remove('vis');
-  document.getElementById('randomDtBtn').textContent='+ нагадати';
+  document.getElementById('randomDtBtn'+col).textContent='+ нагадати';
   renderRandomNotes();
   apiSave(sn).catch(e=>console.error('save random note',e));
 }
