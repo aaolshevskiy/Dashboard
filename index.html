@@ -145,6 +145,21 @@ body{
 /* ── STICKER (expanded) ── */
 .exp-wrap{display:none;margin:6px 0 10px 28px;position:relative;z-index:5}
 .exp-wrap.open{display:block}
+.exp-layout{display:flex;gap:14px;align-items:flex-start}
+.exp-notes-panel{
+  background:#fffacd;
+  border:1px solid #e0cc3a;
+  min-width:180px;max-width:260px;
+  padding:12px 14px;
+  box-shadow:2px 3px 10px rgba(0,0,0,.1);
+  transform:rotate(0.8deg);
+}
+.exp-notes-label{font-size:14px;color:#b8a820;font-weight:700;margin-bottom:6px;border-bottom:0.5px solid rgba(0,0,0,.08);padding-bottom:4px}
+.exp-note-item{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;padding:2px 0}
+.exp-note-item.overdue-item .exp-note-text{color:#c0392b}
+.exp-note-text{font-size:16px;color:#1a1a1a;cursor:pointer;flex:1}
+.exp-note-text:hover{text-decoration:underline}
+.exp-note-time{font-size:12px;color:#bbb;flex-shrink:0}
 .sticker{
   background:#fffacd;
   border:1px solid #e0cc3a;
@@ -765,22 +780,16 @@ function render(){
     return;
   }
   sortObjects();
-  // First pass: decide column for each object
-  const assignments = objects.map((o,i)=>{
+  // After sort, i is the true position in sorted array = global number
+  objects.forEach((o,i)=>{
     const len=estimateRowLen(o);
-    const isShort = len<=SHORT_THRESHOLD;
-    return {o, i, col: (isShort && colR) ? 'R' : 'L'};
-  });
-  // Second pass: assign global sequential numbers and render
-  let globalNum=1;
-  assignments.forEach(({o,i,col})=>{
-    const wrap=buildItemWrap(o,i,globalNum);
-    globalNum++;
-    (col==='R'?colR:colL).appendChild(wrap);
+    const isShort=len<=SHORT_THRESHOLD;
+    const col=(isShort&&colR)?colR:colL;
+    col.appendChild(buildItemWrap(o,i,i+1));
   });
   if(expandedId!==null){
     const el=document.getElementById('exp-'+expandedId);
-    if(el){el.classList.add('open');el.innerHTML=buildSticker(objects[expandedId],expandedId);}
+    if(el){el.classList.add('open');el.innerHTML=buildExpanded(objects[expandedId],expandedId);}
   }
 }
 
@@ -1070,30 +1079,51 @@ async function saveReminder(){
   await apiSave(objects[ri]);
 }
 
-// ── STICKER (expanded card) ──
-function buildSticker(o,i){
+// ── STICKER (expanded card) + notes side by side ──
+function buildSticker(o,i){ return buildExpanded(o,i); }
+
+function buildExpanded(o,i){
   const statusOpts=STATUSES.map(s=>`<option value="${s}"${s===o.status?' selected':''}>${STATUS_LABELS[s]}</option>`).join('');
   const stageOpts=STAGES.map(s=>`<option value="${s}"${s===o.stage?' selected':''}>${s}</option>`).join('');
   const startStr=fmtDateShort(o.dateStart);
   const endStr=fmtDateShort(o.dateEnd);
   const linksHtml=o.linkFolder
-    ?`<a class="sticker-link" href="${o.linkFolder}" target="_blank">📁 Папка Фінал</a>`
-    :'';
-  return`<div class="sticker">
-    <div class="sticker-title">${o.name||'—'}</div>
-    <div class="sticker-fields">
-      <div class="sticker-row"><span class="sticker-label">статус</span><select class="sticker-select" onchange="changeStatus(${i},this.value)">${statusOpts}</select></div>
-      <div class="sticker-row"><span class="sticker-label">етап</span><select class="sticker-select" onchange="changeStage(${i},this.value)">${stageOpts}</select></div>
-      ${o.mastersName?`<div class="sticker-row"><span class="sticker-label">майстри</span><span class="sticker-val" style="font-size:15px">${o.mastersName}</span></div>`:''}
-      ${o.area?`<div class="sticker-row"><span class="sticker-label">площа</span><span class="sticker-val">${o.area} м²</span></div>`:''}
-      ${(startStr||endStr)?`<div class="sticker-row">${startStr?`<span class="sticker-label">старт</span><span class="sticker-val" style="font-size:15px">${startStr}</span>`:''}${endStr?`<span class="sticker-label" style="margin-left:6px">фініш</span><span class="sticker-val" style="font-size:15px">${endStr}</span>`:''}</div>`:''}
-      ${linksHtml?`<div class="sticker-links">${linksHtml}</div>`:''}
+    ?`<a class="sticker-link" href="${o.linkFolder}" target="_blank">📁 Папка Фінал</a>`:'';
+
+  // Notes list for side panel
+  const notes=o.notes||[];
+  const notesHtml=notes.length
+    ?notes.map((n,ni)=>{
+        const active=isNoteActive(n);
+        return`<div class="exp-note-item${active?' overdue-item':''}">
+          <span class="exp-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${o.id}',${ni})">— ${n.text}</span>
+          ${n.time?`<span class="exp-note-time">${fmtDT(n.time)}</span>`:''}
+          <button class="obj-note-del" onclick="deleteObjNoteById('${o.id}',${ni})">✕</button>
+        </div>`;
+      }).join('')
+    :`<div style="font-size:16px;color:#bbb;font-style:italic">Немає заміток</div>`;
+
+  return`<div class="exp-layout">
+    <div class="sticker">
+      <div class="sticker-title">${o.name||'—'}</div>
+      <div class="sticker-fields">
+        <div class="sticker-row"><span class="sticker-label">статус</span><select class="sticker-select" onchange="changeStatus(${i},this.value)">${statusOpts}</select></div>
+        <div class="sticker-row"><span class="sticker-label">етап</span><select class="sticker-select" onchange="changeStage(${i},this.value)">${stageOpts}</select></div>
+        ${o.mastersName?`<div class="sticker-row"><span class="sticker-label">майстри</span><span class="sticker-val" style="font-size:15px">${o.mastersName}</span></div>`:''}
+        ${o.area?`<div class="sticker-row"><span class="sticker-label">площа</span><span class="sticker-val">${o.area} м²</span></div>`:''}
+        ${(startStr||endStr)?`<div class="sticker-row">${startStr?`<span class="sticker-label">старт</span><span class="sticker-val" style="font-size:15px">${startStr}</span>`:''}${endStr?`<span class="sticker-label" style="margin-left:6px">фініш</span><span class="sticker-val" style="font-size:15px">${endStr}</span>`:''}</div>`:''}
+        ${linksHtml?`<div class="sticker-links">${linksHtml}</div>`:''}
+      </div>
+      <div class="sticker-divider"></div>
+      <div class="sticker-actions">
+        <button class="sticker-btn" onclick="openEditModal(${i})">✏ ред.</button>
+        <button class="sticker-btn red" onclick="deleteCard(${i})">✕</button>
+        <button class="sticker-btn col" onclick="closeExpand(${i})">↑</button>
+      </div>
     </div>
-    <div class="sticker-divider"></div>
-    <div class="sticker-actions">
-      <button class="sticker-btn" onclick="openEditModal(${i})">✏ ред.</button>
-      <button class="sticker-btn red" onclick="deleteCard(${i})">✕</button>
-      <button class="sticker-btn col" onclick="closeExpand(${i})">↑</button>
+    <div class="exp-notes-panel">
+      <div class="exp-notes-label">Замітки</div>
+      ${notesHtml}
     </div>
   </div>`;
 }
@@ -1196,7 +1226,9 @@ function renderRandomNotes(){
 
   allItems.forEach((item,globalIdx)=>{
     const len=measureLen(item);
-    const col=len<=SHORT?1:0;
+    // obj notes → always left (col 0)
+    // pure random → right (col 1) only if short, else left
+    const col = item.type==='objnote' ? 0 : (len<=SHORT ? 1 : 0);
     const list=col===1?list1:list0;
     const active=item.overdue;
     const timeStr=item.time?fmtDT(item.time):'';
