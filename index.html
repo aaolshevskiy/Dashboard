@@ -545,7 +545,7 @@ function renderHistoryList(){
                     d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
     const badgeClass = h.action==='delete' ? 'del' : (h.type==='obj' ? 'obj' : 'note');
     const badgeText = h.action==='delete' ? 'видалено' : 'змінено';
-    const typeText = h.type==='obj' ? 'Об'єкт' : h.type==='note' ? 'Замітка' : 'Нотатка';
+    const typeText = h.type==='obj' ? 'Об\'єкт' : h.type==='note' ? 'Замітка' : 'Нотатка';
     const item = document.createElement('div');
     item.className = 'hist-item';
     item.innerHTML = `
