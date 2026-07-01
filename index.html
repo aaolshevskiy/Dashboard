@@ -278,13 +278,23 @@ body{
     </div>
 
     <div class="board-body">
-      <!-- LEFT: objects list -->
-      <div id="colLeft"></div>
-
-      <!-- RIGHT: sticky notes -->
-      <div class="col-right">
-
+      <!-- RANDOM NOTES TOP STRIP -->
+      <div class="random-notes-zone" id="randomNotesZone">
+        <div class="random-notes-list" id="randomNotesList"></div>
+        <div class="random-add-row">
+          <input class="random-add-input" id="randomAddInput" placeholder="нова нотатка..."
+            onkeydown="if(event.key==='Enter')addRandomNote()">
+          <button class="random-add-btn" onclick="addRandomNote()">&#8629;</button>
+          <button class="random-dt-btn" id="randomDtBtn" onclick="toggleRandomDt()">+ нагадати</button>
+        </div>
+        <div class="random-dt-row" id="randomDtRow">
+          <span class="random-dt-label">коли:</span>
+          <input type="date" id="randomDtDate">
+          <span class="random-dt-label">(9:00)</span>
+        </div>
       </div>
+      <!-- OBJECTS LIST -->
+      <div id="colLeft"></div>
     </div>
 
     <!-- DRAWING -->
