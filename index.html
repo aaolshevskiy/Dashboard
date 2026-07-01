@@ -74,14 +74,14 @@ body{
 .note-add-under{display:flex;align-items:center;gap:6px;margin-left:28px;margin-top:3px;margin-bottom:4px}
 .note-add-under input{
   font-family:'Caveat',cursive;font-size:20px;
-  border:none;border-bottom:1px dashed #ddd;background:transparent;
+  border:none;background:transparent;
   outline:none;color:#1a1a1a;flex:1;min-width:100px;padding:1px 2px;
 }
 .note-add-under input::placeholder{color:#ccc}
 .note-add-under input:focus{border-bottom-color:#888}
 .note-input-wrap{margin-left:28px;margin-top:2px;margin-bottom:4px}
 .add-note-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.note-input-field{font-family:'Caveat',cursive;font-size:19px;border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#1a1a1a;padding:1px 2px;flex:1;min-width:100px}
+.note-input-field{font-family:'Caveat',cursive;font-size:19px;border:none;background:transparent;outline:none;color:#1a1a1a;padding:1px 2px;flex:1;min-width:100px}
 .note-input-field::placeholder{color:#ccc}
 .note-input-field:focus{border-bottom-color:#888}
 .note-submit-btn{font-family:'Caveat',cursive;font-size:18px;color:#bbb;cursor:pointer;border:none;background:transparent;padding:0 3px;flex-shrink:0}
@@ -100,7 +100,7 @@ body{
 .list-pack{font-size:24px;color:#1a1a1a;font-weight:700}
 .inline-select{
   font-family:'Caveat',cursive;font-size:22px;color:#888;
-  border:none;border-bottom:1.5px dashed #ddd;
+  border:none;
   background:transparent;outline:none;cursor:pointer;
   padding:0 2px;
   /* Safari/Chrome reset */
@@ -123,12 +123,12 @@ body{
 .obj-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
 .obj-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
 .obj-note-del:hover{color:#c0392b;border-color:#c0392b}
-.obj-note-edit-input{font-family:'Caveat',cursive;font-size:20px;color:#1a1a1a;border:none;border-bottom:1.5px dashed #aaa;background:transparent;outline:none;flex:1;min-width:80px;padding:0 2px}
+.obj-note-edit-input{font-family:'Caveat',cursive;font-size:20px;color:#1a1a1a;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;flex:1;min-width:80px;padding:0 2px}
 .obj-note-edit-input:focus{border-bottom-color:#1a1a8a}
 
 .note-datetime-row{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-left:28px;margin-top:1px}
 .note-datetime-row.vis{display:flex}
-.note-datetime-row input[type=date]{font-family:'Caveat',cursive;font-size:16px;border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#888;padding:1px 2px;width:130px}
+.note-datetime-row input[type=date]{font-family:'Caveat',cursive;font-size:16px;border:none;background:transparent;outline:none;color:#888;padding:1px 2px;width:130px}
 .note-dt-label{font-size:14px;color:#bbb}
 
 /* ── STICKER (expanded) ── */
@@ -146,23 +146,23 @@ body{
   overflow:hidden;
 }
 .sticker::before{content:'';position:absolute;top:0;left:0;right:0;height:7px;background:linear-gradient(to bottom,rgba(200,180,30,.3),transparent);pointer-events:none}
-.sticker-title{font-size:19px;font-weight:700;color:#1a1a1a;border-bottom:1.5px dashed rgba(0,0,0,.12);padding-bottom:5px;margin-bottom:6px;flex-shrink:0}
+.sticker-title{font-size:19px;font-weight:700;color:#1a1a1a;border-bottom:0.5px solid rgba(0,0,0,.08);padding-bottom:5px;margin-bottom:6px;flex-shrink:0}
 .sticker-fields{display:flex;flex-direction:column;gap:3px;flex:1;overflow:hidden}
 .sticker-row{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
 .sticker-label{font-size:13px;color:#b8a820;flex-shrink:0}
 .sticker-val{font-size:17px;color:#1a1a1a;font-weight:600}
 .sticker-select{
   font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;
-  border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);
+  border:none;border-bottom:0.5px solid rgba(0,0,0,.1);
   background:transparent;outline:none;cursor:pointer;font-weight:600;max-width:130px;
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
 }
 .sticker-select:focus{border-bottom-color:#8a7000}
-.sticker-input{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:1.5px dashed rgba(0,0,0,.15);background:transparent;outline:none;width:100%}
+.sticker-input{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);background:transparent;outline:none;width:100%}
 .sticker-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .sticker-link{font-size:15px;color:#8a7000;text-decoration:none;border-bottom:1px solid #c8a820}
 .sticker-link:hover{opacity:.7}
-.sticker-divider{border:none;border-top:1.5px dashed rgba(0,0,0,.1);margin:5px 0}
+.sticker-divider{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:5px 0}
 .sticker-actions{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
 .sticker-btn{font-family:'Caveat',cursive;font-size:14px;padding:2px 8px;border:1.5px solid rgba(0,0,0,.15);border-radius:3px;background:rgba(255,255,255,.5);color:#555;cursor:pointer;white-space:nowrap}
 .sticker-btn:hover{background:rgba(255,255,255,.85)}
@@ -182,7 +182,7 @@ body{
 .random-note-item{
   display:flex;align-items:baseline;gap:6px;
   padding:2px 0;
-  border-bottom:1px solid rgba(0,0,0,0.05);
+  border-bottom:none;
 }
 .random-note-item:last-child{border-bottom:none}
 .random-note-text{
@@ -197,7 +197,7 @@ body{
 .random-add-row{display:flex;align-items:center;gap:8px}
 .random-add-input{
   font-family:'Caveat',cursive;font-size:22px;
-  border:none;border-bottom:1.5px dashed #ccc;
+  border:none;
   background:transparent;outline:none;color:#1a1a1a;
   flex:1;min-width:80px;padding:1px 0;
   -webkit-appearance:none;
@@ -211,7 +211,7 @@ body{
 .random-dt-row.vis{display:flex}
 .random-dt-row input[type=date]{
   font-family:'Caveat',cursive;font-size:17px;
-  border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#888;
+  border:none;background:transparent;outline:none;color:#888;
   -webkit-appearance:none;appearance:none;
 }
 .random-dt-label{font-size:16px;color:#bbb}
@@ -511,18 +511,18 @@ function setSyncStatus(state,text){document.getElementById('syncStatus').classNa
 
 // ── HISTORY ──────────────────────────────────────────────
 const MAX_HISTORY = 50;
-let history = [];
+let actionLog = [];
 
 function addHistory(entry){
   // entry: {type:'note'|'obj'|'randomNote', action:'delete'|'edit', label, data, restore}
   entry.time = new Date().toISOString();
-  history.unshift(entry);
-  if(history.length > MAX_HISTORY) history.pop();
-  try{ localStorage.setItem('crm_history', JSON.stringify(history)); }catch{}
+  actionLog.unshift(entry);
+  if(actionLog.length > MAX_HISTORY) actionLog.pop();
+  try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch{}
 }
 
-function loadHistory(){
-  try{ history = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch{ history=[]; }
+function loadActionLog(){
+  try{ actionLog = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch{ actionLog=[]; }
 }
 
 function openHistoryModal(){
@@ -537,9 +537,9 @@ function renderHistoryList(){
   const list = document.getElementById('historyList');
   const empty = document.getElementById('historyEmpty');
   list.innerHTML = '';
-  if(!history.length){ list.style.display='none'; empty.style.display='block'; return; }
+  if(!actionLog.length){ list.style.display='none'; empty.style.display='block'; return; }
   list.style.display='flex'; empty.style.display='none';
-  history.forEach((h,idx)=>{
+  actionLog.forEach((h,idx)=>{
     const d = new Date(h.time);
     const timeStr = d.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'}) + ' ' +
                     d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
@@ -593,8 +593,8 @@ async function restoreFromHistory(idx){
       await apiSave(sn);
     }
     // Remove from history after restore
-    history.splice(idx,1);
-    try{ localStorage.setItem('crm_history', JSON.stringify(history)); }catch{}
+    actionLog.splice(idx,1);
+    try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch{}
     renderHistoryList();
   }catch(err){ console.error('restoreFromHistory error:',err); }
 }
@@ -1233,7 +1233,7 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
   if(e.target===this) closeNoteEditModal();
 });
 
-loadHistory();
+loadActionLog();
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
   const activeInput=document.activeElement;
