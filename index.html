@@ -133,6 +133,7 @@ body{
 .obj-note-del:hover{color:#c0392b;border-color:#c0392b}
 /* object notes are hidden by default — shown in random notes zone */
 .obj-notes-hidden{display:none}
+.rn-obj-name{font-size:20px;color:#1a1a8a;flex-shrink:0;cursor:pointer;}
 .obj-note-edit-input{font-family:'Caveat',cursive;font-size:20px;color:#1a1a1a;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;flex:1;min-width:80px;padding:0 2px}
 .obj-note-edit-input:focus{border-bottom-color:#1a1a8a}
 
@@ -184,19 +185,17 @@ body{
   margin-bottom:20px;
   padding-bottom:14px;
   display:grid;
-  grid-template-columns:2fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:0 40px;
 }
 .random-notes-col{}
 .random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .random-note-item{
-  display:flex;align-items:baseline;gap:6px;
-  padding:2px 0;
-  border-bottom:none;
+  display:inline-flex;align-items:baseline;gap:4px;flex-wrap:wrap;
+  padding:2px 0;width:100%;
 }
-.random-note-item:last-child{border-bottom:none}
 .random-note-text{
-  font-size:22px;color:#1a1a1a;line-height:1.35;flex:1;cursor:pointer;
+  font-size:22px;color:#1a1a1a;line-height:1.35;cursor:pointer;flex-shrink:0;
   outline:none;
 }
 .random-note-text.overdue{color:#c0392b}
@@ -1200,12 +1199,34 @@ function renderRandomNotes(){
     row.className='random-note-item';
 
     if(item.type==='random'){
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeStr?`<span class="random-note-time"> ${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
     } else {
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span style="font-size:18px;color:#1a1a8a;flex-shrink:0">(${item.objName})</span>${timeStr?`<span class="random-note-time"> ${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span class="rn-obj-name" onclick="toggleObjNoteVisible('${item.objId}',${item.ni})">(${item.objName})</span>${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
     }
     list.appendChild(row);
   });
+}
+
+function toggleObjNoteVisible(objId,ni){
+  // Find the DOM wrap for this object and show/hide that specific note
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  if(!wrap) return;
+  const noteItem=wrap.querySelector('#note-item-'+wrap.id.replace('wrap-','')+'\-'+ni);
+  if(noteItem){
+    const hidden=noteItem.classList.contains('obj-notes-hidden');
+    // toggle all notes for this object first hide all, then show this one
+    if(hidden){
+      noteItem.classList.remove('obj-notes-hidden');
+    } else {
+      noteItem.classList.add('obj-notes-hidden');
+    }
+  } else {
+    // fallback — show entire notes block
+    const slot=parseInt(wrap.id.replace('wrap-',''));
+    const notesEl=document.getElementById('notes-'+slot);
+    if(notesEl) notesEl.style.display=notesEl.style.display==='none'?'':'none';
+  }
 }
 
 function openObjNoteEdit(objId,ni){
