@@ -653,11 +653,18 @@ async function fetchWithTimeout(url, opts={}, ms=10000){
 }
 
 async function apiGet(){
-  console.log('[CRM] apiGet called');
   setSyncStatus('syncing','завантаження...');
   try{
     const res=await fetchWithTimeout(API_URL+'?action=getAll',{redirect:'follow'},12000);
-    const data=await res.json();
+    if(!res.ok){
+      setSyncStatus('err','HTTP '+res.status);
+      render();renderRandomNotes();
+      return;
+    }
+    const text=await res.text();
+    let data;
+    try{ data=JSON.parse(text); }
+    catch(e){ setSyncStatus('err','JSON помилка'); render();renderRandomNotes(); return; }
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
