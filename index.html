@@ -131,6 +131,8 @@ body{
 .obj-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
 .obj-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
 .obj-note-del:hover{color:#c0392b;border-color:#c0392b}
+/* object notes are hidden by default — shown in random notes zone */
+.obj-notes-hidden{display:none}
 .obj-note-edit-input{font-family:'Caveat',cursive;font-size:20px;color:#1a1a1a;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;flex:1;min-width:80px;padding:0 2px}
 .obj-note-edit-input:focus{border-bottom-color:#1a1a8a}
 
@@ -182,7 +184,7 @@ body{
   margin-bottom:20px;
   padding-bottom:14px;
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:2fr 1fr;
   gap:0 40px;
 }
 .random-notes-col{}
@@ -873,7 +875,8 @@ function buildNotesHTML(o,i){
     const active=isNoteActive(n);
     const cl=active?'overdue':'';
     const timeStr=n.time?`<span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
-    html+=`<div class="obj-note-item" id="note-item-${i}-${ni}" onclick="openNoteEditModal(${i},${ni})">
+    // Notes are collapsed under object — click to expand/edit via random zone
+    html+=`<div class="obj-note-item obj-notes-hidden" id="note-item-${i}-${ni}">
       <span class="obj-note-text ${cl}">— ${n.text}</span>
       ${timeStr}
       <button class="obj-note-del" onclick="event.stopPropagation();deleteNoteQuick(${i},${ni})">✕</button>
@@ -937,6 +940,7 @@ async function saveNoteEdit(){
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
     }
     closeNoteEditModal();
+    renderRandomNotes();
     apiSave(objects[ri]).catch(e=>console.error('save error',e));
   }catch(err){console.error('saveNoteEdit:',err);}
 }
@@ -975,6 +979,7 @@ async function deleteNoteQuick(slot,ni){
       const el=document.getElementById('exp-'+slot);
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
     }
+    renderRandomNotes();
     apiSave(objects[ri]).catch(e=>console.error('save error',e));
   }catch(err){console.error('deleteNoteQuick error:',err);}
 }
@@ -1018,7 +1023,10 @@ async function submitQuickNote(i){
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],i);
     }
 
-    // Save async — do not await to avoid UI freeze
+    // Refresh random notes zone to show the new note
+    renderRandomNotes();
+
+    // Save async
     apiSave(objects[ri]).catch(e=>console.error('save error',e));
 
   }catch(err){
@@ -1125,30 +1133,125 @@ function renderRandomNotes(){
   if(!list0||!list1)return;
   list0.innerHTML='';list1.innerHTML='';
 
-  // Sort: overdue first, then the rest
   const now=new Date();
-  const isOverdue=sn=>{
+  const isOverdueSn=sn=>{
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    return note&&note.time&&now>=new Date(note.time);
+    return !!(note&&note.time&&now>=new Date(note.time));
   };
-  const sorted=[...stickyNotes].map((sn,idx)=>({sn,idx}))
-    .sort((a,b)=>isOverdue(b.sn)-isOverdue(a.sn));
 
-  sorted.forEach(({sn,idx})=>{
-    const col=sn.col===1?1:0;
+  // Build unified list: pure random notes + all object notes
+  // type: 'random' | 'objnote'
+  const allItems=[];
+
+  // 1. Pure random (stickyNotes)
+  stickyNotes.forEach((sn,idx)=>{
+    allItems.push({
+      type:'random',
+      idx,
+      text:sn.name||'',
+      objName:null,
+      overdue:isOverdueSn(sn),
+      time:(sn.notes&&sn.notes.length&&sn.notes[0].time)?sn.notes[0].time:'',
+    });
+  });
+
+  // 2. Object notes (from all objects)
+  objects.forEach(o=>{
+    (o.notes||[]).forEach((n,ni)=>{
+      allItems.push({
+        type:'objnote',
+        objId:o.id,
+        ni,
+        text:n.text||'',
+        objName:o.name||'',
+        overdue:isNoteActive(n),
+        time:n.time||'',
+      });
+    });
+  });
+
+  // Sort: overdue first, then pure random (no obj), then obj notes
+  allItems.sort((a,b)=>{
+    if(b.overdue!==a.overdue) return b.overdue-a.overdue;
+    const rankA = a.type==='random'?0:1;
+    const rankB = b.type==='random'?0:1;
+    return rankA-rankB;
+  });
+
+  // Distribute to columns by text length
+  // Short (fits in 1/3 ~35 chars) → col 1, long → col 0
+  const SHORT=35;
+  const measureLen=item=>{
+    let len=item.text.length;
+    if(item.objName) len+=item.objName.length+3; // (Назва)
+    if(item.time) len+=10;
+    return len;
+  };
+
+  allItems.forEach((item,globalIdx)=>{
+    const len=measureLen(item);
+    const col=len<=SHORT?1:0;
     const list=col===1?list1:list0;
-    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    const active=isOverdue(sn);
-    const timeStr=note&&note.time?fmtDT(note.time):'';
+    const active=item.overdue;
+    const timeStr=item.time?fmtDT(item.time):'';
+    const suffix=item.objName?` <span style="font-size:17px;color:#aaa">(${item.objName})</span>`:'';
+
     const row=document.createElement('div');
     row.className='random-note-item';
-    row.innerHTML=`
-      <span class="random-note-text${active?' overdue':''}"
-        onclick="openRandomNoteEdit(${idx})">— ${sn.name||''}</span>
-      ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
-      <button class="random-note-del" onclick="deleteRandomNote(${idx})">✕</button>`;
+
+    if(item.type==='random'){
+      row.innerHTML=`
+        <span class="random-note-text${active?' overdue':''}"
+          onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${suffix}
+        ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
+        <button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
+    } else {
+      // objnote — find slot in DOM
+      row.innerHTML=`
+        <span class="random-note-text${active?' overdue':''}"
+          onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span>${suffix}
+        ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
+        <button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
+    }
     list.appendChild(row);
   });
+}
+
+function openObjNoteEdit(objId,ni){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  // Find DOM slot
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  const slot=wrap?parseInt(wrap.id.replace('wrap-','')):-1;
+  if(slot<0){
+    // fallback: open note edit modal directly
+    noteEditCtx={ri,slot:ri,ni};
+    document.getElementById('ne-text').value=objects[ri].notes[ni].text||'';
+    document.getElementById('ne-date').value=objects[ri].notes[ni].time?objects[ri].notes[ni].time.slice(0,10):'';
+    document.getElementById('ne-err').style.display='none';
+    document.getElementById('noteEditModal').dataset.mode='obj';
+    document.getElementById('noteEditModal').classList.add('open');
+    return;
+  }
+  openNoteEditModal(slot,ni);
+}
+
+async function deleteObjNoteById(objId,ni){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  addHistory({type:'note',action:'delete',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
+  objects[ri].notes.splice(ni,1);
+  // update DOM notes block if visible
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  if(wrap){
+    const slot=parseInt(wrap.id.replace('wrap-',''));
+    const notesEl=document.getElementById('notes-'+slot);
+    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
+  }
+  renderRandomNotes();
+  apiSave(objects[ri]).catch(e=>console.error(e));
 }
 
 function toggleRandomDt(col){
