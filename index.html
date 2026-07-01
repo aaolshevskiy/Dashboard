@@ -1451,7 +1451,9 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
 });
 
 loadActionLog();
-console.log('[CRM] JS loaded, starting...');
+// Show empty board immediately — don't wait for network
+render();
+renderRandomNotes();
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
   const activeInput=document.activeElement;
