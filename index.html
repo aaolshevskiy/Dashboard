@@ -60,15 +60,9 @@ body{
 
 /* ── LAYOUT: 2/3 left + 1/3 right ── */
 .board-body{
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  gap:0 32px;
+  display:flex;
+  flex-direction:column;
   flex:1;
-  align-items:start;
-}
-@media(max-width:700px){
-  .board-body{grid-template-columns:1fr}
-  .col-right{margin-top:24px}
 }
 
 /* ── LIST ── */
@@ -77,6 +71,14 @@ body{
 .list-row-right{flex-shrink:0;margin-left:auto;padding-left:6px}
 .note-icon-btn{font-family:'Caveat',cursive;font-size:20px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0 2px;line-height:1;vertical-align:middle}
 .note-icon-btn:hover{color:#1a1a8a}
+.note-add-under{display:flex;align-items:center;gap:6px;margin-left:28px;margin-top:3px;margin-bottom:4px}
+.note-add-under input{
+  font-family:'Caveat',cursive;font-size:20px;
+  border:none;border-bottom:1px dashed #ddd;background:transparent;
+  outline:none;color:#1a1a1a;flex:1;min-width:100px;padding:1px 2px;
+}
+.note-add-under input::placeholder{color:#ccc}
+.note-add-under input:focus{border-bottom-color:#888}
 .note-input-wrap{margin-left:28px;margin-top:2px;margin-bottom:4px}
 .add-note-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .note-input-field{font-family:'Caveat',cursive;font-size:19px;border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#1a1a1a;padding:1px 2px;flex:1;min-width:100px}
@@ -167,35 +169,49 @@ body{
 .sticker-btn.red:hover{color:#c0392b;border-color:#c0392b}
 .sticker-btn.col{font-size:13px;color:#aaa}
 
-/* ── RIGHT COL: sticky notes ── */
-.col-right{display:flex;flex-direction:column;gap:0;min-height:300px}
-.sticky-notes-label{font-size:16px;color:#bbb;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
-.sticky-notes-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;transition:all .2s}
-.sticky-note-wrap{position:relative}
-.sticky-note{
-  background:#fffacd;
-  border:1px solid #e0cc3a;
-  width:100%;
-  padding:12px 14px 40px;
-  position:relative;
-  box-shadow:2px 3px 10px rgba(0,0,0,.12),inset 0 -1px 0 rgba(0,0,0,.04);
-  min-height:80px;
-  transition:transform .2s;
+/* ── TOP RANDOM NOTES STRIP ── */
+.random-notes-zone{
+  margin-bottom:20px;
+  padding-bottom:14px;
+  border-bottom:1.5px dashed rgba(0,0,0,0.1);
 }
-.sticky-note:nth-child(odd){transform:rotate(-0.8deg)}
-.sticky-note:nth-child(even){transform:rotate(0.6deg)}
-.sticky-note::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(to bottom,rgba(200,180,30,.25),transparent);pointer-events:none}
-.sticky-note-text{font-size:28px;font-weight:600;color:#1a1a1a;line-height:1.3;word-break:break-word;width:100%;cursor:text;outline:none;min-height:32px}
-.sticky-note-text:focus{background:rgba(255,255,255,.5);border-radius:2px}
-.sticky-note-del{position:absolute;bottom:8px;right:10px;font-family:'Caveat',cursive;font-size:13px;color:#ccc;cursor:pointer;border:none;background:transparent}
-.sticky-note-del:hover{color:#c0392b}
-.sticky-note-time{position:absolute;bottom:10px;left:12px;font-size:14px;color:#c8a820}
+.random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.random-note-item{
+  display:flex;align-items:baseline;gap:6px;
+  padding:2px 0;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+}
+.random-note-item:last-child{border-bottom:none}
+.random-note-text{
+  font-size:22px;color:#1a1a1a;line-height:1.35;flex:1;cursor:pointer;
+  outline:none;
+}
+.random-note-text.overdue{color:#c0392b}
+.random-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
+.random-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
+.random-note-del:hover{color:#c0392b;border-color:#c0392b}
 
-.sticky-add-area{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.sticky-add-input{font-family:'Caveat',cursive;font-size:24px;border:none;border-bottom:1.5px dashed #bbb;background:transparent;outline:none;color:#1a1a1a;flex:1;min-width:80px;padding:2px 0}
-.sticky-add-input::placeholder{color:#ccc;font-style:italic}
-.sticky-add-btn{font-family:'Caveat',cursive;font-size:20px;color:#bbb;cursor:pointer;border:none;background:transparent}
-.sticky-add-btn:hover{color:#1a1a8a}
+.random-add-row{display:flex;align-items:center;gap:8px}
+.random-add-input{
+  font-family:'Caveat',cursive;font-size:22px;
+  border:none;border-bottom:1.5px dashed #ccc;
+  background:transparent;outline:none;color:#1a1a1a;
+  flex:1;min-width:80px;padding:1px 0;
+  -webkit-appearance:none;
+}
+.random-add-input::placeholder{color:#ccc;font-style:italic}
+.random-add-btn{font-family:'Caveat',cursive;font-size:20px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0 4px}
+.random-add-btn:hover{color:#1a1a8a}
+.random-dt-btn{font-family:'Caveat',cursive;font-size:16px;color:#ccc;cursor:pointer;border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
+.random-dt-btn:hover{color:#888}
+.random-dt-row{display:none;align-items:center;gap:8px;margin-top:2px}
+.random-dt-row.vis{display:flex}
+.random-dt-row input[type=date]{
+  font-family:'Caveat',cursive;font-size:17px;
+  border:none;border-bottom:1px dashed #ddd;background:transparent;outline:none;color:#888;
+  -webkit-appearance:none;appearance:none;
+}
+.random-dt-label{font-size:16px;color:#bbb}
 
 /* ── NOTE REMINDER MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center}
@@ -267,13 +283,7 @@ body{
 
       <!-- RIGHT: sticky notes -->
       <div class="col-right">
-        <div class="sticky-notes-label">нотатки</div>
-        <div class="sticky-notes-list" id="stickyList"></div>
-        <div class="sticky-add-area">
-          <input class="sticky-add-input" id="stickyInput" placeholder="нова нотатка..."
-            onkeydown="if(event.key==='Enter')addStickyNote()">
-          <button class="sticky-add-btn" onclick="addStickyNote()">↵</button>
-        </div>
+
       </div>
     </div>
 
@@ -470,7 +480,7 @@ async function apiGet(){
     objects=objs;
     stickyNotes=stickies;
     setSyncStatus('ok','збережено ✓');
-    render();renderStickies();
+    render();renderRandomNotes();
   }catch(e){setSyncStatus('err','помилка з\'єднання');}
 }
 async function apiSave(obj){
@@ -592,10 +602,7 @@ function buildItemWrap(o,i){
   if(hasActiveReminder(o)){const dot=document.createElement('span');dot.className='reminder-dot';row.appendChild(dot);}
 
   // INLINE ADD NOTE — right side of row
-  const rowRight=document.createElement('span');
-  rowRight.className='list-row-right';
-  rowRight.innerHTML=`<button class="note-icon-btn" onclick="event.stopPropagation();toggleNoteInput(${i})" title="Додати замітку">✎</button>`;
-  row.appendChild(rowRight);
+  // No icon in row — pencil goes below notes
 
   wrap.appendChild(row);
 
@@ -608,6 +615,15 @@ function buildItemWrap(o,i){
   wrap.appendChild(notesDiv);
 
   // NOTE INPUT — hidden by default, shows below notes
+  // Pencil icon + input always shown below notes (toggleable)
+  const pencilBtn=document.createElement('button');
+  pencilBtn.className='note-icon-btn';
+  pencilBtn.style.cssText='margin-left:28px;margin-top:2px;display:block;font-size:18px';
+  pencilBtn.title='Додати замітку';
+  pencilBtn.textContent='✎';
+  pencilBtn.onclick=e=>{e.stopPropagation();toggleNoteInput(i);};
+  wrap.appendChild(pencilBtn);
+
   const noteInputWrap=document.createElement('div');
   noteInputWrap.className='note-input-wrap';
   noteInputWrap.id='ni-wrap-'+i;
@@ -668,6 +684,8 @@ function openNoteEditModal(slot,ni){
 function closeNoteEditModal(){
   document.getElementById('noteEditModal').classList.remove('open');
   noteEditCtx=null;
+  randomEditIdx=null;
+  delete document.getElementById('noteEditModal').dataset.mode;
 }
 
 async function saveNoteEdit(){
@@ -675,6 +693,20 @@ async function saveNoteEdit(){
     const text=document.getElementById('ne-text').value.trim();
     if(!text){document.getElementById('ne-err').style.display='block';return;}
     const date=document.getElementById('ne-date').value;
+    const mode=document.getElementById('noteEditModal').dataset.mode;
+
+    if(mode==='random'){
+      // Edit random sticky note
+      const sn=stickyNotes[randomEditIdx];
+      sn.name=text;
+      sn.notes=date?[{text,time:date+'T09:00'}]:[];
+      renderRandomNotes();
+      closeNoteEditModal();
+      apiSave(sn).catch(e=>console.error('save error',e));
+      return;
+    }
+
+    // Edit object note
     const {ri,slot,ni}=noteEditCtx;
     objects[ri].notes[ni].text=text;
     objects[ri].notes[ni].time=date?date+'T09:00':'';
@@ -859,58 +891,75 @@ function toggleExpand(i){
 }
 function closeExpand(i){const el=document.getElementById('exp-'+i);if(el){el.classList.remove('open');el.innerHTML='';}if(expandedId===i)expandedId=null;}
 
-// ── STICKY NOTES ──
-function renderStickies(){
-  const list=document.getElementById('stickyList');
+// ── RANDOM NOTES (top strip) ──
+function isRandomNoteActive(sn){
+  if(!sn.notes||!sn.notes.length)return false;
+  return sn.notes.some(n=>n.time&&new Date()>=new Date(n.time));
+}
+
+function renderRandomNotes(){
+  const list=document.getElementById('randomNotesList');
+  if(!list)return;
   list.innerHTML='';
   stickyNotes.forEach((sn,idx)=>{
-    const wrap=document.createElement('div');wrap.className='sticky-note-wrap';
-    const note=document.createElement('div');note.className='sticky-note';
-
-    // editable text
-    const textEl=document.createElement('div');
-    textEl.className='sticky-note-text';
-    textEl.contentEditable='true';
-    textEl.textContent=sn.name||'';
-    textEl.title='Клікніть щоб редагувати';
-    textEl.addEventListener('blur',async()=>{
-      const newText=textEl.textContent.trim();
-      if(newText!==stickyNotes[idx].name){
-        stickyNotes[idx].name=newText;
-        await apiSave(stickyNotes[idx]);
-      }
-    });
-    textEl.addEventListener('keydown',e=>{
-      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();textEl.blur();}
-    });
-
-    const del=document.createElement('button');
-    del.className='sticky-note-del';
-    del.textContent='✕ видалити';
-    del.onclick=()=>deleteStickyNote(idx);
-
-    note.appendChild(textEl);
-    note.appendChild(del);
-    wrap.appendChild(note);
-    list.appendChild(wrap);
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    const active=note&&note.time&&new Date()>=new Date(note.time);
+    const timeStr=note&&note.time?fmtDT(note.time):'';
+    const row=document.createElement('div');
+    row.className='random-note-item';
+    row.innerHTML=`
+      <span class="random-note-text${active?' overdue':''}"
+        onclick="openRandomNoteEdit(${idx})">— ${sn.name||''}</span>
+      ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
+      <button class="random-note-del" onclick="deleteRandomNote(${idx})">✕</button>`;
+    list.appendChild(row);
   });
 }
 
-async function addStickyNote(){
-  const inp=document.getElementById('stickyInput');
-  const text=inp.value.trim();if(!text)return;
-  const sn={id:'sticky_'+Date.now(),name:text,addr:'',stage:'',status:'',pack:'',area:'',notes:[]};
-  stickyNotes.push(sn);
-  inp.value='';
-  renderStickies();
-  await apiSave(sn);
+function toggleRandomDt(){
+  const row=document.getElementById('randomDtRow');
+  const btn=document.getElementById('randomDtBtn');
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
 }
 
-async function deleteStickyNote(idx){
+async function addRandomNote(){
+  const inp=document.getElementById('randomAddInput');
+  const text=inp.value.trim();if(!text)return;
+  const date=document.getElementById('randomDtDate').value;
+  const time=date?date+'T09:00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,addr:'',stage:'',status:'',pack:'',area:'',notes:time?[{text,time}]:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  document.getElementById('randomDtDate').value='';
+  const dtRow=document.getElementById('randomDtRow');
+  if(dtRow)dtRow.classList.remove('vis');
+  document.getElementById('randomDtBtn').textContent='+ нагадати';
+  renderRandomNotes();
+  apiSave(sn).catch(e=>console.error('save random note',e));
+}
+
+async function deleteRandomNote(idx){
   const id=stickyNotes[idx].id;
   stickyNotes.splice(idx,1);
-  renderStickies();
-  await apiDelete(id);
+  renderRandomNotes();
+  apiDelete(id);
+}
+
+// Edit random note — reuse noteEditModal
+let randomEditIdx=null;
+function openRandomNoteEdit(idx){
+  randomEditIdx=idx;
+  const sn=stickyNotes[idx];
+  const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+  document.getElementById('ne-text').value=sn.name||'';
+  document.getElementById('ne-date').value=note&&note.time?note.time.slice(0,10):'';
+  document.getElementById('ne-err').style.display='none';
+  // Hijack saveNoteEdit for random note
+  document.getElementById('noteEditModal').dataset.mode='random';
+  document.getElementById('noteEditModal').classList.add('open');
+  setTimeout(()=>document.getElementById('ne-text').focus(),50);
 }
 
 // ── OBJECT CRUD ──
