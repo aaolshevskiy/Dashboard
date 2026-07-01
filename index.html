@@ -765,11 +765,18 @@ function render(){
     return;
   }
   sortObjects();
-  objects.forEach((o,i)=>{
+  // First pass: decide column for each object
+  const assignments = objects.map((o,i)=>{
     const len=estimateRowLen(o);
     const isShort = len<=SHORT_THRESHOLD;
-    const col = (isShort && colR) ? colR : colL;
-    col.appendChild(buildItemWrap(o,i));
+    return {o, i, col: (isShort && colR) ? 'R' : 'L'};
+  });
+  // Second pass: assign global sequential numbers and render
+  let globalNum=1;
+  assignments.forEach(({o,i,col})=>{
+    const wrap=buildItemWrap(o,i,globalNum);
+    globalNum++;
+    (col==='R'?colR:colL).appendChild(wrap);
   });
   if(expandedId!==null){
     const el=document.getElementById('exp-'+expandedId);
@@ -777,16 +784,16 @@ function render(){
   }
 }
 
-function buildItemWrap(o,i){
+function buildItemWrap(o,i,globalNum){
   const wrap=document.createElement('div');
   wrap.className='list-item-wrap';wrap.id='wrap-'+i;
   wrap.dataset.objid=o.id;
   // ROW
   const row=document.createElement('div');row.className='list-row';
-  // number
+  // number — global sequential
   const num=document.createElement('span');
   num.style.cssText='font-size:18px;color:#ccc;flex-shrink:0;min-width:26px;text-align:right;margin-right:2px;font-weight:400';
-  num.textContent=(i+1)+'.';
+  num.textContent=(globalNum!=null?globalNum:i+1)+'.';
   row.appendChild(num);
   // star
   const star=document.createElement('span');
