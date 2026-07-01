@@ -840,16 +840,11 @@ function buildItemWrap(o,i,globalNum){
 
   wrap.appendChild(row);
 
-  // STICKER — right after the row, before notes
+  // STICKER — right after the row
   const expDiv=document.createElement('div');expDiv.className='exp-wrap';expDiv.id='exp-'+i;
   wrap.appendChild(expDiv);
 
-  // NOTES — only visible when there are notes
-  const notesDiv=document.createElement('div');notesDiv.className='obj-notes';notesDiv.id='notes-'+i;notesDiv.innerHTML=buildNotesHTML(o,i);
-  wrap.appendChild(notesDiv);
-
-  // NOTE INPUT — hidden by default, shows below notes
-  // Pencil icon + input always shown below notes (toggleable)
+  // NOTE INPUT — pencil icon, toggleable
   const pencilBtn=document.createElement('button');
   pencilBtn.className='note-icon-btn';
   pencilBtn.style.cssText='margin-left:28px;margin-top:2px;display:block;font-size:18px';
@@ -948,8 +943,6 @@ async function saveNoteEdit(){
     const {ri,slot,ni}=noteEditCtx;
     objects[ri].notes[ni].text=text;
     objects[ri].notes[ni].time=date?date+'T09:00':'';
-    const notesEl=document.getElementById('notes-'+slot);
-    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
     if(expandedId===slot){
       const el=document.getElementById('exp-'+slot);
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
@@ -988,8 +981,6 @@ async function deleteNoteQuick(slot,ni){
     const deletedNote = {...objects[ri].notes[ni]};
     addHistory({type:'note',action:'delete',label:deletedNote.text,parentName:objects[ri].name,objId:objects[ri].id,data:deletedNote});
     objects[ri].notes.splice(ni,1);
-    const notesEl=document.getElementById('notes-'+slot);
-    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
     if(expandedId===slot){
       const el=document.getElementById('exp-'+slot);
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
@@ -1027,10 +1018,6 @@ async function submitQuickNote(i){
     if(dtBtn) dtBtn.textContent='+ нагадати';
     const niWrap=document.getElementById('ni-wrap-'+i);
     if(niWrap) niWrap.style.display='none';
-
-    // Update only notes block — no full render()
-    const notesEl=document.getElementById('notes-'+i);
-    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],i);
 
     // Update sticker if open
     if(expandedId===i){
@@ -1157,7 +1144,9 @@ async function changeStatus(i,val){
   const ri=oid!==null?objIdx(oid):i;
   if(ri<0||ri>=objects.length)return;
   objects[ri].status=val;await apiSave(objects[ri]);
-  const el=document.getElementById('exp-'+i);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],i);
+  const el=document.getElementById('exp-'+i);
+  if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],i);
+  renderRandomNotes();
 }
 async function changeStage(i,val){
   const wrap=document.getElementById('wrap-'+i);
@@ -1319,11 +1308,6 @@ async function deleteObjNoteById(objId,ni){
   // update DOM notes block if visible
   const wrap=[...document.querySelectorAll('[data-objid]')]
     .find(w=>String(w.dataset.objid)===String(objId));
-  if(wrap){
-    const slot=parseInt(wrap.id.replace('wrap-',''));
-    const notesEl=document.getElementById('notes-'+slot);
-    if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
-  }
   renderRandomNotes();
   apiSave(objects[ri]).catch(e=>console.error(e));
 }
