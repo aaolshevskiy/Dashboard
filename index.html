@@ -615,11 +615,21 @@ function parseObj(o){
   };
 }
 
+async function fetchWithTimeout(url, opts={}, ms=10000){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),ms);
+  try{
+    const res=await fetch(url,{...opts,signal:controller.signal});
+    clearTimeout(timer);
+    return res;
+  }catch(e){clearTimeout(timer);throw e;}
+}
+
 async function apiGet(){
-  console.log('[CRM] apiGet called, URL:', API_URL.slice(0,50));
+  console.log('[CRM] apiGet called');
   setSyncStatus('syncing','завантаження...');
   try{
-    const res=await fetch(API_URL+'?action=getAll',{redirect:'follow'});
+    const res=await fetchWithTimeout(API_URL+'?action=getAll',{redirect:'follow'},12000);
     const data=await res.json();
     const stickies=[];
     const objs=[];
@@ -637,10 +647,14 @@ async function apiGet(){
     stickyNotes=stickies;
     setSyncStatus('ok','збережено ✓');
   }catch(e){
-    setSyncStatus('err','помилка з\'єднання');
-    console.error('apiGet error:',e);
+    if(e&&e.name==='AbortError'){
+      setSyncStatus('err','тайм-аут — перевірте Apps Script');
+    } else {
+      setSyncStatus('err','помилка з\'єднання');
+    }
+    console.error('[CRM] apiGet error:',e&&e.name, e&&e.message);
   }finally{
-    // Always render, even if fetch failed
+    console.log('[CRM] render, objects:', objects.length);
     render();
     renderRandomNotes();
   }
