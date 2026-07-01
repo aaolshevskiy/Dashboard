@@ -498,13 +498,12 @@ function parseObj(o){
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
-    const res=await fetch(API_URL+'?action=getAll');
+    const res=await fetch(API_URL+'?action=getAll',{redirect:'follow'});
     const data=await res.json();
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
       if(String(o.id).startsWith('sticky_')){
-        // Restore col from addr field (we store col there for stickies)
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
         sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
@@ -516,8 +515,14 @@ async function apiGet(){
     objects=objs;
     stickyNotes=stickies;
     setSyncStatus('ok','збережено ✓');
-    render();renderRandomNotes();
-  }catch(e){setSyncStatus('err','помилка з\'єднання');}
+  }catch(e){
+    setSyncStatus('err','помилка з\'єднання');
+    console.error('apiGet error:',e);
+  }finally{
+    // Always render, even if fetch failed
+    render();
+    renderRandomNotes();
+  }
 }
 async function apiSave(obj){
   setSyncStatus('syncing','збереження...');
