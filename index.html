@@ -218,6 +218,7 @@ body{
 }
 .random-note-text.overdue{color:#c0392b}
 .random-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
+.random-note-time.has-reminder{color:#2a7a3a;font-weight:500}
 .random-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
 .random-note-del:hover{color:#c0392b;border-color:#c0392b}
 
@@ -1249,26 +1250,32 @@ function renderRandomNotes(){
     return len;
   };
 
-  allItems.forEach((item,globalIdx)=>{
-    const len=measureLen(item);
-    // obj notes → always left (col 0)
-    // pure random → right (col 1) only if short, else left
-    const col = item.type==='objnote' ? 0 : (len<=SHORT ? 1 : 0);
-    const list=col===1?list1:list0;
+  // Separate: left=objnote, right=pure random
+  const leftItems=allItems.filter(x=>x.type==='objnote')
+    .sort((a,b)=>b.overdue-a.overdue);
+  const rightItems=allItems.filter(x=>x.type==='random')
+    .sort((a,b)=>b.overdue-a.overdue);
+
+  const renderItem=(item,list)=>{
     const active=item.overdue;
+    const hasFutureReminder=item.time&&!active;
     const timeStr=item.time?fmtDT(item.time):'';
-    const suffix=item.objName?` <span style="font-size:17px;color:#aaa">(${item.objName})</span>`:'';
+    const timeCls=hasFutureReminder?' has-reminder':'';
+    const timeHtml=timeStr?`<span class="random-note-time${timeCls}">${timeStr}</span>`:'';
 
     const row=document.createElement('div');
     row.className='random-note-item';
 
     if(item.type==='random'){
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeHtml}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
     } else {
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span class="rn-obj-name" onclick="toggleObjNoteVisible('${item.objId}',${item.ni})">(${item.objName})</span>${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span class="rn-obj-name" onclick="toggleObjNoteVisible('${item.objId}',${item.ni})">(${item.objName})</span>${timeHtml}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
     }
     list.appendChild(row);
-  });
+  };
+
+  leftItems.forEach(item=>renderItem(item,list0));
+  rightItems.forEach(item=>renderItem(item,list1));
 }
 
 function toggleObjNoteVisible(objId,ni){
