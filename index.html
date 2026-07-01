@@ -1200,18 +1200,9 @@ function renderRandomNotes(){
     row.className='random-note-item';
 
     if(item.type==='random'){
-      row.innerHTML=`
-        <span class="random-note-text${active?' overdue':''}"
-          onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${suffix}
-        ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
-        <button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeStr?`<span class="random-note-time"> ${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
     } else {
-      // objnote — find slot in DOM
-      row.innerHTML=`
-        <span class="random-note-text${active?' overdue':''}"
-          onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span>${suffix}
-        ${timeStr?`<span class="random-note-time">${timeStr}</span>`:''}
-        <button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
+      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span style="font-size:18px;color:#1a1a8a;flex-shrink:0">(${item.objName})</span>${timeStr?`<span class="random-note-time"> ${timeStr}</span>`:''}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
     }
     list.appendChild(row);
   });
