@@ -274,7 +274,7 @@ body{
 
   <div class="board-inner">
     <div class="topbar">
-      <div class="board-title">Об'єкти в роботі</div>
+      <div class="board-title">Мій дашборд</div>
       <div class="topbar-right">
         <div class="sync-status" id="syncStatus"><span id="syncText">завантаження...</span></div>
         <button class="add-btn" onclick="openAddModal()">+ Додати</button>
@@ -316,6 +316,7 @@ body{
         </div>
       </div>
       <!-- OBJECTS LIST -->
+      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;border-top:1.5px dashed rgba(0,0,0,0.1);">Об'єкти в роботі</div>
       <div id="colLeft"></div>
     </div>
 
@@ -684,8 +685,11 @@ function buildItemWrap(o,i){
 function buildNotesHTML(o,i){
   const notes=o.notes||[];
   if(!notes.length) return '';
+  // Sort: overdue first
+  const indexed=notes.map((n,ni)=>({n,ni}))
+    .sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
   let html='';
-  notes.forEach((n,ni)=>{
+  indexed.forEach(({n,ni})=>{
     const active=isNoteActive(n);
     const cl=active?'overdue':'';
     const timeStr=n.time?`<span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
@@ -938,11 +942,21 @@ function renderRandomNotes(){
   const list1=document.getElementById('randomNotesList1');
   if(!list0||!list1)return;
   list0.innerHTML='';list1.innerHTML='';
-  stickyNotes.forEach((sn,idx)=>{
-    const col=sn.col===1?1:0; // col stored in sn.col
+
+  // Sort: overdue first, then the rest
+  const now=new Date();
+  const isOverdue=sn=>{
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    return note&&note.time&&now>=new Date(note.time);
+  };
+  const sorted=[...stickyNotes].map((sn,idx)=>({sn,idx}))
+    .sort((a,b)=>isOverdue(b.sn)-isOverdue(a.sn));
+
+  sorted.forEach(({sn,idx})=>{
+    const col=sn.col===1?1:0;
     const list=col===1?list1:list0;
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    const active=note&&note.time&&new Date()>=new Date(note.time);
+    const active=isOverdue(sn);
     const timeStr=note&&note.time?fmtDT(note.time):'';
     const row=document.createElement('div');
     row.className='random-note-item';
