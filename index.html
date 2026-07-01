@@ -215,6 +215,18 @@ body{
   -webkit-appearance:none;appearance:none;
 }
 .random-dt-label{font-size:16px;color:#bbb}
+/* ── HISTORY ── */
+.hist-item{background:#f9f9f8;border:0.5px solid #e8e8e0;border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
+.hist-item.overdue-item{border-color:#F09595;background:#FCEBEB}
+.hist-badge{font-size:11px;padding:2px 7px;border-radius:4px;background:#f0f0ee;color:#888;white-space:nowrap;flex-shrink:0;margin-top:3px}
+.hist-badge.del{background:#FCEBEB;color:#A32D2D}
+.hist-badge.note{background:#E6F1FB;color:#0C447C}
+.hist-badge.obj{background:#E1F5EE;color:#085041}
+.hist-body{flex:1;min-width:0}
+.hist-name{font-size:17px;font-weight:600;color:#1a1a1a;line-height:1.3}
+.hist-meta{font-size:13px;color:#aaa;margin-top:2px}
+.hist-restore{font-family:'Caveat',cursive;font-size:15px;padding:3px 10px;border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;color:#1a1a8a;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.hist-restore:hover{background:rgba(26,26,138,.06)}
 
 /* ── NOTE REMINDER MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center}
@@ -276,6 +288,7 @@ body{
       <div class="board-title">Мій дашборд</div>
       <div class="topbar-right">
         <div class="sync-status" id="syncStatus"><span id="syncText">завантаження...</span></div>
+        <button class="add-btn" onclick="openHistoryModal()" style="background:transparent;border-color:#aaa;color:#888;margin-right:4px">📋 Історія</button>
         <button class="add-btn" onclick="openAddModal()">+ Додати об'єкт</button>
       </div>
     </div>
@@ -433,6 +446,19 @@ body{
   </div>
 </div>
 
+<!-- HISTORY MODAL -->
+<div class="overlay" id="historyModal">
+  <div class="modal" style="width:560px;max-width:97vw">
+    <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Історія змін</span>
+      <button class="btn-cancel" style="font-size:15px;padding:2px 10px" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div style="font-size:15px;color:#aaa;margin-top:-4px">Останні видалення та зміни. Натисніть «Відновити» щоб повернути.</div>
+    <div id="historyList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:60vh;overflow-y:auto"></div>
+    <div id="historyEmpty" style="font-size:18px;color:#ccc;font-style:italic;padding:16px 0;display:none">Поки що нічого немає</div>
+  </div>
+</div>
+
 <!-- NOTE EDIT MODAL -->
 <div class="overlay" id="noteEditModal">
   <div class="modal modal-sm">
@@ -482,6 +508,100 @@ function isNoteActive(n){return n.time&&n.text&&new Date()>=new Date(n.time);}
 function hasActiveReminder(o){return(o.notes||[]).some(isNoteActive);}
 
 function setSyncStatus(state,text){document.getElementById('syncStatus').className='sync-status '+state;document.getElementById('syncText').textContent=text;}
+
+// ── HISTORY ──────────────────────────────────────────────
+const MAX_HISTORY = 50;
+let history = [];
+
+function addHistory(entry){
+  // entry: {type:'note'|'obj'|'randomNote', action:'delete'|'edit', label, data, restore}
+  entry.time = new Date().toISOString();
+  history.unshift(entry);
+  if(history.length > MAX_HISTORY) history.pop();
+  try{ localStorage.setItem('crm_history', JSON.stringify(history)); }catch{}
+}
+
+function loadHistory(){
+  try{ history = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch{ history=[]; }
+}
+
+function openHistoryModal(){
+  renderHistoryList();
+  document.getElementById('historyModal').classList.add('open');
+}
+function closeHistoryModal(){
+  document.getElementById('historyModal').classList.remove('open');
+}
+
+function renderHistoryList(){
+  const list = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  list.innerHTML = '';
+  if(!history.length){ list.style.display='none'; empty.style.display='block'; return; }
+  list.style.display='flex'; empty.style.display='none';
+  history.forEach((h,idx)=>{
+    const d = new Date(h.time);
+    const timeStr = d.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'}) + ' ' +
+                    d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+    const badgeClass = h.action==='delete' ? 'del' : (h.type==='obj' ? 'obj' : 'note');
+    const badgeText = h.action==='delete' ? 'видалено' : 'змінено';
+    const typeText = h.type==='obj' ? 'Об'єкт' : h.type==='note' ? 'Замітка' : 'Нотатка';
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <span class="hist-badge ${badgeClass}">${badgeText}</span>
+      <div class="hist-body">
+        <div class="hist-name">${h.label||'—'}</div>
+        <div class="hist-meta">${typeText} · ${timeStr}${h.parentName?' · '+h.parentName:''}</div>
+      </div>
+      <button class="hist-restore" onclick="restoreFromHistory(${idx})">↩ Відновити</button>`;
+    list.appendChild(item);
+  });
+}
+
+async function restoreFromHistory(idx){
+  const h = history[idx];
+  if(!h) return;
+  try{
+    if(h.type==='obj'){
+      // Restore deleted object
+      const obj = {...h.data};
+      obj.id = ''; // get new id
+      await apiSave(obj);
+      objects.push(parseObj(obj));
+      sortObjects();
+      render();
+    } else if(h.type==='note'){
+      // Restore note to object
+      const ri = objects.findIndex(o=>String(o.id)===String(h.objId));
+      if(ri>=0){
+        if(!objects[ri].notes) objects[ri].notes=[];
+        objects[ri].notes.push(h.data);
+        // Find slot in DOM
+        const wrap = [...document.querySelectorAll('[data-objid]')].find(w=>String(w.dataset.objid)===String(h.objId));
+        const slot = wrap ? parseInt(wrap.id.replace('wrap-','')) : ri;
+        const notesEl = document.getElementById('notes-'+slot);
+        if(notesEl) notesEl.innerHTML = buildNotesHTML(objects[ri], slot);
+        await apiSave(objects[ri]);
+      }
+    } else if(h.type==='randomNote'){
+      // Restore random note
+      const sn = {...h.data};
+      sn.id = 'sticky_'+Date.now();
+      stickyNotes.push(sn);
+      renderRandomNotes();
+      await apiSave(sn);
+    }
+    // Remove from history after restore
+    history.splice(idx,1);
+    try{ localStorage.setItem('crm_history', JSON.stringify(history)); }catch{}
+    renderHistoryList();
+  }catch(err){ console.error('restoreFromHistory error:',err); }
+}
+
+document.getElementById('historyModal').addEventListener('click',function(e){
+  if(e.target===this) closeHistoryModal();
+});
 
 function parseBool(v){ return v===true||v==='true'||v==='TRUE'||v===1||v==='1'; }
 
@@ -790,6 +910,8 @@ async function deleteNoteQuick(slot,ni){
     const oid=wrap?wrap.dataset.objid:null;
     const ri=oid!==null?objIdx(oid):slot;
     if(ri<0||ri>=objects.length)return;
+    const deletedNote = {...objects[ri].notes[ni]};
+    addHistory({type:'note',action:'delete',label:deletedNote.text,parentName:objects[ri].name,objId:objects[ri].id,data:deletedNote});
     objects[ri].notes.splice(ni,1);
     const notesEl=document.getElementById('notes-'+slot);
     if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
@@ -999,7 +1121,9 @@ async function addRandomNote(col){
 }
 
 async function deleteRandomNote(idx){
-  const id=stickyNotes[idx].id;
+  const sn=stickyNotes[idx];
+  addHistory({type:'randomNote',action:'delete',label:sn.name,data:{...sn,notes:sn.notes?[...sn.notes]:[]}});
+  const id=sn.id;
   stickyNotes.splice(idx,1);
   renderRandomNotes();
   apiDelete(id);
@@ -1096,6 +1220,7 @@ async function deleteCard(i){
   const ri=oid!==null?objIdx(oid):i;
   if(ri<0||ri>=objects.length)return;
   if(!confirm('Видалити "'+objects[ri].name+'"?'))return;
+  addHistory({type:'obj',action:'delete',label:objects[ri].name,data:{...objects[ri],notes:[...(objects[ri].notes||[])]}});
   const id=objects[ri].id;expandedId=null;objects.splice(ri,1);render();
   await apiDelete(id);
 }
@@ -1108,6 +1233,7 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
   if(e.target===this) closeNoteEditModal();
 });
 
+loadHistory();
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
   const activeInput=document.activeElement;
