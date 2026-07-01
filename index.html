@@ -102,6 +102,8 @@ body{
 .list-name{font-size:28px;font-weight:700;color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .list-name:hover{text-decoration:underline;text-decoration-style:wavy;text-underline-offset:4px}
 .list-name.done{color:#bbb;text-decoration:line-through;text-decoration-thickness:3px}
+.list-name.has-notes{text-decoration:underline;text-decoration-style:wavy;text-decoration-color:#1a1a8a;text-underline-offset:4px;text-decoration-thickness:1.5px}
+.list-name.has-notes:hover{text-decoration-thickness:2px}
 .list-addr-wrap{font-size:24px;color:#1a1a1a}
 .list-addr-wrap a{color:#1a1a1a;text-decoration:none}
 .list-addr-wrap a:hover{text-decoration:underline}
@@ -773,13 +775,17 @@ function render(){
     return;
   }
   sortObjects();
-  // After sort, i is the true position in sorted array = global number
+  // Assign numbers left-first then right, so numbering is visually sequential
+  const leftItems=[], rightItems=[];
   objects.forEach((o,i)=>{
     const len=estimateRowLen(o);
     const isShort=len<=SHORT_THRESHOLD;
-    const col=(isShort&&colR)?colR:colL;
-    col.appendChild(buildItemWrap(o,i,i+1));
+    if(isShort&&colR) rightItems.push({o,i});
+    else leftItems.push({o,i});
   });
+  let num=1;
+  leftItems.forEach(({o,i})=>{ colL.appendChild(buildItemWrap(o,i,num++)); });
+  rightItems.forEach(({o,i})=>{ colR.appendChild(buildItemWrap(o,i,num++)); });
   if(expandedId!==null){
     const el=document.getElementById('exp-'+expandedId);
     if(el){el.classList.add('open');el.innerHTML=buildExpanded(objects[expandedId],expandedId);}
@@ -804,7 +810,8 @@ function buildItemWrap(o,i,globalNum){
   row.appendChild(star);
   // name
   const name=document.createElement('span');
-  name.className='list-name'+(o.completed?' done':'');
+  const hasNotes=(o.notes&&o.notes.length>0);
+  name.className='list-name'+(o.completed?' done':'')+(hasNotes?' has-notes':'');
   name.textContent=o.name||'—';
   name.onclick=()=>toggleExpand(i);
   row.appendChild(name);
