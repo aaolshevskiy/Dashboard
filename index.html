@@ -1466,40 +1466,8 @@ setInterval(()=>{
   if(!isTypingNote) render();
 },30000);
 
-const SEED_OBJECTS=[
-  {name:'Krakowskie Tarasy',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Inv',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Boleslawiec',addr:'Dankow',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:true,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Port Popowice',addr:'Wroclaw',stage:'Etap 1',status:'active',pack:'DP',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Zlota Praga',addr:'Warszawa',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Swiecice',addr:'Warszawa',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Moj Gajkow',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Bakowo 104m2',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'104',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Zielona Gora',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Siechnice',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Inv',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Siechnice Julia',addr:'Wroclaw',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:true,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Jasna Marona',addr:'Lublin',stage:'Pidhotovka',status:'active',pack:'Comf',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Giebultow x3',addr:'',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Antoniewska',addr:'Warszawa',stage:'Pidhotovka',status:'done',pack:'Inv',area:'',inwork:false,completed:true,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-  {name:'Domy na Polanie',addr:'Wolowice',stage:'Pidhotovka',status:'active',pack:'DP',area:'',inwork:false,completed:false,masters:false,mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]},
-];
 
-// fix stage values to match select options
-const STAGE_MAP={'Pidhotovka':'Pidhotovka','Etap 1':'Etap 1'};
-
-async function seedIfEmpty(){
-  if(objects.length>0||stickyNotes.length>0) return;
-  setSyncStatus('syncing','Dodaemo obiekty...');
-  for(const obj of SEED_OBJECTS){
-    obj.id='seed_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    await new Promise(r=>setTimeout(r,150));
-    await apiSave(obj);
-    objects.push({...obj});
-  }
-  setSyncStatus('ok','zbereheno');
-  render();
-}
-
-apiGet().then(()=>{ setTimeout(seedIfEmpty,800); });
+apiGet();
 </script>
 </body>
 </html>
