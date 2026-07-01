@@ -642,29 +642,16 @@ function parseObj(o){
   };
 }
 
-async function fetchWithTimeout(url, opts={}, ms=10000){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),ms);
-  try{
-    const res=await fetch(url,{...opts,signal:controller.signal});
-    clearTimeout(timer);
-    return res;
-  }catch(e){clearTimeout(timer);throw e;}
-}
-
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
-    const res=await fetchWithTimeout(API_URL+'?action=getAll',{redirect:'follow'},12000);
-    if(!res.ok){
-      setSyncStatus('err','HTTP '+res.status);
-      render();renderRandomNotes();
-      return;
-    }
-    const text=await res.text();
+    const res = await fetch(API_URL + '?action=getAll');
+    const text = await res.text();
     let data;
-    try{ data=JSON.parse(text); }
-    catch(e){ setSyncStatus('err','JSON помилка'); render();renderRandomNotes(); return; }
+    try { data = JSON.parse(text); } catch(e) {
+      setSyncStatus('err','Помилка даних');
+      render(); renderRandomNotes(); return;
+    }
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
@@ -695,7 +682,6 @@ async function apiGet(){
 }
 async function apiSave(obj){
   setSyncStatus('syncing','збереження...');
-  // Always send complete canonical object — never lose fields
   const full={
     id:         obj.id||'',
     name:       obj.name||'',
