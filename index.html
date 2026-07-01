@@ -560,7 +560,7 @@ function renderHistoryList(){
 }
 
 async function restoreFromHistory(idx){
-  const h = history[idx];
+  const h = actionLog[idx];
   if(!h) return;
   try{
     if(h.type==='obj'){
@@ -592,7 +592,7 @@ async function restoreFromHistory(idx){
       renderRandomNotes();
       await apiSave(sn);
     }
-    // Remove from history after restore
+    // Remove from actionLog after restore
     actionLog.splice(idx,1);
     try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch{}
     renderHistoryList();
@@ -616,6 +616,7 @@ function parseObj(o){
 }
 
 async function apiGet(){
+  console.log('[CRM] apiGet called, URL:', API_URL.slice(0,50));
   setSyncStatus('syncing','завантаження...');
   try{
     const res=await fetch(API_URL+'?action=getAll',{redirect:'follow'});
@@ -1234,6 +1235,7 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
 });
 
 loadActionLog();
+console.log('[CRM] JS loaded, starting...');
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
   const activeInput=document.activeElement;
