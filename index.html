@@ -545,11 +545,11 @@ function addHistory(entry){
   entry.time = new Date().toISOString();
   actionLog.unshift(entry);
   if(actionLog.length > MAX_HISTORY) actionLog.pop();
-  try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch{}
+  try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch(e){}
 }
 
 function loadActionLog(){
-  try{ actionLog = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch{ actionLog=[]; }
+  try{ actionLog = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch(e){ actionLog=[]; }
 }
 
 function openHistoryModal(){
@@ -621,7 +621,7 @@ async function restoreFromHistory(idx){
     }
     // Remove from actionLog after restore
     actionLog.splice(idx,1);
-    try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch{}
+    try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch(e){}
     renderHistoryList();
   }catch(err){ console.error('restoreFromHistory error:',err); }
 }
@@ -638,7 +638,7 @@ function parseObj(o){
     inwork:    parseBool(o.inwork),
     completed: parseBool(o.completed),
     masters:   parseBool(o.masters),
-    notes: Array.isArray(o.notes) ? o.notes : (()=>{ try{ return JSON.parse(o.notes||'[]'); }catch{ return []; } })()
+    notes: Array.isArray(o.notes) ? o.notes : (()=>{ try{ return JSON.parse(o.notes||'[]'); }catch(e){ return []; } })()
   };
 }
 
@@ -658,7 +658,7 @@ async function apiGet(){
       if(String(o.id).startsWith('sticky_')){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
-        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
+        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch(e){return[];}})();
         stickies.push(sn);
       } else {
         objs.push(parseObj(o));
@@ -1059,6 +1059,17 @@ async function saveReminder(){
   await apiSave(objects[ri]);
 }
 
+function expNoteClick(el){
+  var oid=el.dataset.oid;
+  var ni=parseInt(el.dataset.ni);
+  openObjNoteEdit(oid,ni);
+}
+function expNoteDelete(el){
+  var oid=el.dataset.oid;
+  var ni=parseInt(el.dataset.ni);
+  deleteObjNoteById(oid,ni);
+}
+
 // ── STICKER (expanded card) + notes side by side ──
 function buildSticker(o,i){ return buildExpanded(o,i); }
 
@@ -1080,15 +1091,16 @@ function buildExpanded(o,i){
   const notes=o.notes||[];
   let notesHtml='';
   if(notes.length){
-    notes.forEach((n,ni)=>{
-      const active=isNoteActive(n);
-      const cls=active?' overdue':'';
-      const itemCls=active?' overdue-item':'';
-      const timeStr=n.time?('<span class="exp-note-time">'+fmtDT(n.time)+'</span>'):'';
-      notesHtml+='<div class="exp-note-item'+itemCls+'">'
-        +'<span class="exp-note-text'+cls+'" onclick="openObjNoteEdit(''+o.id+'','+ni+')">— '+n.text+'</span>'
+    notes.forEach(function(n,ni){
+      var active=isNoteActive(n);
+      var cls=active?' overdue':'';
+      var itemCls=active?' overdue-item':'';
+      var timeStr=n.time?('<span class="exp-note-time">'+fmtDT(n.time)+'</span>'):'';
+      var oid=String(o.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      notesHtml+='<div class="exp-note-item'+itemCls+'" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="expNoteClick(this)">'
+        +'<span class="exp-note-text'+cls+'">— '+n.text+'</span>'
         +timeStr
-        +'<button class="obj-note-del" onclick="deleteObjNoteById(''+o.id+'','+ni+')">✕</button>'
+        +'<button class="obj-note-del" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="event.stopPropagation();expNoteDelete(this)">✕</button>'
         +'</div>';
     });
   } else {
