@@ -615,6 +615,12 @@ body{
     <div class="modal-title">Редагувати замітку</div>
     <div class="form-row"><label>Текст</label><textarea id="ne-text" rows="3" style="font-size:19px;font-family:'Caveat',cursive;border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;resize:vertical;background:transparent;outline:none"></textarea></div>
     <div class="form-row"><label>Нагадування (дата, час 9:00)</label><input id="ne-date" type="date" style="font-size:18px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;padding:2px;-webkit-appearance:none;appearance:none"></div>
+    <div class="form-row" id="ne-obj-row" style="display:none">
+      <label>Прив'язати до об'єкту</label>
+      <select id="ne-obj-select" class="obj-link-select">
+        <option value="">— без прив'язки —</option>
+      </select>
+    </div>
     <div class="err-msg" id="ne-err" style="font-size:14px;color:#c0392b;display:none">Введіть текст</div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeNoteEditModal()">Скасувати</button>
@@ -1147,6 +1153,8 @@ function closeNoteEditModal(){
   document.getElementById('noteEditModal').classList.remove('open');
   noteEditCtx=null;
   randomEditIdx=null;
+  const objRow=document.getElementById('ne-obj-row');
+  if(objRow) objRow.style.display='none';
   delete document.getElementById('noteEditModal').dataset.mode;
 }
 
@@ -1159,9 +1167,30 @@ async function saveNoteEdit(){
 
     if(mode==='random'){
       const sn=stickyNotes[randomEditIdx];
+      const selObjId=document.getElementById('ne-obj-select')?document.getElementById('ne-obj-select').value:'';
+
+      // If user linked to an object — convert to object note
+      if(selObjId){
+        const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
+        if(ri>=0){
+          if(!objects[ri].notes) objects[ri].notes=[];
+          objects[ri].notes.push({text,time:date?date+'T09:00':''});
+          // Remove from sticky notes
+          const delId=sn.id;
+          stickyNotes.splice(randomEditIdx,1);
+          closeNoteEditModal();
+          render();
+          renderRandomNotes();
+          apiSave(objects[ri]).catch(e=>console.error(e));
+          apiDelete(delId).catch(e=>console.error(e));
+          return;
+        }
+      }
+
+      // No object — keep as random note
       sn.name=text;
       sn.notes=date?[{text,time:date+'T09:00'}]:[];
-      // col preserved from original
+      sn.linkedObjId='';
       renderRandomNotes();
       closeNoteEditModal();
       apiSave(sn).catch(e=>console.error('save error',e));
@@ -1602,8 +1631,24 @@ function openRandomNoteEdit(idx){
   document.getElementById('ne-text').value=sn.name||'';
   document.getElementById('ne-date').value=note&&note.time?note.time.slice(0,10):'';
   document.getElementById('ne-err').style.display='none';
-  // Hijack saveNoteEdit for random note
   document.getElementById('noteEditModal').dataset.mode='random';
+
+  // Show object selector and populate with current objects
+  const objRow=document.getElementById('ne-obj-row');
+  const objSel=document.getElementById('ne-obj-select');
+  if(objRow&&objSel){
+    objRow.style.display='flex';
+    objSel.innerHTML='<option value="">\u2014 без об\u2019єкту \u2014</option>';
+
+    objects.forEach(o=>{
+      const opt=document.createElement('option');
+      opt.value=o.id;
+      opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');
+      objSel.appendChild(opt);
+    });
+    // Pre-select if already linked (sn.linkedObjId)
+    objSel.value=sn.linkedObjId||'';
+  }
   document.getElementById('noteEditModal').classList.add('open');
   setTimeout(()=>document.getElementById('ne-text').focus(),50);
 }
