@@ -246,7 +246,7 @@ body{
   box-shadow:0 2px 10px rgba(0,0,0,.12),0 1px 0 rgba(0,0,0,.06);
   overflow:hidden;
   width:100%;
-  max-width:220px;
+  max-width:154px;
   position:relative;
   font-family:'Caveat',cursive;
   border:0.5px solid #e8e8e0;
@@ -258,39 +258,39 @@ body{
   padding:0 8px;z-index:3;
 }
 .cal-spiral{
-  width:13px;height:13px;border-radius:50%;
+  width:9px;height:9px;border-radius:50%;
   background:#f4f0e6;
-  border:2px solid #ccc;
+  border:1.5px solid #ccc;
   box-shadow:inset 0 1px 2px rgba(0,0,0,.1);
-  margin-top:-6px;
+  margin-top:-4px;
 }
 /* White header */
 .cal-header{
   background:#fff;
-  padding:14px 10px 8px;
+  padding:10px 8px 6px;
   text-align:center;
   position:relative;
   border-bottom:0.5px solid #f0f0ee;
 }
 .cal-month-name{
-  font-size:13px;font-weight:600;color:#aaa;
+  font-size:9px;font-weight:600;color:#aaa;
   text-transform:uppercase;letter-spacing:.12em;margin-bottom:0;
 }
 .cal-day-num{
-  font-size:56px;font-weight:700;color:#c0392b;
-  line-height:1;margin:2px 0 2px;
+  font-size:39px;font-weight:700;color:#c0392b;
+  line-height:1;margin:1px 0 1px;
 }
 .cal-weekday{
-  font-size:16px;font-weight:600;color:#888;
+  font-size:11px;font-weight:600;color:#888;
   letter-spacing:.04em;
 }
 /* Body with events */
 .cal-body{
   background:#fff;
-  padding:12px 12px 12px;
-  min-height:40px;
+  padding:8px 9px 9px;
+  min-height:28px;
 }
-.cal-ev-item{display:flex;align-items:baseline;gap:5px;padding:2px 0;flex-wrap:wrap}
+.cal-ev-item{display:flex;align-items:baseline;gap:4px;padding:1px 0;flex-wrap:wrap}
 .cal-ev-title{font-size:19px;line-height:1.3}
 .cal-ev-time{font-size:14px;flex-shrink:0}
 /* Color states — applied to item row */
@@ -299,11 +299,11 @@ body{
 .cal-ev-item.cal-ev-now .cal-ev-title,.cal-ev-item.cal-ev-now .cal-ev-time{color:#c0392b;font-weight:700}
 .cal-ev-item.cal-ev-soon .cal-ev-title,.cal-ev-item.cal-ev-soon .cal-ev-time{color:#c0392b}
 .cal-ev-item.cal-ev-future .cal-ev-title,.cal-ev-item.cal-ev-future .cal-ev-time{color:#1a1a8a}
-.cal-ev-title{font-size:19px;line-height:1.3;color:#1a1a1a}
-.cal-ev-time{font-size:14px;flex-shrink:0;color:#888}
-.cal-ev-allday{font-size:14px;color:#aaa;font-style:italic}
-.cal-empty-msg{font-size:17px;color:#ccc;font-style:italic}
-.cal-loading-msg{font-size:15px;color:#bbb;font-style:italic}
+.cal-ev-title{font-size:13px;line-height:1.3;color:#1a1a1a}
+.cal-ev-time{font-size:11px;flex-shrink:0;color:#888}
+.cal-ev-allday{font-size:11px;color:#aaa;font-style:italic}
+.cal-empty-msg{font-size:12px;color:#ccc;font-style:italic}
+.cal-loading-msg{font-size:12px;color:#bbb;font-style:italic}
 .random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .random-note-item{
   display:inline-flex;align-items:baseline;gap:4px;flex-wrap:wrap;
@@ -822,9 +822,15 @@ function renderCalendar(events){
     var row=document.createElement('div');
     row.className='cal-ev-item '+colorCls;  // color class on row
 
-    var titleEl=document.createElement('span');
+    var titleEl=document.createElement(ev.link?'a':'span');
     titleEl.className='cal-ev-title';
     titleEl.textContent='— '+ev.title;
+    if(ev.link){
+      titleEl.href=ev.link;
+      titleEl.target='_blank';
+      titleEl.style.cssText='text-decoration:none;cursor:pointer';
+    }
+    titleEl.title=ev.title;
     row.appendChild(titleEl);
 
     if(!ev.allDay){
