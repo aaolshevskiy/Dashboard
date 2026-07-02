@@ -234,10 +234,21 @@ body{
   padding-bottom:14px;
   padding-left:90px;
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0 40px;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:0 32px;
 }
 .random-notes-col{}
+/* Calendar column */
+.cal-col-label{font-size:16px;font-weight:700;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.cal-week-events{display:flex;flex-direction:column;gap:3px}
+.cal-ev-item{display:flex;align-items:baseline;gap:5px;padding:2px 0;flex-wrap:wrap}
+.cal-ev-date{font-size:15px;color:#1a1a8a;flex-shrink:0;font-weight:600}
+.cal-ev-date.today{color:#c0392b}
+.cal-ev-title{font-size:20px;color:#1a1a1a;line-height:1.3}
+.cal-ev-time{font-size:14px;color:#aaa;flex-shrink:0}
+.cal-ev-allday{font-size:14px;color:#bbb;font-style:italic}
+.cal-empty-msg{font-size:18px;color:#ccc;font-style:italic}
+.cal-loading-msg{font-size:16px;color:#bbb;font-style:italic}
 .random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .random-note-item{
   display:inline-flex;align-items:baseline;gap:4px;flex-wrap:wrap;
@@ -353,9 +364,9 @@ body{
     </div>
 
     <div class="board-body">
-            <!-- RANDOM NOTES TOP STRIP — 2 columns -->
+            <!-- TOP STRIP — 3 columns: obj notes | free notes | calendar -->
       <div class="random-notes-zone" id="randomNotesZone">
-        <!-- LEFT COLUMN -->
+        <!-- LEFT: замітки від об'єктів -->
         <div class="random-notes-col">
           <div class="random-notes-list" id="randomNotesList0"></div>
           <div class="random-add-row">
@@ -370,7 +381,7 @@ body{
             <span class="random-dt-label">(9:00)</span>
           </div>
         </div>
-        <!-- RIGHT COLUMN -->
+        <!-- CENTER: вільні нотатки -->
         <div class="random-notes-col">
           <div class="random-notes-list" id="randomNotesList1"></div>
           <div class="random-add-row">
@@ -383,6 +394,13 @@ body{
             <span class="random-dt-label">коли:</span>
             <input type="date" id="randomDtDate1">
             <span class="random-dt-label">(9:00)</span>
+          </div>
+        </div>
+        <!-- RIGHT: події календаря -->
+        <div class="random-notes-col">
+          <div class="cal-col-label">Цей тиждень</div>
+          <div class="cal-week-events" id="calWeekEvents">
+            <div class="cal-loading-msg">завантаження...</div>
           </div>
         </div>
       </div>
@@ -702,50 +720,52 @@ function fmtWeekLabel(days){
 }
 
 function renderCalendar(events){
-  const grid=document.getElementById('calendarGrid');
-  const weekLabel=document.getElementById('calWeekLabel');
-  if(!grid)return;
+  const container=document.getElementById('calWeekEvents');
+  if(!container)return;
+  container.innerHTML='';
   const days=getWeekDates();
   const today=new Date();
   today.setHours(0,0,0,0);
-  weekLabel.textContent=fmtWeekLabel(days);
-  grid.innerHTML='';
 
+  let hasAny=false;
   days.forEach(day=>{
-    const col=document.createElement('div');
-    col.className='cal-day';
     const isToday=day.getTime()===today.getTime();
-    const lbl=document.createElement('div');
-    lbl.className='cal-day-label'+(isToday?' today':'');
-    lbl.textContent=DAY_NAMES[day.getDay()]+' '+day.getDate();
-    col.appendChild(lbl);
-
     const dayEvents=events.filter(ev=>{
       const evDate=new Date(ev.start);
       evDate.setHours(0,0,0,0);
       return evDate.getTime()===day.getTime();
     });
-
-    if(!dayEvents.length){
-      const empty=document.createElement('div');
-      empty.className='cal-empty';empty.textContent='·';
-      col.appendChild(empty);
-    } else {
-      dayEvents.forEach(ev=>{
-        const evEl=document.createElement('div');
-        evEl.className='cal-event'+(isToday?' cal-today':'');
-        if(ev.allDay){
-          evEl.innerHTML=ev.title+'<span class="cal-event-time cal-event-allday">весь день</span>';
-        } else {
-          const t=new Date(ev.start);
-          const timeStr=t.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-          evEl.innerHTML=ev.title+'<span class="cal-event-time">'+timeStr+'</span>';
-        }
-        col.appendChild(evEl);
-      });
-    }
-    grid.appendChild(col);
+    if(!dayEvents.length) return;
+    hasAny=true;
+    dayEvents.forEach(ev=>{
+      const row=document.createElement('div');
+      row.className='cal-ev-item';
+      const dateEl=document.createElement('span');
+      dateEl.className='cal-ev-date'+(isToday?' today':'');
+      dateEl.textContent=DAY_NAMES[day.getDay()]+' '+day.getDate()+'.';
+      const titleEl=document.createElement('span');
+      titleEl.className='cal-ev-title';
+      titleEl.textContent=ev.title;
+      row.appendChild(dateEl);
+      row.appendChild(titleEl);
+      if(!ev.allDay){
+        const t=new Date(ev.start);
+        const timeEl=document.createElement('span');
+        timeEl.className='cal-ev-time';
+        timeEl.textContent=t.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+        row.appendChild(timeEl);
+      } else {
+        const allDayEl=document.createElement('span');
+        allDayEl.className='cal-ev-allday';
+        allDayEl.textContent='весь день';
+        row.appendChild(allDayEl);
+      }
+      container.appendChild(row);
+    });
   });
+  if(!hasAny){
+    container.innerHTML='<div class="cal-empty-msg">Подій немає</div>';
+  }
 }
 
 async function loadCalendar(){
@@ -755,8 +775,8 @@ async function loadCalendar(){
     if(Array.isArray(data)) renderCalendar(data);
     else renderCalendar([]);
   }catch(e){
-    const grid=document.getElementById('calendarGrid');
-    if(grid) grid.innerHTML='<div class="cal-loading">Календар недоступний</div>';
+    const container=document.getElementById('calWeekEvents');
+    if(container) container.innerHTML='<div class="cal-loading-msg">Потрібна авторизація в Apps Script</div>';
   }
 }
 
