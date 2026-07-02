@@ -239,14 +239,17 @@ body{
 }
 .random-notes-col{}
 /* Calendar column */
-.cal-col-label{font-size:16px;font-weight:700;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.cal-col-label{font-size:16px;font-weight:700;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;display:flex;gap:6px;align-items:baseline}
 .cal-week-events{display:flex;flex-direction:column;gap:3px}
-.cal-ev-item{display:flex;align-items:baseline;gap:5px;padding:2px 0;flex-wrap:wrap}
-.cal-ev-date{font-size:15px;color:#1a1a8a;flex-shrink:0;font-weight:600}
-.cal-ev-date.today{color:#c0392b}
-.cal-ev-title{font-size:20px;color:#1a1a1a;line-height:1.3}
-.cal-ev-time{font-size:14px;color:#aaa;flex-shrink:0}
-.cal-ev-allday{font-size:14px;color:#bbb;font-style:italic}
+.cal-ev-item{display:flex;align-items:baseline;gap:6px;padding:2px 0;flex-wrap:wrap}
+.cal-ev-title{font-size:20px;line-height:1.3;flex-shrink:0}
+.cal-ev-time{font-size:15px;flex-shrink:0}
+/* Color states */
+.cal-ev-past{color:#bbb}
+.cal-ev-now{color:#c0392b;font-weight:700}
+.cal-ev-soon{color:#c0392b}
+.cal-ev-future{color:#1a1a8a}
+.cal-ev-allday{font-size:14px;color:#aaa;font-style:italic}
 .cal-empty-msg{font-size:18px;color:#ccc;font-style:italic}
 .cal-loading-msg{font-size:16px;color:#bbb;font-style:italic}
 .random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
@@ -398,7 +401,7 @@ body{
         </div>
         <!-- RIGHT: події календаря -->
         <div class="random-notes-col">
-          <div class="cal-col-label">Цей тиждень</div>
+          <div class="cal-col-label" id="calDayLabel">Сьогодні</div>
           <div class="cal-week-events" id="calWeekEvents">
             <div class="cal-loading-msg">завантаження...</div>
           </div>
@@ -723,52 +726,78 @@ function renderCalendar(events){
   const container=document.getElementById('calWeekEvents');
   if(!container)return;
   container.innerHTML='';
-  const days=getWeekDates();
-  const today=new Date();
-  today.setHours(0,0,0,0);
+  const now=new Date();
+  const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
+  const todayEnd=new Date(now);todayEnd.setHours(23,59,59,999);
 
-  let hasAny=false;
-  days.forEach(day=>{
-    const isToday=day.getTime()===today.getTime();
-    const dayEvents=events.filter(ev=>{
-      const evDate=new Date(ev.start);
-      evDate.setHours(0,0,0,0);
-      return evDate.getTime()===day.getTime();
-    });
-    if(!dayEvents.length) return;
-    hasAny=true;
-    dayEvents.forEach(ev=>{
-      const row=document.createElement('div');
-      row.className='cal-ev-item';
-      const dateEl=document.createElement('span');
-      dateEl.className='cal-ev-date'+(isToday?' today':'');
-      dateEl.textContent=DAY_NAMES[day.getDay()]+' '+day.getDate()+'.';
-      const titleEl=document.createElement('span');
-      titleEl.className='cal-ev-title';
-      titleEl.textContent=ev.title;
-      row.appendChild(dateEl);
-      row.appendChild(titleEl);
-      if(!ev.allDay){
-        const t=new Date(ev.start);
-        const timeEl=document.createElement('span');
-        timeEl.className='cal-ev-time';
-        timeEl.textContent=t.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-        row.appendChild(timeEl);
-      } else {
-        const allDayEl=document.createElement('span');
-        allDayEl.className='cal-ev-allday';
-        allDayEl.textContent='весь день';
-        row.appendChild(allDayEl);
-      }
-      container.appendChild(row);
-    });
-  });
-  if(!hasAny){
-    container.innerHTML='<div class="cal-empty-msg">Подій немає</div>';
+  // Filter only today's events
+  const todayEvents=events.filter(ev=>{
+    const evDate=new Date(ev.start);
+    return evDate>=todayStart&&evDate<=todayEnd;
+  }).sort((a,b)=>new Date(a.start)-new Date(b.start));
+
+  if(!todayEvents.length){
+    container.innerHTML='<div class="cal-empty-msg">Сьогодні подій немає</div>';
+    return;
   }
+
+  todayEvents.forEach(ev=>{
+    const row=document.createElement('div');
+    row.className='cal-ev-item';
+
+    // Determine color by time status
+    let colorCls='cal-ev-future'; // blue — more than 1h away
+    if(ev.allDay){
+      colorCls='cal-ev-future';
+    } else {
+      const start=new Date(ev.start);
+      const end=new Date(ev.end||ev.start);
+      const diffMs=start-now;
+      if(end<now){
+        colorCls='cal-ev-past';    // grey — already passed
+      } else if(diffMs<=0){
+        colorCls='cal-ev-now';     // red — happening now
+      } else if(diffMs<=60*60*1000){
+        colorCls='cal-ev-soon';    // red — less than 1h away
+      } else {
+        colorCls='cal-ev-future';  // blue
+      }
+    }
+
+    const titleEl=document.createElement('span');
+    titleEl.className='cal-ev-title '+colorCls;
+    titleEl.textContent='— '+ev.title;
+    row.appendChild(titleEl);
+
+    if(!ev.allDay){
+      const t=new Date(ev.start);
+      const timeEl=document.createElement('span');
+      timeEl.className='cal-ev-time '+colorCls;
+      timeEl.textContent=t.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+      row.appendChild(timeEl);
+    } else {
+      const allDayEl=document.createElement('span');
+      allDayEl.className='cal-ev-allday';
+      allDayEl.textContent='весь день';
+      row.appendChild(allDayEl);
+    }
+    container.appendChild(row);
+  });
 }
 
+// Refresh calendar colors every minute (times change)
+setInterval(()=>{
+  loadCalendar();
+},60000);
+
 async function loadCalendar(){
+  // Update label with today's date
+  const lbl=document.getElementById('calDayLabel');
+  if(lbl){
+    const now=new Date();
+    const months=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+    lbl.textContent='Сьогодні, '+now.getDate()+' '+months[now.getMonth()];
+  }
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
