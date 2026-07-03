@@ -248,7 +248,7 @@ body{
   box-shadow:0 2px 10px rgba(0,0,0,.12),0 1px 0 rgba(0,0,0,.06);
   overflow:hidden;
   width:100%;
-  max-width:154px;
+  max-width:308px;
   position:relative;
   font-family:'Caveat',cursive;
   border:0.5px solid #e8e8e0;
@@ -563,7 +563,7 @@ body{
         <select id="f-pack"><option value="Comf">Comf</option><option value="Inv">Inv</option><option value="Prem">Prem</option><option value="ДП">ДП</option></select>
       </div>
       <div class="form-row"><label>Етап</label>
-        <select id="f-stage"><option>Підготовка</option><option>Розробка проєкту</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Фінішуємо</option></select>
+        <select id="f-stage"><option>Підготовка</option><option>Розробка проєкту</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Поправки</option></select>
       </div>
       <div class="form-row"><label>Статус</label>
         <select id="f-status">
@@ -648,7 +648,7 @@ body{
 const API_URL="https://script.google.com/macros/s/AKfycbyS6GtaZuWAzs-mM47yl_qkc1N3yllhYu_UadXNiVu2ESg32A5hDQ2A7IJ8Jo_-7iP-/exec";
 const MONTHS_GEN=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
 const STATUS_LABELS={active:'В роботі',launch:'На запуск',finishing:'Закінчуємо',pause:'На паузі',frozen:'Заморожено',done:'Закінчено'};
-const STAGES=['Підготовка','Розробка проєкту','Етап 1','Етап 2','Етап 3','Етап 4','Фінішуємо'];
+const STAGES=['','Підготовка','Розробка проєкту','Етап 1','Етап 2','Етап 3','Етап 4','Поправки'];
 const STATUSES=['active','launch','finishing','pause','frozen','done'];
 
 let objects=[];
@@ -1639,11 +1639,18 @@ function openRandomNoteEdit(idx){
   if(objRow&&objSel){
     objRow.style.display='flex';
     objSel.innerHTML='<option value="">\u2014 без об\u2019єкту \u2014</option>';
-
-    objects.forEach(o=>{
+    const sorted=[...objects].sort((a,b)=>{
+      if(!!a.completed!==!!b.completed) return a.completed?1:-1;
+      if(!!a.inwork!==!!b.inwork) return a.inwork?-1:1;
+      return (a.name||'').localeCompare(b.name||'','uk');
+    });
+    sorted.forEach(o=>{
       const opt=document.createElement('option');
       opt.value=o.id;
-      opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');
+      const star=o.inwork?'☆ ':'';
+      const done=o.completed?'✓ ':'';
+      opt.textContent=done+star+(o.name||'')+(o.addr?' ('+o.addr.split(',')[0]+')':'');
+      if(o.completed) opt.style.color='#bbb';
       objSel.appendChild(opt);
     });
     // Pre-select if already linked (sn.linkedObjId)
