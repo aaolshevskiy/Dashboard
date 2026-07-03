@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=1200">
 <title>CRM Об'єкти</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +16,8 @@ body{
   min-height:100vh;
   padding:16px;
   display:flex;align-items:flex-start;justify-content:center;
+  min-width:1200px;
+  overflow-x:auto;
 }
 
 /* ── BOARD ── */
@@ -71,9 +73,7 @@ body{
 }
 .objects-col{}
 .objects-col:first-child{padding-left:30px}
-@media(max-width:700px){
-  .objects-layout{grid-template-columns:1fr}
-}
+
 
 /* ── LIST ── */
 .list-item-wrap{margin-bottom:2px}
@@ -390,17 +390,8 @@ body{
 .board-drawing{display:flex;justify-content:center;padding:10px 0 8px;margin-top:auto}
 
 /* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .sticker{width:200px;height:200px}
-  .board-title{font-size:26px}
-  .list-name{font-size:24px}
-}
-@media(max-width:600px){
-  body{padding:8px}
-  .board-inner{padding:14px 14px 0}
-  .board-body{grid-template-columns:1fr}
-  .sticker{width:95%;height:auto;min-height:180px}
-}
+
+
 </style>
 </head>
 <body>
