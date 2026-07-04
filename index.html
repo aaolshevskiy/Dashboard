@@ -1242,12 +1242,12 @@ async function saveNoteEdit(){
           // Remove from sticky notes
           const delId=sn.id;
           stickyNotes.splice(randomEditIdx,1);
+          try{ await apiSave(objects[ri]); } catch(e){ console.error('save obj note:',e); }
+          try{ await apiDelete(delId); } catch(e){ console.error('del sticky:',e); }
           closeNoteEditModal();
           render();
           renderRandomNotes();
           if(isMobile()) renderMobNotes();
-          try{ await apiSave(objects[ri]); } catch(e){ console.error('save obj note:',e); }
-          try{ await apiDelete(delId); } catch(e){ console.error('del sticky:',e); }
           return;
         }
       }
@@ -1345,17 +1345,16 @@ async function submitQuickNote(i){
     const niWrap=document.getElementById('ni-wrap-'+i);
     if(niWrap) niWrap.style.display='none';
 
+    // Save FIRST, then update UI
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save error',e); }
+
     // Update sticker if open
     if(expandedId===i){
       const el=document.getElementById('exp-'+i);
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],i);
     }
-
-    // Refresh random notes zone to show the new note
     renderRandomNotes();
-
-    // Save async
-    apiSave(objects[ri]).catch(e=>console.error('save error',e));
+    if(isMobile()) renderMobNotes();
 
   }catch(err){
     console.error('submitQuickNote error:',err);
@@ -1681,8 +1680,13 @@ async function addSingleNote(){
   if(dtBtn) dtBtn.textContent='+ нагадати';
   renderRandomNotes();
   if(isMobile()) renderMobNotes();
-  try{ await apiSave(sn); }
-  catch(e){ console.error('addSingleNote error:',e); setSyncStatus('err','помилка збереження'); }
+  try{
+    const result = await apiSave(sn);
+    if(!result){ setSyncStatus('err','не збережено'); }
+  } catch(e){
+    console.error('addSingleNote error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
 }
 
 function toggleSingleDt(){
