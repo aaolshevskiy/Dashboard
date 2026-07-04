@@ -1953,26 +1953,26 @@ function renderMobNotes(){
   list.innerHTML='';
   const now=new Date();
 
-  // All items: obj notes + random, overdue first
-  const allItems=[];
+  // obj notes first, then random — within each group overdue first
+  const objItems=[], randomItems=[];
   stickyNotes.forEach((sn,idx)=>{
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    const overdue=note&&note.time&&now>=new Date(note.time);
-    allItems.push({type:'random',idx,text:sn.name||'',overdue,time:note&&note.time?fmtDT(note.time):''});
+    const overdue=!!(note&&note.time&&now>=new Date(note.time));
+    randomItems.push({type:'random',idx,text:sn.name||'',overdue,time:note&&note.time?fmtDT(note.time):''});
   });
   objects.forEach(o=>{
     (o.notes||[]).forEach((n,ni)=>{
-      allItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,overdue:isNoteActive(n),time:n.time?fmtDT(n.time):''});
+      objItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,overdue:!!isNoteActive(n),time:n.time?fmtDT(n.time):''});
     });
   });
-  allItems.sort((a,b)=>{
-    // 1. overdue always first
-    if(b.overdue!==a.overdue) return b.overdue-a.overdue;
-    // 2. obj notes before random (no obj)
-    const mobRankA=a.type==='objnote'?0:1;
-    const mobRankB=b.type==='objnote'?0:1;
-    return mobRankA-mobRankB;
-  });
+  const sortByOverdue=(a,b)=>Number(b.overdue)-Number(a.overdue);
+  objItems.sort(sortByOverdue);
+  randomItems.sort(sortByOverdue);
+  // Overdue from both groups go to top, then obj, then random
+  const overdueAll=[...objItems,...randomItems].filter(x=>x.overdue);
+  const notOverdueObj=objItems.filter(x=>!x.overdue);
+  const notOverdueRandom=randomItems.filter(x=>!x.overdue);
+  const allItems=[...overdueAll,...notOverdueObj,...notOverdueRandom];
 
   allItems.forEach(item=>{
     const row=document.createElement('div');
