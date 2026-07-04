@@ -1023,8 +1023,6 @@ async function apiSave(obj){
   }
   try{
     // Google Apps Script POST via form-encoded to avoid CORS preflight
-    const formData = new FormData();
-    formData.append('payload', JSON.stringify({action:'save',object:full}));
     await fetch(API_URL + '?action=save', {
       method:'POST',
       mode:'no-cors',
@@ -1044,8 +1042,6 @@ async function apiDelete(id){
     });
     return {success:true};
   }catch(e){console.error('apiDelete error:',e);}
-})});setSyncStatus('ok','збережено ✓');}
-  catch(e){setSyncStatus('err','помилка');}
 }
 
 // ── RENDER OBJECTS ──
