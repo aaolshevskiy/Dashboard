@@ -961,7 +961,7 @@ async function apiGet(){
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
-      if(String(o.id).startsWith('sticky_')){
+      if(String(o.id).startsWith('sticky_')||o.status==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
         sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch(e){return[];}})();
@@ -988,24 +988,47 @@ async function apiGet(){
 }
 async function apiSave(obj){
   setSyncStatus('syncing','збереження...');
-  const full={
-    id:         obj.id||'',
-    name:       obj.name||'',
-    addr:       obj.addr||'',
-    stage:      obj.stage||'',
-    status:     obj.status||'active',
-    pack:       obj.pack||'',
-    area:       obj.area||'',
-    inwork:     !!obj.inwork,
-    completed:  !!obj.completed,
-    masters:    !!obj.masters,
-    mastersName:obj.mastersName||'',
-    linkProject:obj.linkProject||'',
-    linkFolder: obj.linkFolder||'',
-    dateStart:  obj.dateStart||'',
-    dateEnd:    obj.dateEnd||'',
-    notes:      Array.isArray(obj.notes)?obj.notes:[]
-  };
+  let full;
+  if(String(obj.id).startsWith('sticky_')||!obj.id){
+    // Sticky/random note — preserve all fields as-is, especially col stored in addr
+    full={
+      id:    obj.id||'sticky_'+Date.now(),
+      name:  obj.name||'',
+      addr:  obj.addr||'0',
+      stage: '',
+      status:'sticky',
+      pack:  '',
+      area:  '',
+      inwork:false,
+      completed:false,
+      masters:false,
+      mastersName:'',
+      linkProject:'',
+      linkFolder:'',
+      dateStart:'',
+      dateEnd:'',
+      notes: Array.isArray(obj.notes)?obj.notes:[]
+    };
+  } else {
+    full={
+      id:         obj.id||'',
+      name:       obj.name||'',
+      addr:       obj.addr||'',
+      stage:      obj.stage||'',
+      status:     obj.status||'active',
+      pack:       obj.pack||'',
+      area:       obj.area||'',
+      inwork:     !!obj.inwork,
+      completed:  !!obj.completed,
+      masters:    !!obj.masters,
+      mastersName:obj.mastersName||'',
+      linkProject:obj.linkProject||'',
+      linkFolder: obj.linkFolder||'',
+      dateStart:  obj.dateStart||'',
+      dateEnd:    obj.dateEnd||'',
+      notes:      Array.isArray(obj.notes)?obj.notes:[]
+    };
+  }
   try{
     const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:full})});
     const data=await res.json();
@@ -1673,7 +1696,13 @@ async function addRandomNote(col){
   if(dtRow)dtRow.classList.remove('vis');
   document.getElementById('randomDtBtn'+col).textContent='+ нагадати';
   renderRandomNotes();
-  apiSave(sn).catch(e=>console.error('save random note',e));
+  if(isMobile()) renderMobNotes();
+  try{
+    await apiSave(sn);
+  }catch(e){
+    console.error('addRandomNote save error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
 }
 
 async function deleteRandomNote(idx){
@@ -1903,7 +1932,12 @@ async function mobAddNote(){
   inp.value='';
   renderMobNotes();
   renderRandomNotes();
-  apiSave(sn).catch(e=>console.error(e));
+  try{
+    await apiSave(sn);
+  }catch(e){
+    console.error('mobAddNote save error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
 }
 
 // Call renderMobile whenever data is refreshed
