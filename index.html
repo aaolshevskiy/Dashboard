@@ -514,8 +514,8 @@ body{
           <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
         </div>
       </div>
-      <!-- Single note input — centered -->
-      <div style="padding:6px 0 8px;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <!-- Single note input — centered, close to notes -->
+      <div style="padding:2px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px">
         <div style="display:flex;align-items:center;gap:8px;width:40%;min-width:280px;margin-left:10%">
           <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
             onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
@@ -1022,9 +1022,12 @@ async function apiSave(obj){
     };
   }
   try{
-    // Use GET to avoid CORS preflight issues with GitHub Pages
-    const saveUrl = API_URL + '?action=save&object=' + encodeURIComponent(JSON.stringify(full));
-    const res = await fetch(saveUrl);
+    // POST with text/plain — no CORS preflight, works from GitHub Pages
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'save', object: full })
+    });
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     if(data.id) obj.id = data.id;
@@ -1034,7 +1037,11 @@ async function apiSave(obj){
 }
 async function apiDelete(id){
   try{
-    const res = await fetch(API_URL + '?action=delete&id=' + encodeURIComponent(id));
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'delete', id })
+    });
     return await res.json();
   }catch(e){ console.error('apiDelete error:',e); }
 }
