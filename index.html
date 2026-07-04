@@ -516,13 +516,13 @@ body{
       </div>
       <!-- Single note input — centered -->
       <div style="padding:6px 0 8px;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <div style="display:flex;align-items:center;gap:8px;width:50%;min-width:280px">
+        <div style="display:flex;align-items:center;gap:8px;width:40%;min-width:280px;margin-left:10%">
           <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
             onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
           <button class="random-add-btn" onclick="addSingleNote()">↵</button>
           <button class="random-dt-btn" id="singleDtBtn" onclick="toggleSingleDt()">+ нагадати</button>
         </div>
-        <div class="random-dt-row" id="singleDtRow" style="width:50%;min-width:280px">
+        <div class="random-dt-row" id="singleDtRow" style="width:40%;min-width:280px;margin-left:10%">
           <span class="random-dt-label">коли:</span>
           <input type="date" id="singleDtDate">
           <span class="random-dt-label">(9:00)</span>
@@ -1022,12 +1022,12 @@ async function apiSave(obj){
     };
   }
   try{
-    const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:full})});
-    const text=await res.text();
-    let data;
-    try{ data=JSON.parse(text); } catch(e){ console.error('apiSave bad response:',text.slice(0,200)); setSyncStatus('err','помилка відповіді'); return false; }
-    if(data.error){ console.error('apiSave server error:',data.error); setSyncStatus('err','помилка сервера'); return false; }
-    if(data.id) obj.id=data.id;
+    // Use no-cors to avoid CORS preflight block from GitHub Pages
+    await fetch(API_URL, {
+      method:'POST',
+      mode:'no-cors',
+      body: JSON.stringify({action:'save',object:full})
+    });
     setSyncStatus('ok','збережено ✓');
     return true;
   }catch(e){ console.error('apiSave network error:',e); setSyncStatus('err','помилка збереження'); return false; }
