@@ -514,15 +514,17 @@ body{
           <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
         </div>
       </div>
-      <!-- Single note input -->
-      <div style="padding:6px 0 4px 90px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <input class="random-add-input" id="randomAddInput0" placeholder="нова нотатка..."
-          onkeydown="if(event.key==='Enter')addRandomNote(1)" style="flex:1;min-width:200px;max-width:500px">
-        <button class="random-add-btn" onclick="addRandomNote(1)">↵</button>
-        <button class="random-dt-btn" id="randomDtBtn0" onclick="toggleRandomDt(0)">+ нагадати</button>
-        <div class="random-dt-row" id="randomDtRow0" style="width:100%;padding-left:0">
+      <!-- Single note input — centered -->
+      <div style="padding:6px 0 8px;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px;width:50%;min-width:280px">
+          <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
+            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
+          <button class="random-add-btn" onclick="addSingleNote()">↵</button>
+          <button class="random-dt-btn" id="singleDtBtn" onclick="toggleSingleDt()">+ нагадати</button>
+        </div>
+        <div class="random-dt-row" id="singleDtRow" style="width:50%;min-width:280px">
           <span class="random-dt-label">коли:</span>
-          <input type="date" id="randomDtDate0">
+          <input type="date" id="singleDtDate">
           <span class="random-dt-label">(9:00)</span>
         </div>
       </div>
@@ -1648,6 +1650,35 @@ async function deleteObjNoteById(objId,ni){
 function toggleRandomDt(col){
   const row=document.getElementById('randomDtRow'+col);
   const btn=document.getElementById('randomDtBtn'+col);
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+async function addSingleNote(){
+  const inp=document.getElementById('singleNoteInput');
+  const text=inp?inp.value.trim():'';
+  if(!text)return;
+  const dateEl=document.getElementById('singleDtDate');
+  const date=dateEl?dateEl.value:'';
+  const time=date?date+'T09:00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  if(dateEl) dateEl.value='';
+  const dtRow=document.getElementById('singleDtRow');
+  const dtBtn=document.getElementById('singleDtBtn');
+  if(dtRow) dtRow.classList.remove('vis');
+  if(dtBtn) dtBtn.textContent='+ нагадати';
+  renderRandomNotes();
+  if(isMobile()) renderMobNotes();
+  try{ await apiSave(sn); }
+  catch(e){ console.error('addSingleNote error:',e); setSyncStatus('err','помилка збереження'); }
+}
+
+function toggleSingleDt(){
+  const row=document.getElementById('singleDtRow');
+  const btn=document.getElementById('singleDtBtn');
   if(!row)return;
   if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
   else{row.classList.add('vis');btn.textContent='− прибрати';}
