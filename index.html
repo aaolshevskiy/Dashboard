@@ -473,32 +473,10 @@ body{
         <!-- LEFT: замітки від об'єктів -->
         <div class="random-notes-col">
           <div class="random-notes-list" id="randomNotesList0"></div>
-          <div class="random-add-row">
-            <input class="random-add-input" id="randomAddInput0" placeholder="нова нотатка..."
-              onkeydown="if(event.key==='Enter')addRandomNote(0)">
-            <button class="random-add-btn" onclick="addRandomNote(0)">↵</button>
-            <button class="random-dt-btn" id="randomDtBtn0" onclick="toggleRandomDt(0)">+ нагадати</button>
-          </div>
-          <div class="random-dt-row" id="randomDtRow0">
-            <span class="random-dt-label">коли:</span>
-            <input type="date" id="randomDtDate0">
-            <span class="random-dt-label">(9:00)</span>
-          </div>
         </div>
         <!-- CENTER: вільні нотатки -->
         <div class="random-notes-col">
           <div class="random-notes-list" id="randomNotesList1"></div>
-          <div class="random-add-row">
-            <input class="random-add-input" id="randomAddInput1" placeholder="нова нотатка..."
-              onkeydown="if(event.key==='Enter')addRandomNote(1)">
-            <button class="random-add-btn" onclick="addRandomNote(1)">↵</button>
-            <button class="random-dt-btn" id="randomDtBtn1" onclick="toggleRandomDt(1)">+ нагадати</button>
-          </div>
-          <div class="random-dt-row" id="randomDtRow1">
-            <span class="random-dt-label">коли:</span>
-            <input type="date" id="randomDtDate1">
-            <span class="random-dt-label">(9:00)</span>
-          </div>
         </div>
         <!-- RIGHT: події календаря -->
         <div class="random-notes-col" style="padding-left:16px">
@@ -534,6 +512,18 @@ body{
         <div class="mob-add">
           <input id="mobAddInput" placeholder="нова нотатка..." onkeydown="if(event.key==='Enter')mobAddNote()">
           <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
+        </div>
+      </div>
+      <!-- Single note input -->
+      <div style="padding:6px 0 4px 90px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input class="random-add-input" id="randomAddInput0" placeholder="нова нотатка..."
+          onkeydown="if(event.key==='Enter')addRandomNote(1)" style="flex:1;min-width:200px;max-width:500px">
+        <button class="random-add-btn" onclick="addRandomNote(1)">↵</button>
+        <button class="random-dt-btn" id="randomDtBtn0" onclick="toggleRandomDt(0)">+ нагадати</button>
+        <div class="random-dt-row" id="randomDtRow0" style="width:100%;padding-left:0">
+          <span class="random-dt-label">коли:</span>
+          <input type="date" id="randomDtDate0">
+          <span class="random-dt-label">(9:00)</span>
         </div>
       </div>
 
@@ -961,7 +951,7 @@ async function apiGet(){
     const stickies=[];
     const objs=[];
     (data||[]).forEach(o=>{
-      if(String(o.id).startsWith('sticky_')||o.status==='sticky'){
+      if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
         sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch(e){return[];}})();
@@ -1031,11 +1021,14 @@ async function apiSave(obj){
   }
   try{
     const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',object:full})});
-    const data=await res.json();
+    const text=await res.text();
+    let data;
+    try{ data=JSON.parse(text); } catch(e){ console.error('apiSave bad response:',text.slice(0,200)); setSyncStatus('err','помилка відповіді'); return false; }
+    if(data.error){ console.error('apiSave server error:',data.error); setSyncStatus('err','помилка сервера'); return false; }
     if(data.id) obj.id=data.id;
     setSyncStatus('ok','збережено ✓');
     return true;
-  }catch(e){setSyncStatus('err','помилка збереження');return false;}
+  }catch(e){ console.error('apiSave network error:',e); setSyncStatus('err','помилка збереження'); return false; }
 }
 async function apiDelete(id){
   try{await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});setSyncStatus('ok','збережено ✓');}
@@ -1165,33 +1158,7 @@ function buildItemWrap(o,i,globalNum){
   const expDiv=document.createElement('div');expDiv.className='exp-wrap';expDiv.id='exp-'+i;
   wrap.appendChild(expDiv);
 
-  // NOTE INPUT — pencil icon, toggleable
-  const pencilBtn=document.createElement('button');
-  pencilBtn.className='note-icon-btn';
-  pencilBtn.style.cssText='margin-left:28px;margin-top:2px;display:block;font-size:18px';
-  pencilBtn.title='Додати замітку';
-  pencilBtn.textContent='✎';
-  pencilBtn.onclick=e=>{e.stopPropagation();toggleNoteInput(i);};
-  wrap.appendChild(pencilBtn);
-
-  const noteInputWrap=document.createElement('div');
-  noteInputWrap.className='note-input-wrap';
-  noteInputWrap.id='ni-wrap-'+i;
-  noteInputWrap.style.display='none';
-  noteInputWrap.innerHTML=`
-    <div class="add-note-row" id="addinline-${i}">
-      <input class="note-input-field" type="text" id="qi-text-${i}" placeholder="нова замітка..."
-        onkeydown="if(event.key==='Enter')submitQuickNote(${i})"
-        onclick="event.stopPropagation()">
-      <button class="note-submit-btn" onclick="event.stopPropagation();submitQuickNote(${i})">↵</button>
-      <button class="dt-mini-btn" id="dt-btn-${i}" onclick="event.stopPropagation();toggleDT(${i})">+ нагадати</button>
-    </div>
-    <div class="note-datetime-row" id="dt-row-${i}">
-      <span class="note-dt-label">нагадати:</span>
-      <input type="date" id="qi-date-${i}">
-      <span class="note-dt-label">(9:00)</span>
-    </div>`;
-  wrap.appendChild(noteInputWrap);
+  // No pencil — notes created in random notes zone only
   return wrap;
 }
 
@@ -1692,7 +1659,7 @@ async function addRandomNote(col){
   const text=inp.value.trim();if(!text)return;
   const date=document.getElementById('randomDtDate'+col).value;
   const time=date?date+'T09:00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,col,addr:String(col),stage:'',status:'',pack:'',area:'',notes:time?[{text,time}]:[]};
+  const sn={id:'sticky_'+Date.now(),name:text,col,addr:String(col),stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
   stickyNotes.push(sn);
   inp.value='';
   document.getElementById('randomDtDate'+col).value='';
@@ -1932,7 +1899,7 @@ async function mobAddNote(){
   const inp=document.getElementById('mobAddInput');
   const text=inp?inp.value.trim():'';
   if(!text) return;
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'',pack:'',area:'',notes:[]};
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:[]};
   stickyNotes.push(sn);
   inp.value='';
   renderMobNotes();
