@@ -1852,15 +1852,23 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
 });
 
 loadActionLog();
-loadCalendar();
-// Show empty board immediately — don't wait for network
 render();
 renderRandomNotes();
+apiGet();
+loadCalendar();
 
-// Auto-reload when app comes back from background (PWA / tab switch)
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){
-    apiGet();
+  if(document.visibilityState==='visible'){ apiGet(); loadCalendar(); }
+});
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){ apiGet(); loadCalendar(); }
+});
+
+setInterval(()=>{
+  const activeInput=document.activeElement;
+  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
+  if(!isTypingNote) render();
+},30000);
 
 // ── MOBILE ──────────────────────────────────────────────
 function isMobile(){ return window.innerWidth <= 768; }
@@ -1950,25 +1958,6 @@ async function mobAddNote(){
   }
 }
 
-// Call renderMobile whenever data is refreshed
-const _origRender=render;
-render=function(){
-  _origRender();
-  if(isMobile()) renderMobNotes();
-};
-    loadCalendar();
-  }
-});
-// Reload when returning from background
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){
-    apiGet();
-    loadCalendar();
-  }
-});
-window.addEventListener('pageshow',function(e){
-  if(e.persisted){ apiGet(); loadCalendar(); }
-});
 
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
