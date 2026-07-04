@@ -1267,8 +1267,9 @@ async function saveNoteEdit(){
           closeNoteEditModal();
           render();
           renderRandomNotes();
-          apiSave(objects[ri]).catch(e=>console.error(e));
-          apiDelete(delId).catch(e=>console.error(e));
+          if(isMobile()) renderMobNotes();
+          try{ await apiSave(objects[ri]); } catch(e){ console.error('save obj note:',e); }
+          try{ await apiDelete(delId); } catch(e){ console.error('del sticky:',e); }
           return;
         }
       }
@@ -1279,7 +1280,8 @@ async function saveNoteEdit(){
       sn.linkedObjId='';
       renderRandomNotes();
       closeNoteEditModal();
-      apiSave(sn).catch(e=>console.error('save error',e));
+      if(isMobile()) renderMobNotes();
+      try{ await apiSave(sn); } catch(e){ console.error('save sticky:',e); setSyncStatus('err','помилка збереження'); }
       return;
     }
 
@@ -1293,7 +1295,8 @@ async function saveNoteEdit(){
     }
     closeNoteEditModal();
     renderRandomNotes();
-    apiSave(objects[ri]).catch(e=>console.error('save error',e));
+    if(isMobile()) renderMobNotes();
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save note:',e); setSyncStatus('err','помилка збереження'); }
   }catch(err){console.error('saveNoteEdit:',err);}
 }
 
@@ -1330,7 +1333,8 @@ async function deleteNoteQuick(slot,ni){
       if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
     }
     renderRandomNotes();
-    apiSave(objects[ri]).catch(e=>console.error('save error',e));
+    if(isMobile()) renderMobNotes();
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save after del note:',e); }
   }catch(err){console.error('deleteNoteQuick error:',err);}
 }
 
@@ -1711,7 +1715,8 @@ async function deleteRandomNote(idx){
   const id=sn.id;
   stickyNotes.splice(idx,1);
   renderRandomNotes();
-  apiDelete(id);
+  if(isMobile()) renderMobNotes();
+  try{ await apiDelete(id); } catch(e){ console.error('del random note:',e); }
 }
 
 // Edit random note — reuse noteEditModal
