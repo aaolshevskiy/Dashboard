@@ -1752,6 +1752,19 @@ loadCalendar();
 // Show empty board immediately — don't wait for network
 render();
 renderRandomNotes();
+
+// Auto-reload when app comes back from background (PWA / tab switch)
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){
+    apiGet();
+    loadCalendar();
+  }
+});
+// Safari PWA focus fallback
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){ apiGet(); loadCalendar(); }
+});
+
 setInterval(()=>{
   // Don't re-render if user is actively typing in a note input
   const activeInput=document.activeElement;
