@@ -1579,6 +1579,7 @@ function renderRandomNotes(){
         ni,
         text:n.text||'',
         objName:o.name||'',
+        objAddr:o.addr||'',
         overdue:isNoteActive(n),
         time:n.time||'',
       });
@@ -1626,7 +1627,14 @@ function renderRandomNotes(){
     if(item.type==='random'){
       row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeHtml}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
     } else {
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openObjNoteEdit('${item.objId}',${item.ni})">— ${item.text}</span><span class="rn-obj-name" onclick="toggleObjNoteVisible('${item.objId}',${item.ni})">(${item.objName})</span>${timeHtml}<button class="random-note-del" onclick="deleteObjNoteById('${item.objId}',${item.ni})">✕</button>`;
+      var oid=String(item.objId);
+      var mLink=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
+      var objTag=mLink
+        ?'<a class="rn-obj-name" href="'+mLink+'" target="_blank">('+item.objName+')</a>'
+        :'<span class="rn-obj-name">('+item.objName+')</span>';
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-oid="'+oid+'" data-ni="'+item.ni+'" style="cursor:pointer">— '+item.text+'</span>'+objTag+timeHtml+'<button class="random-note-del" data-oid="'+oid+'" data-ni="'+item.ni+'">✕</button>';
+      row.querySelector('[data-ni="'+item.ni+'"][data-oid="'+oid+'"]:not(button)').onclick=function(){openObjNoteEdit(oid,item.ni);};
+      row.querySelector('button[data-ni="'+item.ni+'"]').onclick=function(){deleteObjNoteById(oid,item.ni);};
     }
     list.appendChild(row);
   };
@@ -1960,7 +1968,7 @@ function renderMobNotes(){
   });
   objects.forEach(o=>{
     (o.notes||[]).forEach((n,ni)=>{
-      objItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,overdue:!!isNoteActive(n),time:n.time?fmtDT(n.time):''});
+      objItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,objAddr:o.addr||'',overdue:!!isNoteActive(n),time:n.time?fmtDT(n.time):''});
     });
   });
   const sortByOverdue=(a,b)=>Number(b.overdue)-Number(a.overdue);
@@ -1983,7 +1991,8 @@ function renderMobNotes(){
       var oid2=String(item.objId);
       row.setAttribute('data-oid',oid2);
       row.setAttribute('data-ni',item.ni);
-      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-action="editobj">— '+item.text+'</span><span class="rn-obj-name">('+item.objName+')</span>'+timeHtml+'<button class="random-note-del" data-action="delobj">✕</button>';
+      var mapsHref=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-action="editobj">— '+item.text+'</span>'+(mapsHref?'<a class="rn-obj-name" href="'+mapsHref+'" target="_blank">('+item.objName+')</a>':'<span class="rn-obj-name">('+item.objName+')</span>')+timeHtml+'<button class="random-note-del" data-action="delobj">✕</button>';
       row.querySelector('[data-action="editobj"]').onclick=function(){openObjNoteEdit(oid2,item.ni);};
       row.querySelector('[data-action="delobj"]').onclick=function(){deleteObjNoteById(oid2,item.ni);};
     }
