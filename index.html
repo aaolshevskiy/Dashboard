@@ -407,7 +407,7 @@ body{
 
 
 /* ── MOBILE VIEW ── */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   body { padding: 8px; min-width: unset; }
   .board { border-radius: 8px; }
   .board-inner { padding: 12px 12px 0; }
@@ -450,7 +450,7 @@ body{
   .mob-section-label { font-size: 14px; color: #bbb; text-transform: uppercase;
     letter-spacing: .08em; margin: 10px 0 4px; font-weight: 700; }
 }
-@media (min-width: 769px) {
+@media (min-width: 901px) {
   #mobileZone { display: none !important; }
 }
 
@@ -514,7 +514,7 @@ body{
         </div>
         <!-- Notes section label -->
         <div class="mob-section-label">Замітки</div>
-        <div class="mob-notes" id="mobNotesList"></div>
+        <div class="mob-notes" id="mobNotesList"><div class="mob-cal-empty">завантаження...</div></div>
         <div class="mob-add">
           <input id="mobAddInput" placeholder="нова нотатка..." onkeydown="if(event.key==='Enter')mobAddNote()">
           <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
@@ -1896,8 +1896,6 @@ document.getElementById('noteEditModal').addEventListener('click',function(e){
 });
 
 loadActionLog();
-render();
-renderRandomNotes();
 apiGet();
 loadCalendar();
 
@@ -1915,7 +1913,7 @@ setInterval(()=>{
 },30000);
 
 // ── MOBILE ──────────────────────────────────────────────
-function isMobile(){ return window.innerWidth <= 768; }
+function isMobile(){ return window.innerWidth <= 900; }
 
 function renderMobile(){
   if(!isMobile()) return;
@@ -2020,8 +2018,6 @@ setInterval(()=>{
 
 
 loadActionLog();
-render();
-renderRandomNotes();
 apiGet();
 loadCalendar();
 
