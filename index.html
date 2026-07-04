@@ -406,13 +406,13 @@ body{
   .board { border-radius: 8px; }
   .board-inner { padding: 12px 12px 0; }
 
-  /* Hide desktop zones */
-  .board-body,
+  /* Hide desktop-only zones */
   .objects-layout,
   #colLeft, #colRight,
   .topbar .add-btn,
-  [style*="Об'єкти в роботі"],
+  .random-notes-zone,
   .board-body > div[style*="font-size:26px"] { display: none !important; }
+  .board-body { display: block !important; }
 
   /* Show mobile zone */
   #mobileZone { display: block !important; }
@@ -522,7 +522,7 @@ body{
         </div>
       </div>
       <!-- MOBILE ZONE (hidden on desktop) -->
-      <div id="mobileZone" style="display:none">
+      <div id="mobileZone">
         <!-- Mini calendar -->
         <div class="mob-cal">
           <div class="mob-cal-day" id="mobCalDay"></div>
@@ -981,9 +981,9 @@ async function apiGet(){
     }
     console.error('[CRM] apiGet error:',e&&e.name, e&&e.message);
   }finally{
-    console.log('[CRM] render, objects:', objects.length);
     render();
     renderRandomNotes();
+    if(isMobile()) renderMobNotes();
   }
 }
 async function apiSave(obj){
@@ -1841,12 +1841,18 @@ function renderMobCalendar(){
   const MONTHS=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
   dayEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
 
-  // Re-use calWeekEvents data by fetching
-  loadCalendar().then(()=>{
-    // Copy rendered events to mobile zone
-    const src=document.getElementById('calWeekEvents');
-    if(src) evEl.innerHTML=src.innerHTML||'<div class="mob-cal-empty">Подій немає</div>';
-  }).catch(()=>{});
+  // Re-use already-rendered calWeekEvents
+  const src=document.getElementById('calWeekEvents');
+  if(src&&src.innerHTML&&!src.innerHTML.includes('завантаження')){
+    evEl.innerHTML=src.innerHTML;
+  } else {
+    evEl.innerHTML='<div class="mob-cal-empty">Подій немає</div>';
+    // Try to load calendar
+    loadCalendar().finally(()=>{
+      const src2=document.getElementById('calWeekEvents');
+      if(src2) evEl.innerHTML=src2.innerHTML||'<div class="mob-cal-empty">Подій немає</div>';
+    });
+  }
 }
 
 function renderMobNotes(){
@@ -1900,11 +1906,11 @@ async function mobAddNote(){
   apiSave(sn).catch(e=>console.error(e));
 }
 
-// Override apiGet to also refresh mobile
-const _origApiGet=apiGet;
-apiGet=async function(){
-  await _origApiGet();
-  renderMobile();
+// Call renderMobile whenever data is refreshed
+const _origRender=render;
+render=function(){
+  _origRender();
+  if(isMobile()) renderMobNotes();
 };
     loadCalendar();
   }
