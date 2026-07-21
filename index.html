@@ -1550,83 +1550,60 @@ function renderRandomNotes(){
   list0.innerHTML='';list1.innerHTML='';
 
   const now=new Date();
-  const isOverdueSn=sn=>{
-    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    return !!(note&&note.time&&now>=new Date(note.time));
-  };
 
-  // Build unified list: pure random notes + all object notes
-  // type: 'random' | 'objnote'
+  // Collect ALL items (random + obj notes)
   const allItems=[];
 
-  // 1. Pure random (stickyNotes)
   stickyNotes.forEach((sn,idx)=>{
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    const overdue=!!(note&&note.time&&now>=new Date(note.time));
+    const hasFuture=!!(note&&note.time&&now<new Date(note.time));
     allItems.push({
-      type:'random',
-      idx,
+      type:'random',idx,
       text:sn.name||'',
-      objName:null,
-      overdue:isOverdueSn(sn),
-      time:(sn.notes&&sn.notes.length&&sn.notes[0].time)?sn.notes[0].time:'',
+      objName:null,objAddr:null,objId:null,ni:null,
+      overdue,hasFuture,
+      timeRaw:note&&note.time?new Date(note.time):null,
+      time:note&&note.time?fmtDT(note.time):''
     });
   });
 
-  // 2. Object notes (from all objects)
   objects.forEach(o=>{
     (o.notes||[]).forEach((n,ni)=>{
+      const overdue=!!isNoteActive(n);
+      const hasFuture=!!(n.time&&now<new Date(n.time));
       allItems.push({
-        type:'objnote',
-        objId:o.id,
-        ni,
+        type:'objnote',idx:null,
         text:n.text||'',
-        objName:o.name||'',
-        objAddr:o.addr||'',
-        overdue:isNoteActive(n),
-        time:n.time||'',
+        objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
+        overdue,hasFuture,
+        timeRaw:n.time?new Date(n.time):null,
+        time:n.time?fmtDT(n.time):''
       });
     });
   });
 
-  // Sort: overdue first, then pure random (no obj), then obj notes
+  // Sort: overdue first, then by date asc (with date), then no-date last
   allItems.sort((a,b)=>{
-    // overdue first, then objnote, then random (no obj) last
-    if(b.overdue!==a.overdue) return b.overdue-a.overdue;
-    const rankA2=a.type==='objnote'?0:1;
-    const rankB2=b.type==='objnote'?0:1;
-    if(rankA2!==rankB2) return rankA2-rankB2;
-    const rankA = a.type==='random'?0:1;
-    const rankB = b.type==='random'?0:1;
-    return rankA-rankB;
+    if(a.overdue!==b.overdue) return b.overdue-a.overdue;
+    if(a.timeRaw&&b.timeRaw) return a.timeRaw-b.timeRaw;
+    if(a.timeRaw) return -1;
+    if(b.timeRaw) return 1;
+    return 0;
   });
 
-  // Distribute to columns by text length
-  // Short (fits in 1/3 ~35 chars) → col 1, long → col 0
-  const SHORT=35;
-  const measureLen=item=>{
-    let len=item.text.length;
-    if(item.objName) len+=item.objName.length+3; // (Назва)
-    if(item.time) len+=10;
-    return len;
-  };
-
-  // Separate: left=objnote, right=pure random
-  const leftItems=allItems.filter(x=>x.type==='objnote')
-    .sort((a,b)=>b.overdue-a.overdue);
-  const rightItems=allItems.filter(x=>x.type==='random')
-    .sort((a,b)=>b.overdue-a.overdue);
-
-  const renderItem=(item,list)=>{
+  // Distribute: odd→left, even→right (zigzag for balance)
+  allItems.forEach((item,i)=>{
+    const list=i%2===0?list0:list1;
     const active=item.overdue;
-    const hasFutureReminder=item.time&&!active;
-    const timeStr=item.time?fmtDT(item.time):'';
-    const timeCls=hasFutureReminder?' has-reminder':'';
-    const timeHtml=timeStr?`<span class="random-note-time${timeCls}">${timeStr}</span>`:'';
+    const timeCls=item.hasFuture?' has-reminder':'';
+    const timeHtml=item.time?'<span class="random-note-time'+timeCls+'">'+item.time+'</span>':'';
 
     const row=document.createElement('div');
     row.className='random-note-item';
 
     if(item.type==='random'){
-      row.innerHTML=`<span class="random-note-text${active?' overdue':''}" onclick="openRandomNoteEdit(${item.idx})">— ${item.text}</span>${timeHtml}<button class="random-note-del" onclick="deleteRandomNote(${item.idx})">✕</button>`;
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" onclick="openRandomNoteEdit('+item.idx+')">— '+item.text+'</span>'+timeHtml+'<button class="random-note-del" onclick="deleteRandomNote('+item.idx+')">✕</button>';
     } else {
       var oid=String(item.objId);
       var mLink=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
@@ -1638,11 +1615,9 @@ function renderRandomNotes(){
       row.querySelector('button[data-ni="'+item.ni+'"]').onclick=function(){deleteObjNoteById(oid,item.ni);};
     }
     list.appendChild(row);
-  };
-
-  leftItems.forEach(item=>renderItem(item,list0));
-  rightItems.forEach(item=>renderItem(item,list1));
+  });
 }
+
 
 function toggleObjNoteVisible(objId,ni){
   // Find the DOM wrap for this object and show/hide that specific note
