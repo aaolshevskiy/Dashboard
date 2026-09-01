@@ -88,7 +88,7 @@ body{
 }
 .obj-card{
   flex:0 0 auto;
-  width:calc(100%/7);
+  width:calc(100%/5);
   min-width:140px;
   padding:6px 10px 8px 0;
   border-right:0.5px solid rgba(0,0,0,0.06);
@@ -286,7 +286,7 @@ body{
 .cal-empty{font-size:14px;color:#ddd;font-style:italic;text-align:center}
 .cal-loading{font-size:16px;color:#bbb;font-style:italic}
 
-.random-notes-zone{
+.random-notes-zone{display:none!important;
   margin-bottom:20px;
   padding-bottom:14px;
   padding-left:90px;
@@ -522,61 +522,33 @@ body{
     </div>
 
     <div class="board-body">
-            <!-- TOP STRIP — 3 columns: obj notes | free notes | calendar -->
-      <div class="random-notes-zone" id="randomNotesZone">
-        <!-- LEFT: замітки від об'єктів -->
-        <div class="random-notes-col">
-          <div class="random-notes-list" id="randomNotesList0"></div>
+            <!-- CALENDAR STRIP -->
+      <div id="calStrip" style="padding:6px 30px 8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:10px">
+        <span id="calStripDate" style="font-size:18px;font-weight:700;color:#888"></span>
+        <div id="calStripEvents" style="display:flex;gap:12px;flex-wrap:wrap;flex:1">
+          <span style="font-size:16px;color:#ccc;font-style:italic">завантаження...</span>
         </div>
-        <!-- CENTER: вільні нотатки -->
-        <div class="random-notes-col">
-          <div class="random-notes-list" id="randomNotesList1"></div>
-        </div>
-        <!-- RIGHT: події календаря -->
-        <div class="random-notes-col" style="padding-left:0">
-          <div class="cal-tearoff">
-            <div class="cal-spirals">
-              <div class="cal-spiral"></div>
-              <div class="cal-spiral"></div>
-              <div class="cal-spiral"></div>
-            </div>
-            <div class="cal-header">
-              <div class="cal-month-name" id="calMonthName">—</div>
-              <div class="cal-day-num" id="calDayNum">—</div>
-              <div class="cal-weekday" id="calWeekdayName">—</div>
-            </div>
-            <div class="cal-body">
-              <div class="cal-week-events" id="calWeekEvents">
-                <div class="cal-loading-msg">завантаження...</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <a href="https://calendar.google.com/calendar/r/day" target="_blank" style="font-size:14px;color:#aaa;text-decoration:none">📅</a>
       </div>
-      <!-- MOBILE ZONE (hidden on desktop) -->
-      <div id="mobileZone">
-        <!-- Mini calendar -->
-        <div class="mob-cal">
-          <div class="mob-cal-day" id="mobCalDay"></div>
-          <div id="mobCalEvents"><div class="mob-cal-empty">Завантаження...</div></div>
+
+      <!-- OBJECTS LIST -->
+      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;">Об'єкти в роботі</div>
+      <div class="objects-layout" id="objectsLayout"></div>
+
+      <!-- NOTES ZONE (below objects) -->
+      <div style="margin-top:20px;border-top:0.5px solid rgba(0,0,0,0.08);padding-top:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px;padding-left:30px" id="notesZone">
+          <div id="notesZoneLeft"></div>
+          <div id="notesZoneRight"></div>
         </div>
-        <!-- Notes section label -->
-        <div class="mob-section-label">Замітки</div>
-        <div class="mob-notes" id="mobNotesList"><div class="mob-cal-empty">завантаження...</div></div>
-        <div class="mob-add">
-          <input id="mobAddInput" placeholder="нова нотатка..." onkeydown="if(event.key==='Enter')mobAddNote()">
-          <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
-        </div>
-      </div>
-      <!-- Single note input — centered, close to notes -->
-      <div style="padding:2px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <div style="display:flex;align-items:center;gap:8px;width:40%;min-width:280px;margin-left:10%">
+        <!-- Input for new note -->
+        <div style="padding:8px 30px 0;display:flex;align-items:center;gap:8px;margin-top:6px">
           <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
-            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
+            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1;max-width:480px">
           <button class="random-add-btn" onclick="addSingleNote()">↵</button>
           <button class="random-dt-btn" id="singleDtBtn" onclick="toggleSingleDt()">+ нагадати</button>
         </div>
-        <div class="random-dt-row" id="singleDtRow" style="width:40%;min-width:280px;margin-left:10%">
+        <div class="random-dt-row" id="singleDtRow" style="padding-left:30px;margin-top:2px">
           <span class="random-dt-label">коли:</span>
           <input type="date" id="singleDtDate">
           <select class="hour-select" id="singleDtHour">
@@ -587,12 +559,9 @@ body{
             <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
             <option value="21">21:00</option><option value="22">22:00</option>
           </select>
+          <span class="random-dt-label">(9:00)</span>
         </div>
       </div>
-
-      <!-- OBJECTS LIST -->
-      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;">Об'єкти в роботі</div>
-      <div class="objects-layout" id="objectsLayout"></div>
     </div>
 
     <!-- DRAWING -->
@@ -987,6 +956,41 @@ setInterval(()=>{
   loadCalendar();
 },60000);
 
+function renderCalStrip(events){
+  const dateEl=document.getElementById('calStripDate');
+  const evEl=document.getElementById('calStripEvents');
+  if(!dateEl||!evEl) return;
+  const now=new Date();
+  const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+  dateEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+  if(!events.length){
+    evEl.innerHTML='<span style="font-size:16px;color:#ccc;font-style:italic">Подій немає</span>';
+    return;
+  }
+  evEl.innerHTML='';
+  events.forEach(ev=>{
+    const start=new Date(ev.start);
+    const end=new Date(ev.end||ev.start);
+    const diffMs=start-now;
+    let color='#1a1a8a';
+    if(!ev.allDay){
+      if(end<now) color='#ccc';
+      else if(diffMs<=0||diffMs<=60*60*1000) color='#c0392b';
+    }
+    const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+    const span=document.createElement('span');
+    span.style.cssText='font-size:16px;color:'+color+';white-space:nowrap';
+    const link=document.createElement('a');
+    link.href=ev.link||'https://calendar.google.com/calendar/r/day';
+    link.target='_blank';
+    link.style.cssText='color:inherit;text-decoration:none';
+    link.textContent='— '+ev.title+' '+timeStr;
+    span.appendChild(link);
+    evEl.appendChild(span);
+  });
+}
+
 async function loadCalendar(){
   // Fill tear-off calendar header
   const now=new Date();
@@ -1004,6 +1008,7 @@ async function loadCalendar(){
     const data=await res.json();
     if(Array.isArray(data)) renderCalendar(data);
     else renderCalendar([]);
+    renderCalStrip(Array.isArray(data)?data:[]);
     if(isMobile()) renderMobCalendar();
   }catch(e){
     const container=document.getElementById('calWeekEvents');
@@ -1175,7 +1180,7 @@ function render(){
     return;
   }
   sortObjects();
-  const PER_ROW=7;
+  const PER_ROW=5;
   for(let r=0;r<objects.length;r+=PER_ROW){
     const rowObjs=objects.slice(r,r+PER_ROW);
     // Object cards row
@@ -1661,8 +1666,8 @@ function isRandomNoteActive(sn){
 }
 
 function renderRandomNotes(){
-  const list0=document.getElementById('randomNotesList0');
-  const list1=document.getElementById('randomNotesList1');
+  const list0=document.getElementById('notesZoneLeft');
+  const list1=document.getElementById('notesZoneRight');
   if(!list0||!list1)return;
   list0.innerHTML='';list1.innerHTML='';
 
