@@ -88,7 +88,7 @@ body{
 }
 .obj-card{
   flex:0 0 auto;
-  width:calc(100%/5);
+  width:calc(100%/7);
   min-width:140px;
   padding:6px 10px 8px 0;
   border-right:0.5px solid rgba(0,0,0,0.06);
@@ -286,7 +286,7 @@ body{
 .cal-empty{font-size:14px;color:#ddd;font-style:italic;text-align:center}
 .cal-loading{font-size:16px;color:#bbb;font-style:italic}
 
-.random-notes-zone{display:none!important;
+.random-notes-zone{
   margin-bottom:20px;
   padding-bottom:14px;
   padding-left:90px;
@@ -522,33 +522,61 @@ body{
     </div>
 
     <div class="board-body">
-            <!-- CALENDAR STRIP -->
-      <div id="calStrip" style="padding:6px 30px 8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:10px">
-        <span id="calStripDate" style="font-size:18px;font-weight:700;color:#888"></span>
-        <div id="calStripEvents" style="display:flex;gap:12px;flex-wrap:wrap;flex:1">
-          <span style="font-size:16px;color:#ccc;font-style:italic">завантаження...</span>
+            <!-- TOP STRIP — 3 columns: obj notes | free notes | calendar -->
+      <div class="random-notes-zone" id="randomNotesZone">
+        <!-- LEFT: замітки від об'єктів -->
+        <div class="random-notes-col">
+          <div class="random-notes-list" id="randomNotesList0"></div>
         </div>
-        <a href="https://calendar.google.com/calendar/r/day" target="_blank" style="font-size:14px;color:#aaa;text-decoration:none">📅</a>
+        <!-- CENTER: вільні нотатки -->
+        <div class="random-notes-col">
+          <div class="random-notes-list" id="randomNotesList1"></div>
+        </div>
+        <!-- RIGHT: події календаря -->
+        <div class="random-notes-col" style="padding-left:0">
+          <div class="cal-tearoff">
+            <div class="cal-spirals">
+              <div class="cal-spiral"></div>
+              <div class="cal-spiral"></div>
+              <div class="cal-spiral"></div>
+            </div>
+            <div class="cal-header">
+              <div class="cal-month-name" id="calMonthName">—</div>
+              <div class="cal-day-num" id="calDayNum">—</div>
+              <div class="cal-weekday" id="calWeekdayName">—</div>
+            </div>
+            <div class="cal-body">
+              <div class="cal-week-events" id="calWeekEvents">
+                <div class="cal-loading-msg">завантаження...</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- OBJECTS LIST -->
-      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;">Об'єкти в роботі</div>
-      <div class="objects-layout" id="objectsLayout"></div>
-
-      <!-- NOTES ZONE (below objects) -->
-      <div style="margin-top:20px;border-top:0.5px solid rgba(0,0,0,0.08);padding-top:14px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px;padding-left:30px" id="notesZone">
-          <div id="notesZoneLeft"></div>
-          <div id="notesZoneRight"></div>
+      <!-- MOBILE ZONE (hidden on desktop) -->
+      <div id="mobileZone">
+        <!-- Mini calendar -->
+        <div class="mob-cal">
+          <div class="mob-cal-day" id="mobCalDay"></div>
+          <div id="mobCalEvents"><div class="mob-cal-empty">Завантаження...</div></div>
         </div>
-        <!-- Input for new note -->
-        <div style="padding:8px 30px 0;display:flex;align-items:center;gap:8px;margin-top:6px">
+        <!-- Notes section label -->
+        <div class="mob-section-label">Замітки</div>
+        <div class="mob-notes" id="mobNotesList"><div class="mob-cal-empty">завантаження...</div></div>
+        <div class="mob-add">
+          <input id="mobAddInput" placeholder="нова нотатка..." onkeydown="if(event.key==='Enter')mobAddNote()">
+          <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
+        </div>
+      </div>
+      <!-- Single note input — centered, close to notes -->
+      <div style="padding:2px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px;width:40%;min-width:280px;margin-left:10%">
           <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
-            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1;max-width:480px">
+            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
           <button class="random-add-btn" onclick="addSingleNote()">↵</button>
           <button class="random-dt-btn" id="singleDtBtn" onclick="toggleSingleDt()">+ нагадати</button>
         </div>
-        <div class="random-dt-row" id="singleDtRow" style="padding-left:30px;margin-top:2px">
+        <div class="random-dt-row" id="singleDtRow" style="width:40%;min-width:280px;margin-left:10%">
           <span class="random-dt-label">коли:</span>
           <input type="date" id="singleDtDate">
           <select class="hour-select" id="singleDtHour">
@@ -559,9 +587,12 @@ body{
             <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
             <option value="21">21:00</option><option value="22">22:00</option>
           </select>
-          <span class="random-dt-label">(9:00)</span>
         </div>
       </div>
+
+      <!-- OBJECTS LIST -->
+      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;">Об'єкти в роботі</div>
+      <div class="objects-layout" id="objectsLayout"></div>
     </div>
 
     <!-- DRAWING -->
@@ -956,41 +987,6 @@ setInterval(()=>{
   loadCalendar();
 },60000);
 
-function renderCalStrip(events){
-  const dateEl=document.getElementById('calStripDate');
-  const evEl=document.getElementById('calStripEvents');
-  if(!dateEl||!evEl) return;
-  const now=new Date();
-  const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
-  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-  dateEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
-  if(!events.length){
-    evEl.innerHTML='<span style="font-size:16px;color:#ccc;font-style:italic">Подій немає</span>';
-    return;
-  }
-  evEl.innerHTML='';
-  events.forEach(ev=>{
-    const start=new Date(ev.start);
-    const end=new Date(ev.end||ev.start);
-    const diffMs=start-now;
-    let color='#1a1a8a';
-    if(!ev.allDay){
-      if(end<now) color='#ccc';
-      else if(diffMs<=0||diffMs<=60*60*1000) color='#c0392b';
-    }
-    const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-    const span=document.createElement('span');
-    span.style.cssText='font-size:16px;color:'+color+';white-space:nowrap';
-    const link=document.createElement('a');
-    link.href=ev.link||'https://calendar.google.com/calendar/r/day';
-    link.target='_blank';
-    link.style.cssText='color:inherit;text-decoration:none';
-    link.textContent='— '+ev.title+' '+timeStr;
-    span.appendChild(link);
-    evEl.appendChild(span);
-  });
-}
-
 async function loadCalendar(){
   // Fill tear-off calendar header
   const now=new Date();
@@ -1008,7 +1004,6 @@ async function loadCalendar(){
     const data=await res.json();
     if(Array.isArray(data)) renderCalendar(data);
     else renderCalendar([]);
-    renderCalStrip(Array.isArray(data)?data:[]);
     if(isMobile()) renderMobCalendar();
   }catch(e){
     const container=document.getElementById('calWeekEvents');
@@ -1180,7 +1175,7 @@ function render(){
     return;
   }
   sortObjects();
-  const PER_ROW=5;
+  const PER_ROW=7;
   for(let r=0;r<objects.length;r+=PER_ROW){
     const rowObjs=objects.slice(r,r+PER_ROW);
     // Object cards row
@@ -1192,7 +1187,23 @@ function render(){
       row.appendChild(card);
     });
     layout.appendChild(row);
-
+    // Expanded sticker (if any in this row)
+    rowObjs.forEach((o,j)=>{
+      const i=r+j;
+      if(expandedId===i){
+        const expDiv=document.createElement('div');
+        expDiv.className='exp-wrap';expDiv.id='exp-'+i;
+        expDiv.innerHTML=buildExpanded(o,i);
+        expDiv.classList.add('open');
+        layout.appendChild(expDiv);
+      }
+    });
+    // Notes row for this group
+    const notesRow=document.createElement('div');
+    notesRow.className='obj-notes-row';
+    notesRow.id='notes-row-'+r;
+    notesRow.style.display='none'; // hidden by default
+    layout.appendChild(notesRow);
   }
 }
 
@@ -1212,10 +1223,11 @@ function buildObjCard(o,i,num){
   const hasNotes=o.notes&&o.notes.length>0;
   const hasReminder=hasActiveReminder(o);
 
-  // Name — no click handler
+  // Name
   const name=document.createElement('span');
   name.className='obj-card-name'+(o.completed?' done':'')+(hasNotes?' has-notes':'');
   name.textContent=(o.inwork?'☆ ':'')+o.name;
+  name.onclick=()=>toggleExpand(i);
   card.appendChild(name);
 
   // Address
@@ -1224,6 +1236,7 @@ function buildObjCard(o,i,num){
     addr.className='obj-card-addr';
     addr.href=mapsUrl(o.addr);addr.target='_blank';
     addr.textContent=o.addr.split(',')[0];
+    addr.onclick=e=>e.stopPropagation();
     card.appendChild(addr);
   }
 
@@ -1246,34 +1259,877 @@ function buildObjCard(o,i,num){
     card.appendChild(dates);
   }
 
-  // Notes — always expanded below name (no sticker)
-  if(hasNotes){
-    const notesDiv=document.createElement('div');
-    notesDiv.style.cssText='margin-top:4px;display:flex;flex-direction:column;gap:1px';
-    const sorted=[...o.notes].sort((a,b)=>(isNoteActive(b)?1:0)-(isNoteActive(a)?1:0));
-    sorted.forEach((n,ni)=>{
-      const active=isNoteActive(n);
-      const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:baseline;gap:3px;flex-wrap:wrap';
-      const txt=document.createElement('span');
-      txt.style.cssText='font-size:15px;color:'+(active?'#c0392b':'#444')+';cursor:pointer;line-height:1.3';
-      txt.textContent='— '+n.text;
-      txt.onclick=()=>openNoteEditModal(i,ni);
-      row.appendChild(txt);
-      if(n.time){
-        const t=document.createElement('span');
-        t.style.cssText='font-size:12px;color:'+(active?'#c0392b':'#bbb');
-        t.textContent=fmtDT(n.time);
-        row.appendChild(t);
-      }
-      notesDiv.appendChild(row);
-    });
-    card.appendChild(notesDiv);
-  }
+  // Exp div
+  const expDiv=document.createElement('div');
+  expDiv.className='exp-wrap';expDiv.id='exp-'+i;
+  card.appendChild(expDiv);
 
   return card;
 }
 
+function buildItemWrap(o,i,globalNum){
+  const wrap=document.createElement('div');
+  wrap.className='list-item-wrap';wrap.id='wrap-'+i;
+  wrap.dataset.objid=o.id;
+  // ROW
+  const row=document.createElement('div');row.className='list-row';
+  // number — global sequential
+  const num=document.createElement('span');
+  num.style.cssText='font-size:18px;color:#ccc;flex-shrink:0;min-width:26px;text-align:right;margin-right:2px;font-weight:400';
+  num.textContent=(globalNum!=null?globalNum:i+1)+'.';
+  row.appendChild(num);
+  // star
+  const star=document.createElement('span');
+  if(o.inwork){star.className='list-star'+(o.completed?' crossed':'');star.textContent='☆';}
+  else{star.className='list-star-empty';}
+  row.appendChild(star);
+  // name
+  const name=document.createElement('span');
+  const hasNotes=(o.notes&&o.notes.length>0);
+  name.className='list-name'+(o.completed?' done':'')+(hasNotes?' has-notes':'');
+  name.textContent=o.name||'—';
+  name.onclick=()=>toggleExpand(i);
+  row.appendChild(name);
+  // address
+  if(o.addr){
+    const aw=document.createElement('span');aw.className='list-addr-wrap';
+    aw.innerHTML=` (<a href="${mapsUrl(o.addr)}" target="_blank" onclick="event.stopPropagation()">${o.addr}</a>)`;
+    row.appendChild(aw);
+  }
+  // area, then pack, then stage
+  if(o.area){const a=document.createElement('span');a.style.cssText='font-size:22px;color:#888;flex-shrink:0';a.textContent=' '+o.area+'м²';row.appendChild(a);}
+  if(o.pack){const p=document.createElement('span');p.className='list-pack';p.textContent=' '+o.pack+'.';row.appendChild(p);}
+  // M badge
+  if(o.masters){const m=document.createElement('span');m.className='m-badge';m.textContent='М';row.appendChild(m);}
+  // reminder dot
+  if(hasActiveReminder(o)){const dot=document.createElement('span');dot.className='reminder-dot';row.appendChild(dot);}
+
+  // INLINE ADD NOTE — right side of row
+  // No icon in row — pencil goes below notes
+
+  wrap.appendChild(row);
+
+  // STICKER — right after the row
+  const expDiv=document.createElement('div');expDiv.className='exp-wrap';expDiv.id='exp-'+i;
+  wrap.appendChild(expDiv);
+
+  // No pencil — notes created in random notes zone only
+  return wrap;
+}
+
+function buildNotesHTML(o,i){
+  const notes=o.notes||[];
+  if(!notes.length) return '';
+  // Sort: overdue first
+  const indexed=notes.map((n,ni)=>({n,ni}))
+    .sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
+  let html='';
+  indexed.forEach(({n,ni})=>{
+    const active=isNoteActive(n);
+    const cl=active?'overdue':'';
+    const timeStr=n.time?`<span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
+    // Notes are collapsed under object — click to expand/edit via random zone
+    html+=`<div class="obj-note-item obj-notes-hidden" id="note-item-${i}-${ni}">
+      <span class="obj-note-text ${cl}">— ${n.text}</span>
+      ${timeStr}
+      <button class="obj-note-del" onclick="event.stopPropagation();deleteNoteQuick(${i},${ni})">✕</button>
+    </div>`;
+  });
+  return html;
+}
+
+// ── NOTE EDIT MODAL ──
+let noteEditCtx=null;
+
+function openNoteEditModal(slot,ni){
+  try{
+    const wrap=document.getElementById('wrap-'+slot);
+    const oid=wrap?wrap.dataset.objid:null;
+    const ri=oid?objIdx(oid):slot;
+    if(ri<0||ri>=objects.length)return;
+    const n=objects[ri].notes[ni];
+    noteEditCtx={ri,slot,ni};
+    document.getElementById('ne-text').value=n.text||'';
+    document.getElementById('ne-date').value=n.time?n.time.slice(0,10):'';
+    const neH=document.getElementById('ne-hour');
+    if(neH&&n.time) neH.value=parseInt(n.time.slice(11,13))||9;
+    document.getElementById('ne-err').style.display='none';
+    document.getElementById('noteEditModal').classList.add('open');
+    setTimeout(()=>document.getElementById('ne-text').focus(),50);
+  }catch(err){console.error('openNoteEditModal:',err);}
+}
+
+function closeNoteEditModal(){
+  document.getElementById('noteEditModal').classList.remove('open');
+  noteEditCtx=null;
+  randomEditIdx=null;
+  const objRow=document.getElementById('ne-obj-row');
+  if(objRow) objRow.style.display='none';
+  delete document.getElementById('noteEditModal').dataset.mode;
+}
+
+async function saveNoteEdit(){
+  try{
+    const text=document.getElementById('ne-text').value.trim();
+    if(!text){document.getElementById('ne-err').style.display='block';return;}
+    const date=document.getElementById('ne-date').value;
+    const hourEl2=document.getElementById('ne-hour');
+    const neHour=hourEl2?String(hourEl2.value).padStart(2,'0'):'09';
+    const mode=document.getElementById('noteEditModal').dataset.mode;
+
+    if(mode==='random'){
+      const sn=stickyNotes[randomEditIdx];
+      const selObjId=document.getElementById('ne-obj-select')?document.getElementById('ne-obj-select').value:'';
+
+      // If user linked to an object — convert to object note
+      if(selObjId){
+        const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
+        if(ri>=0){
+          if(!objects[ri].notes) objects[ri].notes=[];
+          objects[ri].notes.push({text,time:date?date+'T'+neHour+':00':''});
+          // Remove from sticky notes
+          const delId=sn.id;
+          stickyNotes.splice(randomEditIdx,1);
+          try{ await apiSave(objects[ri]); } catch(e){ console.error('save obj note:',e); }
+          try{ await apiDelete(delId); } catch(e){ console.error('del sticky:',e); }
+          closeNoteEditModal();
+          render();
+          renderRandomNotes();
+          if(isMobile()) renderMobNotes();
+          return;
+        }
+      }
+
+      // No object — keep as random note
+      sn.name=text;
+      sn.notes=date?[{text,time:date+'T'+neHour+':00'}]:[];
+      sn.linkedObjId='';
+      renderRandomNotes();
+      closeNoteEditModal();
+      if(isMobile()) renderMobNotes();
+      try{ await apiSave(sn); } catch(e){ console.error('save sticky:',e); setSyncStatus('err','помилка збереження'); }
+      return;
+    }
+
+    // Edit object note
+    const {ri,slot,ni}=noteEditCtx;
+    objects[ri].notes[ni].text=text;
+    objects[ri].notes[ni].time=date?date+'T'+neHour+':00':'';
+    if(expandedId===slot){
+      const el=document.getElementById('exp-'+slot);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
+    }
+    closeNoteEditModal();
+    renderRandomNotes();
+    if(isMobile()) renderMobNotes();
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save note:',e); setSyncStatus('err','помилка збереження'); }
+  }catch(err){console.error('saveNoteEdit:',err);}
+}
+
+function toggleNoteInput(i){
+  const wrap=document.getElementById('ni-wrap-'+i);
+  if(!wrap)return;
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    const inp=document.getElementById('qi-text-'+i);
+    if(inp)setTimeout(()=>inp.focus(),50);
+  }
+}
+
+function toggleDT(i){
+  const row=document.getElementById('dt-row-'+i);
+  const btn=document.getElementById('dt-btn-'+i);
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+async function deleteNoteQuick(slot,ni){
+  try{
+    const wrap=document.getElementById('wrap-'+slot);
+    const oid=wrap?wrap.dataset.objid:null;
+    const ri=oid!==null?objIdx(oid):slot;
+    if(ri<0||ri>=objects.length)return;
+    const deletedNote = {...objects[ri].notes[ni]};
+    addHistory({type:'note',action:'delete',label:deletedNote.text,parentName:objects[ri].name,objId:objects[ri].id,data:deletedNote});
+    objects[ri].notes.splice(ni,1);
+    if(expandedId===slot){
+      const el=document.getElementById('exp-'+slot);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
+    }
+    renderRandomNotes();
+    if(isMobile()) renderMobNotes();
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save after del note:',e); }
+  }catch(err){console.error('deleteNoteQuick error:',err);}
+}
+
+async function submitQuickNote(i){
+  try{
+    const wrap=document.getElementById('wrap-'+i);
+    if(!wrap){console.error('wrap-'+i+' not found');return;}
+    const oid=wrap.dataset.objid;
+    const ri=oid?objIdx(oid):i;
+    if(ri<0||ri>=objects.length){console.error('object not found for slot '+i+' oid '+oid);return;}
+
+    const textEl=document.getElementById('qi-text-'+i);
+    const text=(textEl?textEl.value:'').trim();
+    if(!text)return;
+
+    const dateEl=document.getElementById('qi-date-'+i);
+    const date=dateEl?dateEl.value:'';
+    const time=date?date+'T09:00':'';
+
+    if(!Array.isArray(objects[ri].notes)) objects[ri].notes=[];
+    objects[ri].notes.push({text,time});
+
+    // Clear UI without full re-render
+    if(textEl) textEl.value='';
+    if(dateEl) dateEl.value='';
+    const dtRow=document.getElementById('dt-row-'+i);
+    const dtBtn=document.getElementById('dt-btn-'+i);
+    if(dtRow) dtRow.classList.remove('vis');
+    if(dtBtn) dtBtn.textContent='+ нагадати';
+    const niWrap=document.getElementById('ni-wrap-'+i);
+    if(niWrap) niWrap.style.display='none';
+
+    // Save FIRST, then update UI
+    try{ await apiSave(objects[ri]); } catch(e){ console.error('save error',e); }
+
+    // Update sticker if open
+    if(expandedId===i){
+      const el=document.getElementById('exp-'+i);
+      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],i);
+    }
+    renderRandomNotes();
+    if(isMobile()) renderMobNotes();
+
+  }catch(err){
+    console.error('submitQuickNote error:',err);
+  }
+}
+
+// ── REMINDER MODAL (click on existing note) ──
+function openReminderModal(slot,ni){
+  const wrap=document.getElementById('wrap-'+slot);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):slot;
+  reminderCtx={objIdx:ri,slot,ni};
+  if(ri<0||ri>=objects.length)return;
+  const n=objects[ri].notes[ni];
+  document.getElementById('reminderNoteText').textContent='«'+n.text+'»';
+  document.getElementById('r-date').value=n.time?n.time.slice(0,10):'';
+  document.getElementById('r-error').style.display='none';
+  document.getElementById('reminderModal').classList.add('open');
+}
+function closeReminderModal(){document.getElementById('reminderModal').classList.remove('open');reminderCtx=null;}
+async function saveReminder(){
+  const date=document.getElementById('r-date').value;
+  if(!date){document.getElementById('r-error').style.display='block';return;}
+  document.getElementById('r-error').style.display='none';
+  const ri=reminderCtx.objIdx;   // real array index
+  const slot=reminderCtx.slot;   // DOM slot
+  const ni=reminderCtx.ni;
+  if(ri<0||ri>=objects.length)return;
+  objects[ri].notes[ni].time=date+'T09:00';
+  const notesEl=document.getElementById('notes-'+slot);
+  if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
+  if(expandedId===slot){const el=document.getElementById('exp-'+slot);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],slot);}
+  closeReminderModal();
+  await apiSave(objects[ri]);
+}
+
+function expNoteClick(el){
+  var oid=el.dataset.oid;
+  var ni=parseInt(el.dataset.ni);
+  openObjNoteEdit(oid,ni);
+}
+function expNoteDelete(el){
+  var oid=el.dataset.oid;
+  var ni=parseInt(el.dataset.ni);
+  deleteObjNoteById(oid,ni);
+}
+
+// ── STICKER (expanded card) + notes side by side ──
+function buildSticker(o,i){ return buildExpanded(o,i); }
+
+function buildExpanded(o,i){
+  const statusOpts=STATUSES.map(s=>{
+    const sel=s===o.status?' selected':'';
+    return '<option value="'+s+'"'+sel+'>'+STATUS_LABELS[s]+'</option>';
+  }).join('');
+  const stageOpts=STAGES.map(s=>{
+    const sel=s===o.stage?' selected':'';
+    return '<option value="'+s+'"'+sel+'>'+s+'</option>';
+  }).join('');
+  const startStr=fmtDateShort(o.dateStart)||'';
+  const endStr=fmtDateShort(o.dateEnd)||'';
+  const linksHtml=o.linkFolder
+    ?'<a class="sticker-link" href="'+o.linkFolder+'" target="_blank">📁 Папка Фінал</a>'
+    :'';
+
+  const notes=o.notes||[];
+  let notesHtml='';
+  if(notes.length){
+    notes.forEach(function(n,ni){
+      var active=isNoteActive(n);
+      var cls=active?' overdue':'';
+      var itemCls=active?' overdue-item':'';
+      var timeStr=n.time?('<span class="exp-note-time">'+fmtDT(n.time)+'</span>'):'';
+      var oid=String(o.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      notesHtml+='<div class="exp-note-item'+itemCls+'" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="expNoteClick(this)">'
+        +'<span class="exp-note-text'+cls+'">— '+n.text+'</span>'
+        +timeStr
+        +'<button class="obj-note-del" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="event.stopPropagation();expNoteDelete(this)">✕</button>'
+        +'</div>';
+    });
+  } else {
+    notesHtml='<div style="font-size:16px;color:#bbb;font-style:italic">Немає заміток</div>';
+  }
+
+  let datesHtml='';
+  if(startStr||endStr){
+    datesHtml='<div class="sticker-row">'
+      +(startStr?'<span class="sticker-label">старт</span><span class="sticker-val" style="font-size:15px">'+startStr+'</span>':'')
+      +(endStr?'<span class="sticker-label" style="margin-left:6px">фініш</span><span class="sticker-val" style="font-size:15px">'+endStr+'</span>':'')
+      +'</div>';
+  }
+
+  return '<div class="exp-layout">'
+    +'<div class="sticker">'
+      +'<div class="sticker-title">'+(o.name||'—')+'</div>'
+      +'<div class="sticker-fields">'
+        +'<div class="sticker-row"><span class="sticker-label">статус</span>'
+          +'<select class="sticker-select" onchange="changeStatus('+i+',this.value)">'+statusOpts+'</select></div>'
+        +'<div class="sticker-row"><span class="sticker-label">етап</span>'
+          +'<select class="sticker-select" onchange="changeStage('+i+',this.value)">'+stageOpts+'</select></div>'
+        +(o.mastersName?'<div class="sticker-row"><span class="sticker-label">майстри</span><span class="sticker-val" style="font-size:15px">'+o.mastersName+'</span></div>':'')
+        +(o.area?'<div class="sticker-row"><span class="sticker-label">площа</span><span class="sticker-val">'+o.area+' м²</span></div>':'')
+        +datesHtml
+        +(linksHtml?'<div class="sticker-links">'+linksHtml+'</div>':'')
+      +'</div>'
+      +'<div class="sticker-divider"></div>'
+      +'<div class="sticker-actions">'
+        +'<button class="sticker-btn" onclick="openEditModal('+i+')">✏ ред.</button>'
+        +'<button class="sticker-btn red" onclick="deleteCard('+i+')">✕</button>'
+        +'<button class="sticker-btn col" onclick="closeExpand('+i+')">↑</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="exp-notes-panel">'
+      +'<div class="exp-notes-label">Замітки</div>'
+      +notesHtml
+    +'</div>'
+  +'</div>';
+}
+
+
+async function changeStatus(i,val){
+  const wrap=document.getElementById('wrap-'+i);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):i;
+  if(ri<0||ri>=objects.length)return;
+  objects[ri].status=val;await apiSave(objects[ri]);
+  const el=document.getElementById('exp-'+i);
+  if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],i);
+  renderRandomNotes();
+}
+async function changeStage(i,val){
+  const wrap=document.getElementById('wrap-'+i);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):i;
+  if(ri<0||ri>=objects.length)return;
+  objects[ri].stage=val;await apiSave(objects[ri]);
+  if(wrap){const s=wrap.querySelector('.inline-select');if(s)s.value=val;}
+}
+
+function toggleExpand(i){
+  if(expandedId===i){closeExpand(i);return;}
+  if(expandedId!==null){const prev=document.getElementById('exp-'+expandedId);if(prev){prev.classList.remove('open');prev.innerHTML='';}}
+  expandedId=i;
+  const wrap=document.getElementById('wrap-'+i);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):i;
+  const el=document.getElementById('exp-'+i);
+  if(el&&ri>=0&&ri<objects.length){el.innerHTML=buildSticker(objects[ri],i);el.classList.add('open');}
+}
+function closeExpand(i){const el=document.getElementById('exp-'+i);if(el){el.classList.remove('open');el.innerHTML='';}if(expandedId===i)expandedId=null;}
+
+// ── RANDOM NOTES (top strip) ──
+function isRandomNoteActive(sn){
+  if(!sn.notes||!sn.notes.length)return false;
+  return sn.notes.some(n=>n.time&&new Date()>=new Date(n.time));
+}
+
+function renderRandomNotes(){
+  const list0=document.getElementById('randomNotesList0');
+  const list1=document.getElementById('randomNotesList1');
+  if(!list0||!list1)return;
+  list0.innerHTML='';list1.innerHTML='';
+
+  const now=new Date();
+
+  // Collect ALL items (random + obj notes)
+  const allItems=[];
+
+  stickyNotes.forEach((sn,idx)=>{
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    const overdue=!!(note&&note.time&&now>=new Date(note.time));
+    const hasFuture=!!(note&&note.time&&now<new Date(note.time));
+    allItems.push({
+      type:'random',idx,
+      text:sn.name||'',
+      objName:null,objAddr:null,objId:null,ni:null,
+      overdue,hasFuture,
+      timeRaw:note&&note.time?new Date(note.time):null,
+      time:note&&note.time?fmtDT(note.time):''
+    });
+  });
+
+  objects.forEach(o=>{
+    (o.notes||[]).forEach((n,ni)=>{
+      const overdue=!!isNoteActive(n);
+      const hasFuture=!!(n.time&&now<new Date(n.time));
+      allItems.push({
+        type:'objnote',idx:null,
+        text:n.text||'',
+        objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
+        overdue,hasFuture,
+        timeRaw:n.time?new Date(n.time):null,
+        time:n.time?fmtDT(n.time):''
+      });
+    });
+  });
+
+  // Sort: overdue first, then by date asc (with date), then no-date last
+  allItems.sort((a,b)=>{
+    if(a.overdue!==b.overdue) return b.overdue-a.overdue;
+    if(a.timeRaw&&b.timeRaw) return a.timeRaw-b.timeRaw;
+    if(a.timeRaw) return -1;
+    if(b.timeRaw) return 1;
+    return 0;
+  });
+
+  // Left col = first half, right col = second half
+  const half=Math.ceil(allItems.length/2);
+  allItems.forEach((item,i)=>{
+    const list=i<half?list0:list1;
+    const active=item.overdue;
+    const timeCls=item.hasFuture?' has-reminder':'';
+    const timeHtml=item.time?'<span class="random-note-time'+timeCls+'">'+item.time+'</span>':'';
+
+    const row=document.createElement('div');
+    row.className='random-note-item';
+
+    if(item.type==='random'){
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" onclick="openRandomNoteEdit('+item.idx+')">— '+item.text+'</span>'+timeHtml+'<button class="random-note-del" onclick="deleteRandomNote('+item.idx+')">✕</button>';
+    } else {
+      var oid=String(item.objId);
+      var mLink=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
+      var objTag=mLink
+        ?'<a class="rn-obj-name" href="'+mLink+'" target="_blank">('+item.objName+')</a>'
+        :'<span class="rn-obj-name">('+item.objName+')</span>';
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-oid="'+oid+'" data-ni="'+item.ni+'" style="cursor:pointer">— '+item.text+'</span>'+objTag+timeHtml+'<button class="random-note-del" data-oid="'+oid+'" data-ni="'+item.ni+'">✕</button>';
+      row.querySelector('[data-ni="'+item.ni+'"][data-oid="'+oid+'"]:not(button)').onclick=function(){openObjNoteEdit(oid,item.ni);};
+      row.querySelector('button[data-ni="'+item.ni+'"]').onclick=function(){deleteObjNoteById(oid,item.ni);};
+    }
+    list.appendChild(row);
+  });
+}
+
+
+function toggleObjNoteVisible(objId,ni){
+  // Find the DOM wrap for this object and show/hide that specific note
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  if(!wrap) return;
+  const noteItem=wrap.querySelector('#note-item-'+wrap.id.replace('wrap-','')+'\-'+ni);
+  if(noteItem){
+    const hidden=noteItem.classList.contains('obj-notes-hidden');
+    // toggle all notes for this object first hide all, then show this one
+    if(hidden){
+      noteItem.classList.remove('obj-notes-hidden');
+    } else {
+      noteItem.classList.add('obj-notes-hidden');
+    }
+  } else {
+    // fallback — show entire notes block
+    const slot=parseInt(wrap.id.replace('wrap-',''));
+    const notesEl=document.getElementById('notes-'+slot);
+    if(notesEl) notesEl.style.display=notesEl.style.display==='none'?'':'none';
+  }
+}
+
+function openObjNoteEdit(objId,ni){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  // Find DOM slot
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  const slot=wrap?parseInt(wrap.id.replace('wrap-','')):-1;
+  if(slot<0){
+    // fallback: open note edit modal directly
+    noteEditCtx={ri,slot:ri,ni};
+    document.getElementById('ne-text').value=objects[ri].notes[ni].text||'';
+    document.getElementById('ne-date').value=objects[ri].notes[ni].time?objects[ri].notes[ni].time.slice(0,10):'';
+    document.getElementById('ne-err').style.display='none';
+    document.getElementById('noteEditModal').dataset.mode='obj';
+    document.getElementById('noteEditModal').classList.add('open');
+    return;
+  }
+  openNoteEditModal(slot,ni);
+}
+
+async function deleteObjNoteById(objId,ni){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  addHistory({type:'note',action:'delete',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
+  objects[ri].notes.splice(ni,1);
+  // update DOM notes block if visible
+  const wrap=[...document.querySelectorAll('[data-objid]')]
+    .find(w=>String(w.dataset.objid)===String(objId));
+  renderRandomNotes();
+  apiSave(objects[ri]).catch(e=>console.error(e));
+}
+
+function toggleRandomDt(col){
+  const row=document.getElementById('randomDtRow'+col);
+  const btn=document.getElementById('randomDtBtn'+col);
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+async function addSingleNote(){
+  const inp=document.getElementById('singleNoteInput');
+  const text=inp?inp.value.trim():'';
+  if(!text)return;
+  const dateEl=document.getElementById('singleDtDate');
+  const date=dateEl?dateEl.value:'';
+  const hourEl=document.getElementById('singleDtHour');
+  const hour=hourEl?hourEl.value:'9';
+  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  if(dateEl) dateEl.value='';
+  const dtRow=document.getElementById('singleDtRow');
+  const dtBtn=document.getElementById('singleDtBtn');
+  if(dtRow) dtRow.classList.remove('vis');
+  if(dtBtn) dtBtn.textContent='+ нагадати';
+  renderRandomNotes();
+  if(isMobile()) renderMobNotes();
+  try{
+    const result = await apiSave(sn);
+    if(!result){ setSyncStatus('err','не збережено'); }
+  } catch(e){
+    console.error('addSingleNote error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
+}
+
+function toggleSingleDt(){
+  const row=document.getElementById('singleDtRow');
+  const btn=document.getElementById('singleDtBtn');
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+async function addRandomNote(col){
+  col=col||0;
+  const inp=document.getElementById('randomAddInput'+col);
+  const text=inp.value.trim();if(!text)return;
+  const date=document.getElementById('randomDtDate'+col).value;
+  const time=date?date+'T09:00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,col,addr:String(col),stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  document.getElementById('randomDtDate'+col).value='';
+  const dtRow=document.getElementById('randomDtRow'+col);
+  if(dtRow)dtRow.classList.remove('vis');
+  document.getElementById('randomDtBtn'+col).textContent='+ нагадати';
+  renderRandomNotes();
+  if(isMobile()) renderMobNotes();
+  try{
+    await apiSave(sn);
+  }catch(e){
+    console.error('addRandomNote save error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
+}
+
+async function deleteRandomNote(idx){
+  const sn=stickyNotes[idx];
+  addHistory({type:'randomNote',action:'delete',label:sn.name,data:{...sn,notes:sn.notes?[...sn.notes]:[]}});
+  const id=sn.id;
+  stickyNotes.splice(idx,1);
+  renderRandomNotes();
+  if(isMobile()) renderMobNotes();
+  try{ await apiDelete(id); } catch(e){ console.error('del random note:',e); }
+}
+
+// Edit random note — reuse noteEditModal
+let randomEditIdx=null;
+function openRandomNoteEdit(idx){
+  randomEditIdx=idx;
+  const sn=stickyNotes[idx];
+  const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+  document.getElementById('ne-text').value=sn.name||'';
+  document.getElementById('ne-date').value=note&&note.time?note.time.slice(0,10):'';
+  const neHr=document.getElementById('ne-hour');
+  if(neHr&&note&&note.time) neHr.value=parseInt(note.time.slice(11,13))||9;
+  document.getElementById('ne-err').style.display='none';
+  document.getElementById('noteEditModal').dataset.mode='random';
+
+  // Show object selector and populate with current objects
+  const objRow=document.getElementById('ne-obj-row');
+  const objSel=document.getElementById('ne-obj-select');
+  if(objRow&&objSel){
+    objRow.style.display='flex';
+    objSel.innerHTML='<option value="">\u2014 без об\u2019єкту \u2014</option>';
+    const sorted=[...objects].sort((a,b)=>{
+      if(!!a.completed!==!!b.completed) return a.completed?1:-1;
+      if(!!a.inwork!==!!b.inwork) return a.inwork?-1:1;
+      return (a.name||'').localeCompare(b.name||'','uk');
+    });
+    sorted.forEach(o=>{
+      const opt=document.createElement('option');
+      opt.value=o.id;
+      const star=o.inwork?'☆ ':'';
+      const done=o.completed?'✓ ':'';
+      opt.textContent=done+star+(o.name||'')+(o.addr?' ('+o.addr.split(',')[0]+')':'');
+      if(o.completed) opt.style.color='#bbb';
+      objSel.appendChild(opt);
+    });
+    // Pre-select if already linked (sn.linkedObjId)
+    objSel.value=sn.linkedObjId||'';
+  }
+  document.getElementById('noteEditModal').classList.add('open');
+  setTimeout(()=>document.getElementById('ne-text').focus(),50);
+}
+
+// ── OBJECT CRUD ──
+function openAddModal(){
+  editIdx=null;
+  document.getElementById('modalTitle').textContent='Новий об\'єкт';
+  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); 
+  document.getElementById('f-stage').value='Підготовка';
+  document.getElementById('f-status').value='active';
+  document.getElementById('f-pack').value='Comf';
+  document.getElementById('f-inwork').checked=false;
+  document.getElementById('f-completed').checked=false;
+  document.getElementById('f-masters').checked=false;
+  document.getElementById('addModal').classList.add('open');
+}
+
+function openEditModal(i){
+  const wrap=document.getElementById('wrap-'+i);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):i;
+  editIdx=ri;const o=objects[ri];
+  if(!o)return;
+  document.getElementById('modalTitle').textContent='Редагувати';
+  document.getElementById('f-name').value=o.name||'';
+  document.getElementById('f-addr').value=o.addr||'';
+  document.getElementById('f-stage').value=o.stage||'Підготовка';
+  document.getElementById('f-status').value=o.status||'active';
+  document.getElementById('f-pack').value=o.pack||'Comf';
+  document.getElementById('f-area').value=o.area||'';
+  document.getElementById('f-link-folder').value=o.linkFolder||'';
+  document.getElementById('f-start').value=o.dateStart||'';
+  document.getElementById('f-end').value=o.dateEnd||'';
+  document.getElementById('f-inwork').checked=!!o.inwork;
+  document.getElementById('f-completed').checked=!!o.completed;
+  document.getElementById('f-masters').checked=!!o.masters;
+  document.getElementById('f-masters-name').value=o.mastersName||'';
+  document.getElementById('addModal').classList.add('open');
+}
+function closeAddModal(){document.getElementById('addModal').classList.remove('open')}
+
+async function saveCard(){
+  const btn=document.getElementById('btnSaveObj');
+  try{
+  btn.disabled=true;btn.textContent='Збереження...';
+  const obj={
+    name:document.getElementById('f-name').value.trim()||'Без назви',
+    addr:document.getElementById('f-addr').value.trim(),
+    stage:document.getElementById('f-stage').value,
+    status:document.getElementById('f-status').value,
+    pack:document.getElementById('f-pack').value,
+    area:document.getElementById('f-area').value,
+    inwork:document.getElementById('f-inwork').checked,
+    completed:document.getElementById('f-completed').checked,
+    masters:document.getElementById('f-masters').checked,
+    mastersName:document.getElementById('f-masters-name').value.trim(),
+    linkProject:editIdx!==null?(objects[editIdx].linkProject||''):'',
+    linkFolder:document.getElementById('f-link-folder').value.trim(),
+    dateStart:document.getElementById('f-start').value,
+    dateEnd:document.getElementById('f-end').value,
+    notes:editIdx!==null?(objects[editIdx].notes||[]):[]
+  };
+  if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
+  else{await apiSave(obj);objects.push(obj);}
+  btn.disabled=false;btn.textContent='Зберегти';
+  closeAddModal();expandedId=null;render();
+  }catch(err){
+    console.error('saveCard error:',err);
+    btn.disabled=false;btn.textContent='Зберегти';
+    alert('Помилка збереження: '+err.message);
+  }
+}
+
+async function deleteCard(i){
+  const wrap=document.getElementById('wrap-'+i);
+  const oid=wrap?wrap.dataset.objid:null;
+  const ri=oid!==null?objIdx(oid):i;
+  if(ri<0||ri>=objects.length)return;
+  if(!confirm('Видалити "'+objects[ri].name+'"?'))return;
+  addHistory({type:'obj',action:'delete',label:objects[ri].name,data:{...objects[ri],notes:[...(objects[ri].notes||[])]}});
+  const id=objects[ri].id;expandedId=null;objects.splice(ri,1);render();
+  await apiDelete(id);
+}
+
+// addModal: ONLY close via "Скасувати" button — never on outside click (prevents accidental close while editing)
+document.getElementById('reminderModal').addEventListener('click',function(e){
+  if(e.target===this) closeReminderModal();
+});
+document.getElementById('noteEditModal').addEventListener('click',function(e){
+  if(e.target===this) closeNoteEditModal();
+});
+
+loadActionLog();
+apiGet();
+loadCalendar();
+
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){ apiGet(); loadCalendar(); }
+});
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){ apiGet(); loadCalendar(); }
+});
+
+setInterval(()=>{
+  const activeInput=document.activeElement;
+  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
+  if(!isTypingNote) render();
+},30000);
+
+// ── MOBILE ──────────────────────────────────────────────
+function isMobile(){ return window.innerWidth <= 900; }
+
+function renderMobile(){
+  if(!isMobile()) return;
+  renderMobCalendar();
+  renderMobNotes();
+}
+
+function renderMobCalendar(){
+  const dayEl=document.getElementById('mobCalDay');
+  const evEl=document.getElementById('mobCalEvents');
+  if(!dayEl||!evEl) return;
+  const now=new Date();
+  const DAYS=['Неділя','Понеділок','Вівторок','Середа','Четвер','Пятниця','Субота'];
+  const MONTHS=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  dayEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+
+  // Re-use already-rendered calWeekEvents
+  const src=document.getElementById('calWeekEvents');
+  if(src&&src.innerHTML&&!src.innerHTML.includes('завантаження')){
+    evEl.innerHTML=src.innerHTML;
+  } else {
+    evEl.innerHTML='<div class="mob-cal-empty">Завантаження...</div>';
+    loadCalendar().then(()=>{
+      const src2=document.getElementById('calWeekEvents');
+      if(src2) evEl.innerHTML=src2.innerHTML||'<div class="mob-cal-empty">Подій немає</div>';
+    }).catch(()=>{
+      evEl.innerHTML='<div class="mob-cal-empty">Недоступно</div>';
+    });
+  }
+}
+
+function renderMobNotes(){
+  const list=document.getElementById('mobNotesList');
+  if(!list) return;
+  list.innerHTML='';
+  const now=new Date();
+
+  // obj notes first, then random — within each group overdue first
+  const objItems=[], randomItems=[];
+  stickyNotes.forEach((sn,idx)=>{
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    const overdue=!!(note&&note.time&&now>=new Date(note.time));
+    randomItems.push({type:'random',idx,text:sn.name||'',overdue,time:note&&note.time?fmtDT(note.time):''});
+  });
+  objects.forEach(o=>{
+    (o.notes||[]).forEach((n,ni)=>{
+      objItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,objAddr:o.addr||'',overdue:!!isNoteActive(n),time:n.time?fmtDT(n.time):''});
+    });
+  });
+  const sortByOverdue=(a,b)=>Number(b.overdue)-Number(a.overdue);
+  objItems.sort(sortByOverdue);
+  randomItems.sort(sortByOverdue);
+  // Overdue from both groups go to top, then obj, then random
+  const overdueAll=[...objItems,...randomItems].filter(x=>x.overdue);
+  const notOverdueObj=objItems.filter(x=>!x.overdue);
+  const notOverdueRandom=randomItems.filter(x=>!x.overdue);
+  const allItems=[...overdueAll,...notOverdueObj,...notOverdueRandom];
+
+  allItems.forEach(item=>{
+    const row=document.createElement('div');
+    row.className='random-note-item';
+    const active=item.overdue;
+    const timeHtml=item.time?('<span class="random-note-time'+(item.time&&!active?' has-reminder':'')+'">'+item.time+'</span>'):'';
+    if(item.type==='random'){
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" onclick="openRandomNoteEdit('+item.idx+')">— '+item.text+'</span>'+timeHtml+'<button class="random-note-del" onclick="deleteRandomNote('+item.idx+')">✕</button>';
+    } else {
+      var oid2=String(item.objId);
+      row.setAttribute('data-oid',oid2);
+      row.setAttribute('data-ni',item.ni);
+      var mapsHref=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
+      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-action="editobj">— '+item.text+'</span>'+(mapsHref?'<a class="rn-obj-name" href="'+mapsHref+'" target="_blank">('+item.objName+')</a>':'<span class="rn-obj-name">('+item.objName+')</span>')+timeHtml+'<button class="random-note-del" data-action="delobj">✕</button>';
+      row.querySelector('[data-action="editobj"]').onclick=function(){openObjNoteEdit(oid2,item.ni);};
+      row.querySelector('[data-action="delobj"]').onclick=function(){deleteObjNoteById(oid2,item.ni);};
+    }
+    list.appendChild(row);
+  });
+}
+
+async function mobAddNote(){
+  const inp=document.getElementById('mobAddInput');
+  const text=inp?inp.value.trim():'';
+  if(!text) return;
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  renderMobNotes();
+  renderRandomNotes();
+  try{
+    await apiSave(sn);
+  }catch(e){
+    console.error('mobAddNote save error:',e);
+    setSyncStatus('err','помилка збереження');
+  }
+}
+
+
+setInterval(()=>{
+  // Don't re-render if user is actively typing in a note input
+  const activeInput=document.activeElement;
+  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
+  if(!isTypingNote) render();
+},30000);
+
+
+loadActionLog();
+apiGet();
+loadCalendar();
+
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){ apiGet(); loadCalendar(); }
+});
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){ apiGet(); loadCalendar(); }
+});
 </script>
 </body>
 </html>
