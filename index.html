@@ -649,14 +649,16 @@ function buildCard(o,i){
   // Notes (always expanded)
   if(hasNotes){
     const nl=document.createElement('div');nl.className='obj-notes-list';
-    const sorted=[...o.notes].sort((a,b)=>isNoteActive(b)-isNoteActive(a));
-    sorted.forEach((n,ni)=>{
+    // Map original indices before sort
+    const withIdx=o.notes.map((n,origNi)=>({n,origNi}));
+    withIdx.sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
+    withIdx.forEach(({n,origNi})=>{
       const active=isNoteActive(n);
       const row=document.createElement('div');row.className='obj-note-row';
       const txt=document.createElement('span');
       txt.className='obj-note-text'+(active?' overdue':'');
       txt.textContent='\u2013 '+n.text;
-      txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni});
+      txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni:origNi});
       row.appendChild(txt);
       if(n.time){
         const hasFuture=!active&&!!n.time;
@@ -666,7 +668,7 @@ function buildCard(o,i){
         row.appendChild(t);
       }
       const del=document.createElement('button');del.className='obj-note-del';del.textContent='✕';
-      del.onclick=()=>deleteObjNote(o.id,ni);
+      del.onclick=()=>deleteObjNote(o.id,origNi);
       row.appendChild(del);
       nl.appendChild(row);
     });
