@@ -285,17 +285,22 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 @media(max-width:768px){
   body{padding:6px;min-width:unset}
   .board-inner{padding:10px 10px 0}
-  /* Objects in single column on mobile */
-  .objects-grid{grid-template-columns:1fr!important}
+  /* Show objects in single column */
+  .objects-grid{display:grid!important;grid-template-columns:1fr!important}
+  .section-label{display:block!important}
+  .overdue-zone{display:block}
   .obj-card{margin:4px 0}
   /* Notes in single column */
   .notes-cols{grid-template-columns:1fr}
-  /* Slightly smaller fonts on mobile */
+  /* Compact fonts on mobile */
   .obj-card-name{font-size:15px!important}
   .obj-note-text{font-size:14px!important}
   .obj-card-addr{font-size:12px!important}
   .obj-card-dates{font-size:12px!important}
   .obj-card-meta{font-size:12px!important}
+  /* Smaller topbar */
+  .board-title{font-size:20px!important}
+  .btn{font-size:12px!important;padding:0 12px!important;height:30px!important;line-height:30px!important}
 }
 @media(min-width:769px) and (max-width:1024px){
   body{padding:8px;}
@@ -393,7 +398,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Пакет</label>
       <select id="f-pack">
         <option value="">—</option>
-        <option>Страт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
+        <option>Старт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
       </select>
     </div>
     <div class="fsec">Терміни</div>
