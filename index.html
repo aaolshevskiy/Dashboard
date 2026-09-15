@@ -3,2133 +3,990 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Мій дашборд</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Дашборд">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#b8b8b8">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f8f7f2'/><text y='.85em' font-size='75' x='10'>🗒️</text></svg>">
+<title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
-<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%D0%9C%D1%96%D0%B9%20%D0%B4%D0%B0%D1%88%D0%B1%D0%BE%D1%80%D0%B4%22%2C%22short_name%22%3A%22%D0%94%D0%B0%D1%88%D0%B1%D0%BE%D1%80%D0%B4%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23b8b8b8%22%2C%22theme_color%22%3A%22%23f8f7f2%22%2C%22start_url%22%3A%22.%2Fcrm.html%22%7D">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+/* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;min-height:100vh}
-body{
-  font-family:'Caveat',cursive;
-  background:#b8b8b8;
-  min-height:100vh;
-  padding:16px;
-  display:flex;align-items:flex-start;justify-content:center;
-  min-width:1200px;
-  overflow-x:auto;
-}
+body{font-family:'Caveat',cursive;background:#b0b0a8;min-height:100vh;
+  display:flex;align-items:flex-start;justify-content:center;padding:16px}
 
 /* ── BOARD ── */
-.board-outer{
-  width:100%;max-width:1440px;
-  background:#a8a8a8;
-  border-radius:6px;padding:12px;
-  box-shadow:0 4px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.15);
-  position:relative;
-}
-.board-outer::before{content:'';position:absolute;inset:0;border-radius:6px;border:2px solid rgba(255,255,255,.18);pointer-events:none;z-index:10}
-.corner{position:absolute;width:26px;height:26px;z-index:20}
-.corner.tl{top:6px;left:6px;border-top:4px solid #777;border-left:4px solid #777;border-radius:3px 0 0 0}
-.corner.tr{top:6px;right:6px;border-top:4px solid #777;border-right:4px solid #777;border-radius:0 3px 0 0}
-.corner.bl{bottom:6px;left:6px;border-bottom:4px solid #777;border-left:4px solid #777;border-radius:0 0 0 3px}
-.corner.br{bottom:6px;right:6px;border-bottom:4px solid #777;border-right:4px solid #777;border-radius:0 0 3px 0}
-.magnet{position:absolute;width:16px;height:16px;border-radius:50%;z-index:20;background:radial-gradient(circle at 35% 35%,#d0d8e0,#6a7a88);border:2px solid #556070;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.3)}
-.magnet.tm{top:3px;left:50%;transform:translateX(-50%)}
-.magnet.bm{bottom:3px;left:50%;transform:translateX(-50%)}
-.magnet.lm{left:3px;top:50%;transform:translateY(-50%)}
-.magnet.rm{right:3px;top:50%;transform:translateY(-50%)}
-
-.board-inner{
+.board{
   background:#f8f7f2;
-  border-radius:3px;
-  padding:20px 24px 0;
-  min-height:calc(100vh - 56px);
-  display:flex;flex-direction:column;
+  border-radius:4px;
+  box-shadow:0 4px 24px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.6);
+  width:100%;max-width:1400px;min-height:85vh;
   position:relative;
-  box-shadow:inset 0 0 40px rgba(0,0,0,.03);
+  padding-bottom:40px;
 }
+/* Corner brackets */
+.board::before,.board::after{content:'';position:absolute;width:22px;height:22px;border-color:#999;border-style:solid}
+.board::before{top:10px;left:10px;border-width:2px 0 0 2px}
+.board::after{top:10px;right:10px;border-width:2px 2px 0 0}
+.board-inner{padding:18px 24px 0}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px}
-.board-title{font-size:32px;font-weight:700;color:#1a1a1a}
-.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.sync-status{font-size:17px;color:#bbb}
-.sync-status.ok{color:#2a7a3a}
-.sync-status.err{color:#c0392b}
-.sync-status.syncing{color:#8a6a1a}
-.add-btn{font-family:'Caveat',cursive;font-size:20px;font-weight:600;padding:4px 18px;background:transparent;border:2.5px solid #1a1a1a;border-radius:3px;color:#1a1a1a;cursor:pointer}
-.add-btn:hover{background:rgba(0,0,0,.04)}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.board-title{font-size:30px;font-weight:700;color:#1a1a1a}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.sync-status{font-size:15px;color:#aaa}
+.sync-status.ok .sync-text{color:#2a7a3a}
+.sync-status.err .sync-text{color:#c0392b}
+.btn{font-family:'Caveat',cursive;font-size:17px;padding:4px 14px;border:1.5px solid #888;
+  border-radius:4px;background:transparent;cursor:pointer;color:#555}
+.btn:hover{background:rgba(0,0,0,.05)}
+.btn-primary{border-color:#1a1a8a;color:#1a1a8a}
+.btn-primary:hover{background:rgba(26,26,138,.07)}
 
-/* ── LAYOUT: 2/3 left + 1/3 right ── */
-.board-body{
-  flex:1;
+/* ── CALENDAR STRIP ── */
+.cal-strip{
+  padding:5px 0 8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border-bottom:0.5px solid rgba(0,0,0,.1);margin-bottom:14px;
 }
-.objects-layout{
-  display:flex;
-  flex-direction:column;
+.cal-strip-date{font-size:17px;font-weight:700;color:#888;flex-shrink:0}
+.cal-strip-events{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.cal-ev{font-size:16px;white-space:nowrap}
+.cal-ev a{text-decoration:none;color:inherit}
+.cal-ev a:hover{text-decoration:underline}
+.cal-ev.past{color:#bbb}
+.cal-ev.now,.cal-ev.soon{color:#c0392b}
+.cal-ev.future{color:#1a1a8a}
+.cal-strip-link{font-size:14px;color:#aaa;text-decoration:none;flex-shrink:0}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:8px}
+
+/* ── OBJECTS GRID ── */
+.objects-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
   gap:0;
-}
-/* Row of up to 7 objects */
-.obj-row{
-  display:flex;
-  flex-wrap:nowrap;
-  gap:0;
-  border-bottom:0.5px solid rgba(0,0,0,0.06);
-  padding:4px 0 4px 30px;
-  align-items:flex-start;
+  border-top:0.5px solid rgba(0,0,0,.1);
+  border-left:0.5px solid rgba(0,0,0,.1);
 }
 .obj-card{
-  flex:0 0 auto;
-  width:calc(100%/7);
-  min-width:140px;
-  padding:6px 10px 8px 0;
-  border-right:0.5px solid rgba(0,0,0,0.06);
-  vertical-align:top;
+  border-right:0.5px solid rgba(0,0,0,.1);
+  border-bottom:0.5px solid rgba(0,0,0,.1);
+  padding:10px 12px;
+  min-height:120px;
+  display:flex;flex-direction:column;gap:2px;
 }
-.obj-card:last-child{border-right:none}
+.obj-card.completed{opacity:.55}
+.obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
 .obj-card-name{
-  font-size:20px;font-weight:700;color:#1a1a8a;
-  cursor:pointer;line-height:1.2;
-  display:block;margin-bottom:1px;
+  font-size:19px;font-weight:700;color:#1a1a8a;
+  line-height:1.2;cursor:default;
 }
-.obj-card-name.done{color:#bbb;text-decoration:line-through}
-.obj-card-name.has-notes{text-decoration:underline;text-decoration-style:wavy;
-  text-decoration-color:#1a1a8a;text-underline-offset:3px;text-decoration-thickness:1.5px}
-.obj-card-addr{font-size:14px;color:#888;display:block;margin-bottom:2px;line-height:1.2}
-.obj-card-meta{font-size:14px;color:#aaa;line-height:1.3}
-.obj-card-dates{font-size:14px;color:#666;line-height:1.3;margin-top:2px}
-.obj-card-star{font-size:16px;color:#e0a020;margin-right:2px}
-.obj-card-badge{
-  display:inline-block;font-size:12px;
-  background:rgba(0,0,0,0.05);border-radius:3px;
-  padding:0 4px;color:#888;margin-right:3px;
+.obj-card-name.has-notes{
+  text-decoration:underline;text-decoration-style:wavy;
+  text-decoration-color:#1a1a8a;text-underline-offset:3px;
+  text-decoration-thickness:1.5px;
 }
-.obj-card-dot{
-  display:inline-block;width:7px;height:7px;border-radius:50%;
-  background:#c0392b;vertical-align:middle;margin-left:4px;
+.obj-card-addr{font-size:13px;color:#888;text-decoration:none;line-height:1.2;display:block}
+.obj-card-addr:hover{text-decoration:underline}
+.obj-card-meta{font-size:13px;color:#999;line-height:1.3}
+.obj-card-dates{font-size:13px;color:#666;line-height:1.3;margin-top:3px}
+.obj-card-dates span{color:#aaa}
+.obj-badge{
+  display:inline-block;font-size:11px;background:rgba(0,0,0,.07);
+  border-radius:2px;padding:0 4px;color:#777;margin-right:2px;
 }
-.obj-card-m{
-  display:inline-block;width:18px;height:18px;border:1.5px solid #888;
-  border-radius:50%;text-align:center;font-size:12px;font-weight:700;
-  color:#888;line-height:16px;margin-right:3px;
+.obj-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#c0392b;margin-left:4px;vertical-align:middle}
+.obj-m{display:inline-block;width:16px;height:16px;border:1.5px solid #888;
+  border-radius:50%;text-align:center;font-size:11px;font-weight:700;
+  color:#888;line-height:14px;margin-right:3px;vertical-align:middle}
+.obj-star{color:#e0a020;margin-right:2px}
+/* Notes under obj */
+.obj-notes-list{margin-top:5px;display:flex;flex-direction:column;gap:1px}
+.obj-note-row{display:flex;align-items:baseline;gap:3px;flex-wrap:wrap}
+.obj-note-text{font-size:14px;color:#444;cursor:pointer;line-height:1.3}
+.obj-note-text:hover{color:#1a1a8a}
+.obj-note-text.overdue{color:#c0392b}
+.obj-note-time{font-size:11px;color:#bbb}
+.obj-note-time.has-rem{color:#2a7a3a}
+.obj-note-del{font-size:11px;border:none;background:transparent;color:#ddd;
+  cursor:pointer;padding:0 2px;font-family:'Caveat',cursive}
+.obj-note-del:hover{color:#c0392b}
+/* Add note input */
+.obj-add-note{margin-top:4px;display:flex;align-items:center;gap:4px}
+.obj-add-note input{
+  font-family:'Caveat',cursive;font-size:14px;border:none;
+  border-bottom:1px solid #ddd;background:transparent;outline:none;
+  flex:1;min-width:0;padding:0 2px;color:#1a1a1a;
 }
-/* Notes below the row of objects */
-.obj-notes-row{
-  padding:6px 0 6px 30px;
-  border-bottom:0.5px solid rgba(0,0,0,0.06);
-  display:flex;flex-wrap:wrap;gap:4px 20px;
-}
+.obj-add-note input::placeholder{color:#ccc}
+.obj-add-note button{font-family:'Caveat',cursive;font-size:14px;border:none;
+  background:transparent;color:#bbb;cursor:pointer;padding:0 2px;flex-shrink:0}
+.obj-add-note button:hover{color:#1a1a8a}
 
+/* ── NOTES ZONE (bottom) ── */
+.notes-zone{
+  margin-top:20px;padding-top:12px;
+  border-top:0.5px solid rgba(0,0,0,.1);
+}
+.notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+.note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0}
+.note-text{font-size:20px;color:#1a1a1a;cursor:pointer;line-height:1.3}
+.note-text:hover{text-decoration:underline}
+.note-text.overdue{color:#c0392b}
+.note-obj-link{font-size:18px;color:#1a1a8a;text-decoration:none;flex-shrink:0}
+.note-obj-link:hover{text-decoration:underline}
+.note-time{font-size:14px;color:#bbb;flex-shrink:0}
+.note-time.has-rem{color:#2a7a3a}
+.note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;
+  background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
+.note-del:hover{color:#c0392b;border-color:#c0392b}
+/* Add note input (bottom zone) */
+.notes-add{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notes-add input{
+  font-family:'Caveat',cursive;font-size:20px;border:none;
+  border-bottom:1.5px solid #ddd;background:transparent;outline:none;
+  flex:1;min-width:200px;max-width:480px;padding:1px 2px;color:#1a1a1a;
+}
+.notes-add input::placeholder{color:#ccc}
+.notes-add button{font-family:'Caveat',cursive;font-size:20px;border:none;
+  background:transparent;color:#bbb;cursor:pointer;padding:0 4px}
+.notes-add button:hover{color:#1a1a8a}
+.dt-btn{font-family:'Caveat',cursive;font-size:16px;color:#ccc;cursor:pointer;
+  border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
+.dt-btn:hover{color:#888}
+.dt-row{display:none;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
+.dt-row.vis{display:flex}
+.dt-row input[type=date]{font-family:'Caveat',cursive;font-size:17px;border:none;
+  border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
+  -webkit-appearance:none;appearance:none}
+.hour-sel{font-family:'Caveat',cursive;font-size:16px;color:#888;border:none;
+  border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none}
+.dt-label{font-size:15px;color:#bbb}
 
-/* ── LIST ── */
-.list-item-wrap{margin-bottom:2px}
-.list-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:2px 0;line-height:1.4}
-.list-row-right{flex-shrink:0;margin-left:auto;padding-left:6px}
-.note-icon-btn{font-family:'Caveat',cursive;font-size:20px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0 2px;line-height:1;vertical-align:middle}
-.note-icon-btn:hover{color:#1a1a8a}
-.note-add-under{display:flex;align-items:center;gap:6px;margin-left:28px;margin-top:3px;margin-bottom:4px}
-.note-add-under input{
-  font-family:'Caveat',cursive;font-size:20px;
-  border:none;background:transparent;
-  outline:none;color:#1a1a1a;flex:1;min-width:100px;padding:1px 2px;
-}
-.note-add-under input::placeholder{color:#ccc}
-.note-add-under input:focus{border-bottom-color:#888}
-.note-input-wrap{margin-left:28px;margin-top:2px;margin-bottom:4px}
-.add-note-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.note-input-field{font-family:'Caveat',cursive;font-size:19px;border:none;background:transparent;outline:none;color:#1a1a1a;padding:1px 2px;flex:1;min-width:100px}
-.note-input-field::placeholder{color:#ccc}
-.note-input-field:focus{border-bottom-color:#888}
-.note-submit-btn{font-family:'Caveat',cursive;font-size:18px;color:#bbb;cursor:pointer;border:none;background:transparent;padding:0 3px;flex-shrink:0}
-.note-submit-btn:hover{color:#1a1a8a}
-.dt-mini-btn{font-family:'Caveat',cursive;font-size:15px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0;text-decoration:underline;text-underline-offset:2px;flex-shrink:0}
-.dt-mini-btn:hover{color:#888}
-.list-star{font-size:28px;color:#1a1a1a;flex-shrink:0;width:24px;text-align:center}
-.list-star-empty{width:24px;flex-shrink:0}
-.list-star.crossed{color:#bbb;text-decoration:line-through}
-.list-name{font-size:28px;font-weight:700;color:#1a1a8a;cursor:pointer;flex-shrink:0}
-.list-name:hover{text-decoration:underline;text-decoration-style:wavy;text-underline-offset:4px}
-.list-name.done{color:#bbb;text-decoration:line-through;text-decoration-thickness:3px}
-.list-name.has-notes{text-decoration:underline;text-decoration-style:wavy;text-decoration-color:#1a1a8a;text-underline-offset:4px;text-decoration-thickness:1.5px}
-.list-name.has-notes:hover{text-decoration-thickness:2px}
-.list-addr-wrap{font-size:24px;color:#1a1a1a}
-.list-addr-wrap a{color:#1a1a1a;text-decoration:none}
-.list-addr-wrap a:hover{text-decoration:underline}
-.list-pack{font-size:24px;color:#1a1a1a;font-weight:700}
-.inline-select{
-  font-family:'Caveat',cursive;font-size:22px;color:#888;
-  border:none;
-  background:transparent;outline:none;cursor:pointer;
-  padding:0 2px;
-  /* Safari/Chrome reset */
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  appearance:none;
-}
-.inline-select:focus{border-bottom-color:#1a1a8a;color:#1a1a8a}
-.m-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2.5px solid #1a1a1a;font-size:18px;font-weight:700;color:#1a1a1a;margin-left:5px;flex-shrink:0;vertical-align:middle}
-.reminder-dot{width:9px;height:9px;border-radius:50%;background:#c0392b;flex-shrink:0;display:inline-block;margin-left:3px;vertical-align:middle}
-
-/* ── NOTES UNDER OBJECT ── */
-.obj-notes{margin-left:28px;margin-bottom:2px;margin-top:0}
-.obj-note-item{display:flex;align-items:baseline;gap:5px;padding:1px 0;line-height:1.4;flex-wrap:wrap;cursor:pointer}
-.obj-note-item:hover .obj-note-text{text-decoration:underline;text-decoration-style:dotted}
-.obj-note-text{font-size:20px;line-height:1.35;color:#1a1a1a}
-.obj-note-text.c0{color:#1a1a1a}
-.obj-note-text.c1{color:#1a1a1a}
-.obj-note-text.overdue{color:#c0392b!important}
-.obj-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
-.obj-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
-.obj-note-del:hover{color:#c0392b;border-color:#c0392b}
-/* object notes are hidden by default — shown in random notes zone */
-.obj-notes-hidden{display:none}
-.rn-obj-name{font-size:20px;color:#1a1a8a;flex-shrink:0;cursor:pointer;text-decoration:none;}
-.rn-obj-name:hover{text-decoration:underline;}
-.obj-note-edit-input{font-family:'Caveat',cursive;font-size:20px;color:#1a1a1a;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;flex:1;min-width:80px;padding:0 2px}
-.obj-note-edit-input:focus{border-bottom-color:#1a1a8a}
-
-.note-datetime-row{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-left:28px;margin-top:1px}
-.note-datetime-row.vis{display:flex}
-.note-datetime-row input[type=date]{font-family:'Caveat',cursive;font-size:16px;border:none;background:transparent;outline:none;color:#888;padding:1px 2px;width:130px}
-.note-dt-label{font-size:14px;color:#bbb}
-
-/* ── STICKER (expanded) ── */
-.exp-wrap{display:none;margin:6px 0 10px 28px;position:relative;z-index:5}
-.exp-wrap.open{display:block}
-.exp-layout{display:flex;gap:14px;align-items:flex-start}
-.exp-notes-panel{
-  background:#fffacd;
-  border:1px solid #e0cc3a;
-  min-width:180px;max-width:260px;
-  padding:12px 14px;
-  box-shadow:2px 3px 10px rgba(0,0,0,.1);
-  transform:rotate(0.8deg);
-}
-.exp-notes-label{font-size:14px;color:#b8a820;font-weight:700;margin-bottom:6px;border-bottom:0.5px solid rgba(0,0,0,.08);padding-bottom:4px}
-.exp-note-item{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;padding:2px 0}
-.exp-note-item.overdue-item .exp-note-text{color:#c0392b}
-.exp-note-text{font-size:16px;color:#1a1a1a;cursor:pointer;flex:1}
-.exp-note-text:hover{text-decoration:underline}
-.exp-note-time{font-size:12px;color:#bbb;flex-shrink:0}
-.sticker{
-  background:#fffacd;
-  border:1px solid #e0cc3a;
-  width:240px;height:240px;
-  padding:14px 15px 14px;
-  position:relative;
-  transform:rotate(-1.5deg);
-  box-shadow:3px 4px 14px rgba(0,0,0,.14),inset 0 -2px 0 rgba(0,0,0,.04);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-}
-.sticker::before{content:'';position:absolute;top:0;left:0;right:0;height:7px;background:linear-gradient(to bottom,rgba(200,180,30,.3),transparent);pointer-events:none}
-.sticker-title{font-size:19px;font-weight:700;color:#1a1a1a;border-bottom:0.5px solid rgba(0,0,0,.08);padding-bottom:5px;margin-bottom:6px;flex-shrink:0}
-.sticker-fields{display:flex;flex-direction:column;gap:3px;flex:1;overflow:hidden}
-.sticker-row{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
-.sticker-label{font-size:13px;color:#b8a820;flex-shrink:0}
-.sticker-val{font-size:17px;color:#1a1a1a;font-weight:600}
-.sticker-select{
-  font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;
-  border:none;border-bottom:0.5px solid rgba(0,0,0,.1);
-  background:transparent;outline:none;cursor:pointer;font-weight:600;max-width:130px;
-  -webkit-appearance:none;-moz-appearance:none;appearance:none;
-}
-.sticker-select:focus{border-bottom-color:#8a7000}
-.sticker-input{font-family:'Caveat',cursive;font-size:16px;color:#1a1a1a;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);background:transparent;outline:none;width:100%}
-.sticker-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
-.sticker-link{font-size:15px;color:#8a7000;text-decoration:none;border-bottom:1px solid #c8a820}
-.sticker-link:hover{opacity:.7}
-.sticker-divider{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:5px 0}
-.sticker-actions{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
-.sticker-btn{font-family:'Caveat',cursive;font-size:14px;padding:2px 8px;border:1.5px solid rgba(0,0,0,.15);border-radius:3px;background:rgba(255,255,255,.5);color:#555;cursor:pointer;white-space:nowrap}
-.sticker-btn:hover{background:rgba(255,255,255,.85)}
-.sticker-btn.red:hover{color:#c0392b;border-color:#c0392b}
-.sticker-btn.col{font-size:13px;color:#aaa}
-
-/* ── TOP RANDOM NOTES STRIP ── */
-/* ── CALENDAR ZONE ── */
-.calendar-zone{
-  margin-bottom:16px;
-  padding-left:90px;
-}
-.calendar-zone-header{
-  display:flex;align-items:center;gap:10px;margin-bottom:8px;
-}
-.calendar-title{font-size:20px;font-weight:700;color:#1a1a1a}
-.calendar-week{font-size:16px;color:#aaa}
-.calendar-grid{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:0 8px;
-  align-items:start;
-}
-.cal-day{display:flex;flex-direction:column;gap:3px;min-height:20px}
-.cal-day-label{font-size:14px;color:#aaa;margin-bottom:3px;text-align:center}
-.cal-day-label.today{color:#1a1a8a;font-weight:700}
-.cal-event{
-  font-size:16px;color:#1a1a1a;line-height:1.3;
-  padding:2px 6px;border-radius:4px;
-  background:rgba(26,26,138,0.06);
-  cursor:default;
-}
-.cal-event.cal-today{background:rgba(26,26,138,0.12);font-weight:600}
-.cal-event-time{font-size:13px;color:#aaa;display:block}
-.cal-event-allday{font-size:13px;color:#888;font-style:italic}
-.cal-empty{font-size:14px;color:#ddd;font-style:italic;text-align:center}
-.cal-loading{font-size:16px;color:#bbb;font-style:italic}
-
-.random-notes-zone{
-  margin-bottom:20px;
-  padding-bottom:14px;
-  padding-left:90px;
-  display:grid;
-  grid-template-columns:1.2fr 1.2fr 0.8fr;
-  gap:0 24px;
-}
-.random-notes-col{}
-/* Calendar column */
-/* ── TEAR-OFF CALENDAR ── */
-.cal-tearoff{
-  background:#fff;
-  border-radius:4px;
-  box-shadow:0 2px 10px rgba(0,0,0,.12),0 1px 0 rgba(0,0,0,.06);
-  overflow:hidden;
-  width:100%;
-  max-width:308px;
-  position:relative;
-  font-family:'Caveat',cursive;
-  border:0.5px solid #e8e8e0;
-}
-/* Spiral holes at top */
-.cal-spirals{
-  position:absolute;top:-1px;left:0;right:0;
-  display:flex;justify-content:space-around;
-  padding:0 8px;z-index:3;
-}
-.cal-spiral{
-  width:9px;height:9px;border-radius:50%;
-  background:#f4f0e6;
-  border:1.5px solid #ccc;
-  box-shadow:inset 0 1px 2px rgba(0,0,0,.1);
-  margin-top:-4px;
-}
-/* White header */
-.cal-header{
-  background:#fff;
-  padding:10px 8px 6px;
-  text-align:center;
-  position:relative;
-  border-bottom:0.5px solid #f0f0ee;
-}
-.cal-month-name{
-  font-size:9px;font-weight:600;color:#aaa;
-  text-transform:uppercase;letter-spacing:.12em;margin-bottom:0;
-}
-.cal-day-num{
-  font-size:39px;font-weight:700;color:#c0392b;
-  line-height:1;margin:1px 0 1px;
-}
-.cal-weekday{
-  font-size:11px;font-weight:600;color:#888;
-  letter-spacing:.04em;
-}
-/* Body with events */
-.cal-body{
-  background:#fff;
-  padding:8px 9px 9px;
-  min-height:28px;
-}
-.cal-ev-item{display:inline-flex;align-items:baseline;gap:4px;flex-wrap:wrap;padding:2px 0;width:100%;}
-.cal-ev-title{font-size:19px;line-height:1.3}
-.cal-ev-time{font-size:14px;flex-shrink:0}
-/* Color states — applied to item row */
-.cal-ev-item.cal-ev-past .cal-ev-title{color:#ccc}
-.cal-ev-item.cal-ev-past .cal-ev-time{color:#ddd}
-.cal-ev-item.cal-ev-now .cal-ev-title,.cal-ev-item.cal-ev-now .cal-ev-time{color:#c0392b;font-weight:700}
-.cal-ev-item.cal-ev-soon .cal-ev-title,.cal-ev-item.cal-ev-soon .cal-ev-time{color:#c0392b}
-.cal-ev-item.cal-ev-future .cal-ev-title,.cal-ev-item.cal-ev-future .cal-ev-time{color:#1a1a8a}
-.cal-ev-title{font-size:22px;line-height:1.35;color:#1a1a1a}
-.cal-ev-time{font-size:15px;flex-shrink:0;color:#888}
-.cal-ev-allday{font-size:11px;color:#aaa;font-style:italic}
-.cal-empty-msg{font-size:12px;color:#ccc;font-style:italic}
-.cal-loading-msg{font-size:12px;color:#bbb;font-style:italic}
-.random-notes-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-.random-note-item{
-  display:inline-flex;align-items:baseline;gap:4px;flex-wrap:wrap;
-  padding:2px 0;width:100%;
-}
-.random-note-text{
-  font-size:22px;color:#1a1a1a;line-height:1.35;cursor:pointer;flex-shrink:0;
-  outline:none;
-}
-.random-note-text.overdue{color:#c0392b}
-.random-note-time{font-size:15px;color:#bbb;flex-shrink:0;white-space:nowrap}
-.random-note-time.has-reminder{color:#2a7a3a;font-weight:500}
-.random-note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;background:transparent;color:#ddd;cursor:pointer;font-family:'Caveat',cursive;flex-shrink:0}
-.random-note-del:hover{color:#c0392b;border-color:#c0392b}
-
-.random-add-row{display:flex;align-items:center;gap:8px}
-.random-add-input{
-  font-family:'Caveat',cursive;font-size:22px;
-  border:none;
-  background:transparent;outline:none;color:#1a1a1a;
-  flex:1;min-width:80px;padding:1px 0;
-  -webkit-appearance:none;
-}
-.random-add-input::placeholder{color:#ccc;font-style:italic}
-.random-add-btn{font-family:'Caveat',cursive;font-size:20px;color:#ccc;cursor:pointer;border:none;background:transparent;padding:0 4px}
-.random-add-btn:hover{color:#1a1a8a}
-.random-dt-btn{font-family:'Caveat',cursive;font-size:16px;color:#ccc;cursor:pointer;border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
-.random-dt-btn:hover{color:#888}
-.random-dt-row{display:none;align-items:center;gap:8px;margin-top:2px}
-.random-dt-row.vis{display:flex}
-.random-dt-row input[type=date]{
-  font-family:'Caveat',cursive;font-size:17px;
-  border:none;background:transparent;outline:none;color:#888;
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);
+  z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#f8f7f2;border-radius:8px;padding:24px 28px;
+  width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px}
+.form-row{margin-bottom:12px;display:flex;flex-direction:column;gap:3px}
+.form-row label{font-size:14px;color:#aaa}
+.form-row input,.form-row select{
+  font-family:'Caveat',cursive;font-size:19px;border:none;
+  border-bottom:1.5px solid #e0e0e0;background:transparent;
+  color:#1a1a1a;padding:3px 2px;outline:none;
   -webkit-appearance:none;appearance:none;
 }
-.random-dt-label{font-size:16px;color:#bbb}
-.hour-select{
-  font-family:'Caveat',cursive;font-size:16px;color:#888;
-  border:none;border-bottom:1px solid #ddd;
-  background:transparent;outline:none;cursor:pointer;padding:0 2px;
-  -webkit-appearance:none;-moz-appearance:none;appearance:none;
-}
-/* ── HISTORY ── */
-.hist-item{background:#f9f9f8;border:0.5px solid #e8e8e0;border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
-.hist-item.overdue-item{border-color:#F09595;background:#FCEBEB}
-.hist-badge{font-size:11px;padding:2px 7px;border-radius:4px;background:#f0f0ee;color:#888;white-space:nowrap;flex-shrink:0;margin-top:3px}
-.hist-badge.del{background:#FCEBEB;color:#A32D2D}
-.hist-badge.note{background:#E6F1FB;color:#0C447C}
-.hist-badge.obj{background:#E1F5EE;color:#085041}
+.form-row input:focus,.form-row select:focus{border-bottom-color:#1a1a8a}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.btn-cancel{font-family:'Caveat',cursive;font-size:17px;padding:4px 14px;
+  border:1.5px solid #ccc;border-radius:4px;background:transparent;cursor:pointer;color:#999}
+.btn-save{font-family:'Caveat',cursive;font-size:17px;padding:4px 18px;
+  border:1.5px solid #1a1a8a;border-radius:4px;background:#1a1a8a;cursor:pointer;color:#fff}
+.fsec{font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;
+  margin:14px 0 6px;border-bottom:0.5px solid #e8e8e0;padding-bottom:4px}
+.err-msg{font-size:14px;color:#c0392b;display:none}
+
+/* ── HISTORY MODAL ── */
+.hist-item{background:#f9f9f8;border:0.5px solid #e8e8e0;border-radius:6px;
+  padding:8px 12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.hist-badge{font-size:11px;padding:2px 6px;border-radius:3px;
+  background:#FCEBEB;color:#A32D2D;flex-shrink:0;margin-top:3px}
 .hist-body{flex:1;min-width:0}
-.hist-name{font-size:17px;font-weight:600;color:#1a1a1a;line-height:1.3}
-.hist-meta{font-size:13px;color:#aaa;margin-top:2px}
-.hist-restore{font-family:'Caveat',cursive;font-size:15px;padding:3px 10px;border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;color:#1a1a8a;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.hist-name{font-size:16px;font-weight:600;color:#1a1a1a}
+.hist-meta{font-size:12px;color:#aaa;margin-top:1px}
+.hist-restore{font-family:'Caveat',cursive;font-size:14px;padding:2px 8px;
+  border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;
+  color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .hist-restore:hover{background:rgba(26,26,138,.06)}
 
-/* ── NOTE REMINDER MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center}
-.overlay.open{display:flex}
-#addModal{cursor:default}
-#addModal .modal{cursor:auto}
-.modal{background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:22px;width:400px;max-width:95vw;display:flex;flex-direction:column;gap:11px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.14);font-family:'Caveat',cursive}
-.modal-sm{width:340px}
-.modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:2px}
-.fsec{font-size:13px;color:#bbb;margin-top:4px;padding-bottom:3px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #f0f0f0}
-.form-row{display:flex;flex-direction:column;gap:3px}
-.form-row label{font-size:16px;color:#888}
-.form-row input,.form-row select,.form-row textarea{width:100%;font-size:19px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;color:#1a1a1a;padding:3px 2px;outline:none;-webkit-appearance:none;-moz-appearance:none;appearance:none;}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-bottom-color:#1a1a8a}
-.form-row textarea{resize:vertical;min-height:44px;border:1.5px solid #e0e0e0;border-radius:4px;padding:5px}
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.toggle-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 0}
-.tpill-lbl{display:flex;align-items:center;gap:4px;cursor:pointer}
-.tpill-lbl input[type=checkbox]{display:none}
-.tpill{padding:3px 12px;border:1.5px solid #ddd;border-radius:20px;font-family:'Caveat',cursive;font-size:17px;color:#888;cursor:pointer;transition:all .15s}
-.tpill-lbl input:checked+.tpill.star{border-color:#f0a500;color:#f0a500;background:rgba(240,165,0,.08)}
-.tpill-lbl input:checked+.tpill.done{border-color:#888;color:#888;text-decoration:line-through;background:rgba(0,0,0,.04)}
-.tpill-lbl input:checked+.tpill.masters{border-color:#1a1a1a;color:#1a1a1a;background:rgba(0,0,0,.04)}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;padding-top:10px;border-top:1px solid #f0f0f0}
-.btn-cancel{font-family:'Caveat',cursive;font-size:18px;padding:4px 14px;border:1.5px solid #ddd;border-radius:6px;background:transparent;color:#888;cursor:pointer}
-.btn-cancel:hover{background:#f8f8f8}
-.btn-save{font-family:'Caveat',cursive;font-size:18px;font-weight:700;padding:4px 18px;border:1.5px solid #1a1a8a;border-radius:6px;background:transparent;color:#1a1a8a;cursor:pointer}
-.btn-save:hover{background:rgba(26,26,138,.05)}
-.btn-save:disabled{border-color:#ddd;color:#ddd;cursor:not-allowed}
-.err-msg{font-size:15px;color:#c0392b;display:none}
+/* ── NOTE EDIT MODAL ── */
+.note-edit-date-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
-/* ── MARKER DRAWING AT BOTTOM ── */
-.board-drawing{display:flex;justify-content:center;padding:10px 0 8px;margin-top:auto}
-
-/* ── RESPONSIVE ── */
-
-
-
-/* ── MOBILE VIEW ── */
-@media (max-width: 900px) {
-  body { padding: 8px; min-width: unset; }
-  .board { border-radius: 8px; }
-  .board-inner { padding: 12px 12px 0; }
-
-  /* Hide desktop-only zones */
-  .objects-layout,
-  #colLeft, #colRight,
-  .topbar .add-btn,
-  .random-notes-zone,
-  .board-body > div[style*="font-size:26px"] { display: none !important; }
-  .board-body { display: block !important; }
-
-  /* Show mobile zone */
-  #mobileZone { display: block !important; }
-
-  .topbar { flex-wrap: wrap; gap: 6px; }
-  .board-title { font-size: 24px; }
-  .sync-status { font-size: 13px; }
-
-  /* Mobile calendar strip */
-  .mob-cal { margin-bottom: 14px; }
-  .mob-cal-day { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
-  .mob-cal-empty { font-size: 16px; color: #ccc; font-style: italic; }
-  .mob-ev { display: flex; align-items: baseline; gap: 6px; padding: 2px 0; }
-  .mob-ev-title { font-size: 20px; }
-  .mob-ev-time { font-size: 14px; }
-
-  /* Mobile notes — single column */
-  .mob-notes { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
-  .mob-add { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-  .mob-add input {
-    font-family: 'Caveat', cursive; font-size: 20px;
-    border: none; border-bottom: 1px solid #ddd;
-    background: transparent; outline: none; flex: 1; padding: 2px 0;
-  }
-  .mob-add-btn {
-    font-family: 'Caveat', cursive; font-size: 20px;
-    border: none; background: transparent; color: #bbb; cursor: pointer; padding: 0 4px;
-  }
-  .mob-section-label { font-size: 14px; color: #bbb; text-transform: uppercase;
-    letter-spacing: .08em; margin: 10px 0 4px; font-weight: 700; }
-}
-@media (min-width: 901px) {
-  #mobileZone { display: none !important; }
+/* ── DRAWING ── */
+.board-drawing{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  opacity:.25;
 }
 
+/* ── MOBILE ── */
+@media(max-width:900px){
+  body{padding:6px;min-width:unset}
+  .board-inner{padding:12px 12px 0}
+  .objects-grid{grid-template-columns:repeat(2,1fr)}
+  .notes-cols{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
-<div class="board-outer">
-  <div class="corner tl"></div><div class="corner tr"></div>
-  <div class="corner bl"></div><div class="corner br"></div>
-  <div class="magnet tm"></div><div class="magnet bm"></div>
-  <div class="magnet lm"></div><div class="magnet rm"></div>
+<div class="board">
+<div class="board-inner">
 
-  <div class="board-inner">
-    <div class="topbar">
-      <div class="board-title">Мій дашборд</div>
-      <div class="topbar-right">
-        <div class="sync-status" id="syncStatus"><span id="syncText">завантаження...</span></div>
-        <button class="add-btn" onclick="openHistoryModal()" style="background:transparent;border-color:#aaa;color:#888;margin-right:4px">📋 Історія</button>
-        <button class="add-btn" onclick="openAddModal()">+ Додати об'єкт</button>
-      </div>
-    </div>
-
-    <div class="board-body">
-            <!-- TOP STRIP — 3 columns: obj notes | free notes | calendar -->
-      <div class="random-notes-zone" id="randomNotesZone">
-        <!-- LEFT: замітки від об'єктів -->
-        <div class="random-notes-col">
-          <div class="random-notes-list" id="randomNotesList0"></div>
-        </div>
-        <!-- CENTER: вільні нотатки -->
-        <div class="random-notes-col">
-          <div class="random-notes-list" id="randomNotesList1"></div>
-        </div>
-        <!-- RIGHT: події календаря -->
-        <div class="random-notes-col" style="padding-left:0">
-          <div class="cal-tearoff">
-            <div class="cal-spirals">
-              <div class="cal-spiral"></div>
-              <div class="cal-spiral"></div>
-              <div class="cal-spiral"></div>
-            </div>
-            <div class="cal-header">
-              <div class="cal-month-name" id="calMonthName">—</div>
-              <div class="cal-day-num" id="calDayNum">—</div>
-              <div class="cal-weekday" id="calWeekdayName">—</div>
-            </div>
-            <div class="cal-body">
-              <div class="cal-week-events" id="calWeekEvents">
-                <div class="cal-loading-msg">завантаження...</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- MOBILE ZONE (hidden on desktop) -->
-      <div id="mobileZone">
-        <!-- Mini calendar -->
-        <div class="mob-cal">
-          <div class="mob-cal-day" id="mobCalDay"></div>
-          <div id="mobCalEvents"><div class="mob-cal-empty">Завантаження...</div></div>
-        </div>
-        <!-- Notes section label -->
-        <div class="mob-section-label">Замітки</div>
-        <div class="mob-notes" id="mobNotesList"><div class="mob-cal-empty">завантаження...</div></div>
-        <div class="mob-add">
-          <input id="mobAddInput" placeholder="нова нотатка..." onkeydown="if(event.key==='Enter')mobAddNote()">
-          <button class="mob-add-btn" onclick="mobAddNote()">↵</button>
-        </div>
-      </div>
-      <!-- Single note input — centered, close to notes -->
-      <div style="padding:2px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <div style="display:flex;align-items:center;gap:8px;width:40%;min-width:280px;margin-left:10%">
-          <input class="random-add-input" id="singleNoteInput" placeholder="нова нотатка..."
-            onkeydown="if(event.key==='Enter')addSingleNote()" style="flex:1">
-          <button class="random-add-btn" onclick="addSingleNote()">↵</button>
-          <button class="random-dt-btn" id="singleDtBtn" onclick="toggleSingleDt()">+ нагадати</button>
-        </div>
-        <div class="random-dt-row" id="singleDtRow" style="width:40%;min-width:280px;margin-left:10%">
-          <span class="random-dt-label">коли:</span>
-          <input type="date" id="singleDtDate">
-          <select class="hour-select" id="singleDtHour">
-            <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
-            <option value="9" selected>9:00</option><option value="10">10:00</option><option value="11">11:00</option>
-            <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option>
-            <option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option>
-            <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
-            <option value="21">21:00</option><option value="22">22:00</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- OBJECTS LIST -->
-      <div style="font-size:26px;font-weight:700;color:#1a1a1a;margin:14px 0 8px;padding-top:4px;">Об'єкти в роботі</div>
-      <div class="objects-layout" id="objectsLayout"></div>
-    </div>
-
-    <!-- DRAWING -->
-    <div class="board-drawing">
-      <svg width="260" height="90" viewBox="0 0 260 90" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.35">
-        <!-- Mom (left, big circle head, triangle dress) -->
-        <circle cx="52" cy="22" r="12" stroke="#1a1a1a" stroke-width="2.2" fill="none"/>
-        <line x1="52" y1="34" x2="52" y2="58" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="52" y1="42" x2="38" y2="54" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="52" y1="42" x2="66" y2="52" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="52" y1="58" x2="40" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="52" y1="58" x2="64" y2="75" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <!-- long hair mom -->
-        <path d="M40 18 Q38 10 44 8 Q52 6 60 8 Q66 10 64 18" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M40 18 Q36 28 37 40 Q38 50 40 58" stroke="#1a1a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-        <path d="M64 18 Q68 28 67 40 Q66 50 64 58" stroke="#1a1a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-        <!-- smile mom -->
-        <path d="M47 27 Q52 31 57 27" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <circle cx="48" cy="23" r="1.5" fill="#1a1a1a"/>
-        <circle cx="56" cy="23" r="1.5" fill="#1a1a1a"/>
-
-        <!-- Dad (middle, bigger) -->
-        <circle cx="118" cy="20" r="13" stroke="#1a1a1a" stroke-width="2.2" fill="none"/>
-        <line x1="118" y1="33" x2="118" y2="60" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="118" y1="42" x2="102" y2="55" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="118" y1="42" x2="134" y2="55" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="118" y1="60" x2="107" y2="78" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="118" y1="60" x2="129" y2="78" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/>
-        <!-- hair dad (short) -->
-        <path d="M106 17 Q108 8 118 9 Q128 8 130 17" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <!-- smile dad -->
-        <path d="M113 25 Q118 30 123 25" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <circle cx="114" cy="21" r="1.5" fill="#1a1a1a"/>
-        <circle cx="122" cy="21" r="1.5" fill="#1a1a1a"/>
-
-        <!-- Daughter 1 (smaller, left of dad) -->
-        <circle cx="175" cy="26" r="9" stroke="#1a1a1a" stroke-width="1.8" fill="none"/>
-        <line x1="175" y1="35" x2="175" y2="54" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="175" y1="43" x2="164" y2="52" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="175" y1="43" x2="186" y2="52" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="175" y1="54" x2="168" y2="70" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="175" y1="54" x2="182" y2="70" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <!-- pigtail daughter1 -->
-        <path d="M167 22 Q165 14 175 16 Q185 14 183 22" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <line x1="169" y1="18" x2="163" y2="12" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="181" y1="18" x2="187" y2="12" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M171 30 Q175 33 179 30" stroke="#1a1a1a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-        <circle cx="172" cy="27" r="1.2" fill="#1a1a1a"/>
-        <circle cx="178" cy="27" r="1.2" fill="#1a1a1a"/>
-
-        <!-- Daughter 2 (smallest, far right) -->
-        <circle cx="224" cy="30" r="8" stroke="#1a1a1a" stroke-width="1.8" fill="none"/>
-        <line x1="224" y1="38" x2="224" y2="56" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="224" y1="45" x2="215" y2="53" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="224" y1="45" x2="233" y2="53" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="224" y1="56" x2="218" y2="72" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="224" y1="56" x2="230" y2="72" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
-        <!-- pigtail daughter2 -->
-        <path d="M217 26 Q216 18 224 20 Q232 18 231 26" stroke="#1a1a1a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-        <line x1="219" y1="22" x2="214" y2="16" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
-        <line x1="229" y1="22" x2="234" y2="16" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M220 33 Q224 36 228 33" stroke="#1a1a1a" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <circle cx="221" cy="30" r="1.1" fill="#1a1a1a"/>
-        <circle cx="227" cy="30" r="1.1" fill="#1a1a1a"/>
-
-        <!-- Ground line -->
-        <path d="M30 82 Q145 78 255 82" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.4"/>
-      </svg>
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="board-title">Мій дашборд</div>
+  <div class="topbar-right">
+    <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
+    <button class="btn" onclick="openHistory()">📋 Історія</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
 
-<!-- OBJECT MODAL -->
+<!-- CALENDAR STRIP -->
+<div class="cal-strip" id="calStrip">
+  <span class="cal-strip-date" id="calStripDate"></span>
+  <div class="cal-strip-events" id="calStripEvents">
+    <span class="cal-ev" style="color:#ccc">завантаження...</span>
+  </div>
+  <a class="cal-strip-link" href="https://calendar.google.com/calendar/r/day" target="_blank">📅</a>
+</div>
+
+<!-- OBJECTS -->
+<div class="section-label">Об'єкти в роботі</div>
+<div class="objects-grid" id="objectsGrid"></div>
+
+<!-- NOTES ZONE -->
+<div class="notes-zone">
+  <div class="notes-cols">
+    <div id="notesLeft"></div>
+    <div id="notesRight"></div>
+  </div>
+  <div class="notes-add" style="margin-top:10px">
+    <input id="noteAddInput" placeholder="нова нотатка..."
+      onkeydown="if(event.key==='Enter')addGlobalNote()">
+    <button onclick="addGlobalNote()">↵</button>
+    <button class="dt-btn" id="noteDtBtn" onclick="toggleNoteDt()">+ нагадати</button>
+  </div>
+  <div class="dt-row" id="noteDtRow" style="padding-top:4px">
+    <span class="dt-label">коли:</span>
+    <input type="date" id="noteDtDate">
+    <select class="hour-sel" id="noteDtHour">
+      <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
+      <option value="9" selected>9:00</option><option value="10">10:00</option>
+      <option value="11">11:00</option><option value="12">12:00</option>
+      <option value="13">13:00</option><option value="14">14:00</option>
+      <option value="15">15:00</option><option value="16">16:00</option>
+      <option value="17">17:00</option><option value="18">18:00</option>
+      <option value="19">19:00</option><option value="20">20:00</option>
+      <option value="21">21:00</option><option value="22">22:00</option>
+    </select>
+    <span class="dt-label">(рівно)</span>
+  </div>
+</div>
+
+</div><!-- /board-inner -->
+
+<!-- DRAWING -->
+<svg class="board-drawing" viewBox="0 0 220 90" width="220" height="90" xmlns="http://www.w3.org/2000/svg">
+  <!-- floor -->
+  <line x1="20" y1="80" x2="200" y2="80" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- dad -->
+  <circle cx="60" cy="30" r="9" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M60 39 Q60 60 60 65 M60 65 L52 80 M60 65 L68 80 M50 50 L70 50" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- mom (long hair) -->
+  <circle cx="100" cy="30" r="9" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M91 26 Q89 15 100 21 Q111 15 109 26" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M91 26 Q87 42 89 58" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M109 26 Q113 42 111 58" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M100 39 Q100 60 100 65 M100 65 L92 80 M100 65 L108 80 M90 50 L110 50" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- girl 1 (braid) -->
+  <circle cx="138" cy="36" r="7" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M131 33 Q131 24 138 28 Q145 24 145 33" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M131 33 Q129 46 131 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M145 33 Q147 46 145 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M138 43 Q138 56 138 60 M138 60 L132 74 M138 60 L144 74 M130 52 L146 52" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <!-- girl 2 (braid) -->
+  <circle cx="170" cy="38" r="7" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M163 35 Q163 26 170 30 Q177 26 177 35" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M163 35 Q161 48 163 56" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M177 35 Q179 48 177 56" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M170 45 Q170 58 170 62 M170 62 L164 76 M170 62 L176 76 M162 54 L178 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+</svg>
+
+<!-- ── MODALS ── -->
+
+<!-- ADD/EDIT OBJECT -->
 <div class="overlay" id="addModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">Новий об'єкт</div>
-    <div class="form-row"><label>Назва</label><input id="f-name" placeholder="ЖК Зоряний"></div>
-    <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Лесі Українки 12, Київ"></div>
-    <div class="f3">
-      <div class="form-row"><label>Пакет</label>
-        <select id="f-pack"><option value="Comf">Comf</option><option value="Inv">Inv</option><option value="Prem">Prem</option><option value="ДП">ДП</option></select>
-      </div>
-      <div class="form-row"><label>Етап</label>
-        <select id="f-stage"><option>Підготовка</option><option>Розробка проєкту</option><option>Етап 1</option><option>Етап 2</option><option>Етап 3</option><option>Етап 4</option><option>Поправки</option></select>
-      </div>
-      <div class="form-row"><label>Статус</label>
-        <select id="f-status">
-          <option value="active">В роботі</option><option value="launch">На запуск</option>
-          <option value="finishing">Закінчуємо</option><option value="pause">На паузі</option>
-          <option value="frozen">Заморожено</option><option value="done">Закінчено</option>
-        </select>
-      </div>
+    <div class="fsec">Основне</div>
+    <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту"></div>
+    <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто"></div>
+    <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0"></div>
+    <div class="form-row"><label>Пакет</label>
+      <select id="f-pack">
+        <option value="">—</option>
+        <option>Comf</option><option>Inv</option><option>Prem</option><option>ДП</option>
+      </select>
     </div>
-    <div class="f2">
-      <div class="form-row"><label>Площа, м²</label><input id="f-area" type="number" placeholder="1200"></div>
-      <div class="form-row"><label>Майстри</label><input id="f-masters-name" placeholder="ТОВ Ремонт..."></div>
-    </div>
-    <div class="toggle-group">
-      <label class="tpill-lbl"><input type="checkbox" id="f-inwork"><span class="tpill star">★ В реалізації</span></label>
-      <label class="tpill-lbl"><input type="checkbox" id="f-completed"><span class="tpill done">Завершено</span></label>
-      <label class="tpill-lbl"><input type="checkbox" id="f-masters"><span class="tpill masters">М Знайти майстрів</span></label>
-    </div>
-    <div class="fsec">Дати</div>
-    <div class="f2">
-      <div class="form-row"><label>Старт</label><input id="f-start" type="date"></div>
-      <div class="form-row"><label>Фініш</label><input id="f-end" type="date"></div>
-    </div>
-    <div class="fsec">Посилання</div>
+    <div class="fsec">Терміни</div>
+    <div class="form-row"><label>Дата старту</label><input id="f-start" type="date"></div>
+    <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
+    <div class="fsec">Додатково</div>
+    <div class="form-row"><label>Майстер</label><input id="f-masters-name" placeholder="Ім'я майстра"></div>
     <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
+        <input type="checkbox" id="f-inwork"> ☆ В реалізації</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
+        <input type="checkbox" id="f-masters"> М Знайти майстрів</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
+        <input type="checkbox" id="f-completed"> ✓ Завершено</label>
+    </div>
+    <div class="err-msg" id="f-err">Введіть назву</div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
-      <button class="btn-save" id="btnSaveObj" onclick="saveCard()">Зберегти</button>
+      <button class="btn-save" id="btnSave" onclick="saveCard()">Зберегти</button>
     </div>
   </div>
 </div>
 
-<!-- HISTORY MODAL -->
-<div class="overlay" id="historyModal">
-  <div class="modal" style="width:560px;max-width:97vw">
-    <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Історія змін</span>
-      <button class="btn-cancel" style="font-size:15px;padding:2px 10px" onclick="closeHistoryModal()">✕</button>
+<!-- NOTE EDIT -->
+<div class="overlay" id="noteModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Замітка</div>
+    <div class="form-row"><label>Текст</label>
+      <textarea id="nm-text" rows="3" style="font-family:'Caveat',cursive;font-size:19px;
+        border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
+        resize:vertical;background:transparent;outline:none"></textarea>
     </div>
-    <div style="font-size:15px;color:#aaa;margin-top:-4px">Останні видалення та зміни. Натисніть «Відновити» щоб повернути.</div>
-    <div id="historyList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:60vh;overflow-y:auto"></div>
-    <div id="historyEmpty" style="font-size:18px;color:#ccc;font-style:italic;padding:16px 0;display:none">Поки що нічого немає</div>
-  </div>
-</div>
-
-<!-- NOTE EDIT MODAL -->
-<div class="overlay" id="noteEditModal">
-  <div class="modal modal-sm">
-    <div class="modal-title">Редагувати замітку</div>
-    <div class="form-row"><label>Текст</label><textarea id="ne-text" rows="3" style="font-size:19px;font-family:'Caveat',cursive;border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;resize:vertical;background:transparent;outline:none"></textarea></div>
     <div class="form-row"><label>Нагадування</label>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <input id="ne-date" type="date" style="font-size:18px;font-family:'Caveat',cursive;border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;outline:none;padding:2px;-webkit-appearance:none;appearance:none">
-        <select class="hour-select" id="ne-hour" style="font-size:18px">
+      <div class="note-edit-date-row">
+        <input id="nm-date" type="date" style="font-size:18px;font-family:'Caveat',cursive;
+          border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
+          outline:none;padding:2px;-webkit-appearance:none;appearance:none">
+        <select class="hour-sel" id="nm-hour" style="font-size:18px">
           <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
-          <option value="9" selected>9:00</option><option value="10">10:00</option><option value="11">11:00</option>
-          <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option>
-          <option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option>
-          <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
+          <option value="9" selected>9:00</option><option value="10">10:00</option>
+          <option value="11">11:00</option><option value="12">12:00</option>
+          <option value="13">13:00</option><option value="14">14:00</option>
+          <option value="15">15:00</option><option value="16">16:00</option>
+          <option value="17">17:00</option><option value="18">18:00</option>
+          <option value="19">19:00</option><option value="20">20:00</option>
           <option value="21">21:00</option><option value="22">22:00</option>
         </select>
       </div>
     </div>
-    <div class="form-row" id="ne-obj-row" style="display:none">
+    <div class="form-row" id="nm-obj-row" style="display:none">
       <label>Прив'язати до об'єкту</label>
-      <select id="ne-obj-select" class="obj-link-select">
-        <option value="">— без прив'язки —</option>
-      </select>
+      <select id="nm-obj-select" style="font-family:'Caveat',cursive;font-size:18px;
+        border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
+        outline:none;-webkit-appearance:none;appearance:none"></select>
     </div>
-    <div class="err-msg" id="ne-err" style="font-size:14px;color:#c0392b;display:none">Введіть текст</div>
+    <div class="err-msg" id="nm-err">Введіть текст</div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeNoteEditModal()">Скасувати</button>
-      <button class="btn-save" onclick="saveNoteEdit()">Зберегти</button>
+      <button class="btn-cancel" onclick="closeNoteModal()">Скасувати</button>
+      <button class="btn-save" onclick="saveNoteModal()">Зберегти</button>
     </div>
   </div>
 </div>
 
-<!-- NOTE REMINDER MODAL -->
-<div class="overlay" id="reminderModal">
-  <div class="modal modal-sm">
-    <div class="modal-title">Нагадування</div>
-    <div style="font-size:18px;color:#888" id="reminderNoteText"></div>
-    <div class="form-row"><label>Дата нагадування</label><input id="r-date" type="date"></div>
-    <div class="err-msg" id="r-error">Вкажіть дату</div>
-    <div style="font-size:15px;color:#bbb">Час: 9:00 ранку</div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeReminderModal()">Скасувати</button>
-      <button class="btn-save" onclick="saveReminder()">Зберегти</button>
+<!-- HISTORY -->
+<div class="overlay" id="historyModal">
+  <div class="modal" style="width:540px">
+    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Історія</span>
+      <button class="btn-cancel" style="padding:2px 8px" onclick="closeHistory()">✕</button>
     </div>
+    <div id="historyList"></div>
+    <div id="historyEmpty" style="font-size:17px;color:#ccc;font-style:italic;padding:12px 0">Нічого немає</div>
   </div>
 </div>
 
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyS6GtaZuWAzs-mM47yl_qkc1N3yllhYu_UadXNiVu2ESg32A5hDQ2A7IJ8Jo_-7iP-/exec";
-const MONTHS_GEN=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
-const STATUS_LABELS={active:'В роботі',launch:'На запуск',finishing:'Закінчуємо',pause:'На паузі',frozen:'Заморожено',done:'Закінчено'};
-const STAGES=['','Підготовка','Розробка проєкту','Етап 1','Етап 2','Етап 3','Етап 4','Поправки'];
-const STATUSES=['active','launch','finishing','pause','frozen','done'];
 
-let objects=[];
-let stickyNotes=[];
-let editIdx=null;
-let expandedId=null;
-let reminderCtx=null; // {objIdx, noteIdx}
+// ── STATE ──
+let objects=[], stickyNotes=[], editIdx=null, noteCtx=null;
+let actionLog=[];
 
-function fmtDateShort(iso){if(!iso)return null;const[y,m,d]=iso.split('-');return parseInt(d)+' '+MONTHS_GEN[parseInt(m)-1];}
-function fmtDT(iso){if(!iso)return'';const d=new Date(iso);return d.getDate()+' '+MONTHS_GEN[d.getMonth()]+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
-function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
-function isNoteActive(n){return n.time&&n.text&&new Date()>=new Date(n.time);}
-function hasActiveReminder(o){return(o.notes||[]).some(isNoteActive);}
-
-function setSyncStatus(state,text){document.getElementById('syncStatus').className='sync-status '+state;document.getElementById('syncText').textContent=text;}
-
-// ── HISTORY ──────────────────────────────────────────────
-const MAX_HISTORY = 50;
-let actionLog = [];
-
-function addHistory(entry){
-  // entry: {type:'note'|'obj'|'randomNote', action:'delete'|'edit', label, data, restore}
-  entry.time = new Date().toISOString();
-  actionLog.unshift(entry);
-  if(actionLog.length > MAX_HISTORY) actionLog.pop();
-  try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch(e){}
+// ── UTILS ──
+function setSyncStatus(state,text){
+  const el=document.getElementById('syncStatus');
+  const tx=document.getElementById('syncText');
+  el.className='sync-status '+state;
+  tx.textContent=text;
 }
-
-function loadActionLog(){
-  try{ actionLog = JSON.parse(localStorage.getItem('crm_history')||'[]'); }catch(e){ actionLog=[]; }
-}
-
-function openHistoryModal(){
-  renderHistoryList();
-  document.getElementById('historyModal').classList.add('open');
-}
-function closeHistoryModal(){
-  document.getElementById('historyModal').classList.remove('open');
-}
-
-function renderHistoryList(){
-  const list = document.getElementById('historyList');
-  const empty = document.getElementById('historyEmpty');
-  list.innerHTML = '';
-  if(!actionLog.length){ list.style.display='none'; empty.style.display='block'; return; }
-  list.style.display='flex'; empty.style.display='none';
-  actionLog.forEach((h,idx)=>{
-    const d = new Date(h.time);
-    const timeStr = d.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'}) + ' ' +
-                    d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-    const badgeClass = h.action==='delete' ? 'del' : (h.type==='obj' ? 'obj' : 'note');
-    const badgeText = h.action==='delete' ? 'видалено' : 'змінено';
-    const typeText = h.type==='obj' ? 'Об\'єкт' : h.type==='note' ? 'Замітка' : 'Нотатка';
-    const item = document.createElement('div');
-    item.className = 'hist-item';
-    item.innerHTML = `
-      <span class="hist-badge ${badgeClass}">${badgeText}</span>
-      <div class="hist-body">
-        <div class="hist-name">${h.label||'—'}</div>
-        <div class="hist-meta">${typeText} · ${timeStr}${h.parentName?' · '+h.parentName:''}</div>
-      </div>
-      <button class="hist-restore" onclick="restoreFromHistory(${idx})">↩ Відновити</button>`;
-    list.appendChild(item);
-  });
-}
-
-async function restoreFromHistory(idx){
-  const h = actionLog[idx];
-  if(!h) return;
-  try{
-    if(h.type==='obj'){
-      // Restore deleted object
-      const obj = {...h.data};
-      obj.id = ''; // get new id
-      await apiSave(obj);
-      objects.push(parseObj(obj));
-      sortObjects();
-      render();
-    } else if(h.type==='note'){
-      // Restore note to object
-      const ri = objects.findIndex(o=>String(o.id)===String(h.objId));
-      if(ri>=0){
-        if(!objects[ri].notes) objects[ri].notes=[];
-        objects[ri].notes.push(h.data);
-        // Find slot in DOM
-        const wrap = [...document.querySelectorAll('[data-objid]')].find(w=>String(w.dataset.objid)===String(h.objId));
-        const slot = wrap ? parseInt(wrap.id.replace('wrap-','')) : ri;
-        const notesEl = document.getElementById('notes-'+slot);
-        if(notesEl) notesEl.innerHTML = buildNotesHTML(objects[ri], slot);
-        await apiSave(objects[ri]);
-      }
-    } else if(h.type==='randomNote'){
-      // Restore random note
-      const sn = {...h.data};
-      sn.id = 'sticky_'+Date.now();
-      stickyNotes.push(sn);
-      renderRandomNotes();
-      await apiSave(sn);
-    }
-    // Remove from actionLog after restore
-    actionLog.splice(idx,1);
-    try{ localStorage.setItem('crm_history', JSON.stringify(actionLog)); }catch(e){}
-    renderHistoryList();
-  }catch(err){ console.error('restoreFromHistory error:',err); }
-}
-
-document.getElementById('historyModal').addEventListener('click',function(e){
-  if(e.target===this) closeHistoryModal();
-});
-
-function parseBool(v){ return v===true||v==='true'||v==='TRUE'||v===1||v==='1'; }
-
+function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 function parseObj(o){
-  return {
-    ...o,
-    inwork:    parseBool(o.inwork),
-    completed: parseBool(o.completed),
-    masters:   parseBool(o.masters),
-    notes: Array.isArray(o.notes) ? o.notes : (()=>{ try{ return JSON.parse(o.notes||'[]'); }catch(e){ return []; } })()
+  return{...o,
+    inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
+    notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
   };
 }
-
-// ── CALENDAR ──────────────────────────────────────────────
-const DAY_NAMES=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
-const DAY_NAMES_FULL=['Неділя','Понеділок','Вівторок','Середа','Четвер','Пятниця','Субота'];
-
-function getWeekDates(){
-  const now=new Date();
-  const dow=now.getDay();
-  const mon=new Date(now);
-  mon.setDate(now.getDate()-(dow===0?6:dow-1));
-  mon.setHours(0,0,0,0);
-  const days=[];
-  for(let i=0;i<7;i++){
-    const d=new Date(mon);
-    d.setDate(mon.getDate()+i);
-    days.push(d);
-  }
-  return days;
-}
-
-function fmtWeekLabel(days){
-  const fmt=d=>d.getDate()+' '+['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'][d.getMonth()];
-  return fmt(days[0])+' — '+fmt(days[6]);
-}
-
-function renderCalendar(events){
-  const container=document.getElementById('calWeekEvents');
-  if(!container)return;
-  container.innerHTML='';
-  const now=new Date();
-  const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
-  const todayEnd=new Date(now);todayEnd.setHours(23,59,59,999);
-
-  // Filter only today's events
-  const todayEvents=events.filter(ev=>{
-    const evDate=new Date(ev.start);
-    return evDate>=todayStart&&evDate<=todayEnd;
-  }).sort((a,b)=>new Date(a.start)-new Date(b.start));
-
-  if(!todayEvents.length){
-    container.innerHTML='<div class="cal-empty-msg">Сьогодні подій немає</div>';
-    return;
-  }
-
-  todayEvents.forEach(ev=>{
-    // Determine color class
-    var colorCls='cal-ev-future';
-    if(!ev.allDay){
-      var start=new Date(ev.start);
-      var end=new Date(ev.end||ev.start);
-      var diffMs=start-now;
-      if(end<now) colorCls='cal-ev-past';
-      else if(diffMs<=0) colorCls='cal-ev-now';
-      else if(diffMs<=60*60*1000) colorCls='cal-ev-soon';
-      else colorCls='cal-ev-future';
-    }
-
-    var row=document.createElement('div');
-    row.className='cal-ev-item '+colorCls;  // color class on row
-
-    var titleEl=document.createElement(ev.link?'a':'span');
-    titleEl.className='cal-ev-title';
-    titleEl.textContent='— '+ev.title;
-    if(ev.link){
-      titleEl.href=ev.link;
-      titleEl.target='_blank';
-      titleEl.style.cssText='text-decoration:none;cursor:pointer';
-    }
-    titleEl.title=ev.title;
-    row.appendChild(titleEl);
-
-    if(!ev.allDay){
-      var t=new Date(ev.start);
-      var timeEl=document.createElement('span');
-      timeEl.className='cal-ev-time';
-      timeEl.textContent=t.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-      row.appendChild(timeEl);
-    } else {
-      var allDayEl=document.createElement('span');
-      allDayEl.className='cal-ev-allday';
-      allDayEl.textContent='весь день';
-      row.appendChild(allDayEl);
-    }
-    container.appendChild(row);
-  });
-}
-
-// Refresh calendar colors every minute (times change)
-setInterval(()=>{
-  loadCalendar();
-},60000);
-
-async function loadCalendar(){
-  // Fill tear-off calendar header
-  const now=new Date();
-  const MONTHS_FULL=['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ',
-    'ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
-  const WEEKDAYS=['НЕДІЛЯ','ПОНЕДІЛОК','ВІВТОРОК','СЕРЕДА','ЧЕТВЕР','ПЯТНИЦЯ','СУБОТА'];
-  const mn=document.getElementById('calMonthName');
-  const dn=document.getElementById('calDayNum');
-  const wn=document.getElementById('calWeekdayName');
-  if(mn) mn.textContent=MONTHS_FULL[now.getMonth()];
-  if(dn) dn.textContent=now.getDate();
-  if(wn) wn.textContent=WEEKDAYS[now.getDay()];
-  try{
-    const res=await fetch(API_URL+'?action=getCalendar');
-    const data=await res.json();
-    if(Array.isArray(data)) renderCalendar(data);
-    else renderCalendar([]);
-    if(isMobile()) renderMobCalendar();
-  }catch(e){
-    const container=document.getElementById('calWeekEvents');
-    if(container) container.innerHTML='<div class="cal-loading-msg">Потрібна авторизація в Apps Script</div>';
-  }
-}
-
-async function apiGet(){
-  setSyncStatus('syncing','завантаження...');
-  try{
-    const res = await fetch(API_URL + '?action=getAll');
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch(e) {
-      setSyncStatus('err','Помилка даних');
-      render(); renderRandomNotes(); return;
-    }
-    const stickies=[];
-    const objs=[];
-    (data||[]).forEach(o=>{
-      if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
-        const sn={...o};
-        sn.col=parseInt(sn.col)||parseInt(sn.addr)||0;
-        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch(e){return[];}})();
-        stickies.push(sn);
-      } else {
-        objs.push(parseObj(o));
-      }
-    });
-    objects=objs;
-    stickyNotes=stickies;
-    setSyncStatus('ok','збережено ✓');
-  }catch(e){
-    if(e&&e.name==='AbortError'){
-      setSyncStatus('err','тайм-аут — перевірте Apps Script');
-    } else {
-      setSyncStatus('err','помилка з\'єднання');
-    }
-    console.error('[CRM] apiGet error:',e&&e.name, e&&e.message);
-  }finally{
-    render();
-    renderRandomNotes();
-    if(isMobile()) renderMobNotes();
-  }
-}
-async function apiSave(obj){
-  setSyncStatus('syncing','збереження...');
-  let full;
-  if(String(obj.id).startsWith('sticky_')||!obj.id){
-    // Sticky/random note — preserve all fields as-is, especially col stored in addr
-    full={
-      id:    obj.id||'sticky_'+Date.now(),
-      name:  obj.name||'',
-      addr:  obj.addr||'0',
-      stage: '',
-      status:'sticky',
-      pack:  '',
-      area:  '',
-      inwork:false,
-      completed:false,
-      masters:false,
-      mastersName:'',
-      linkProject:'',
-      linkFolder:'',
-      dateStart:'',
-      dateEnd:'',
-      notes: Array.isArray(obj.notes)?obj.notes:[]
-    };
-  } else {
-    full={
-      id:         obj.id||'',
-      name:       obj.name||'',
-      addr:       obj.addr||'',
-      stage:      obj.stage||'',
-      status:     obj.status||'active',
-      pack:       obj.pack||'',
-      area:       obj.area||'',
-      inwork:     !!obj.inwork,
-      completed:  !!obj.completed,
-      masters:    !!obj.masters,
-      mastersName:obj.mastersName||'',
-      linkProject:obj.linkProject||'',
-      linkFolder: obj.linkFolder||'',
-      dateStart:  obj.dateStart||'',
-      dateEnd:    obj.dateEnd||'',
-      notes:      Array.isArray(obj.notes)?obj.notes:[]
-    };
-  }
-  try{
-    // POST with text/plain — no CORS preflight, works from GitHub Pages
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'save', object: full })
-    });
-    const data = await res.json();
-    if(data.error) throw new Error(data.error);
-    if(data.id) obj.id = data.id;
-    setSyncStatus('ok','збережено ✓');
-    return true;
-  }catch(e){ console.error('apiSave error:',e); setSyncStatus('err','помилка збереження'); return false; }
-}
-async function apiDelete(id){
-  try{
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'delete', id })
-    });
-    return await res.json();
-  }catch(e){ console.error('apiDelete error:',e); }
-}
-
-// ── RENDER OBJECTS ──
-function sortObjects(){
-  const rank=o=>{
-    const isCompleted = o.completed===true||o.completed==='true'||o.completed==='TRUE'||o.completed===1;
-    if(isCompleted) return 6; // завершені — завжди в самому низу
-    const isInwork = o.inwork===true||o.inwork==='true'||o.inwork==='TRUE'||o.inwork===1;
-    const isMasters = o.masters===true||o.masters==='true'||o.masters==='TRUE'||o.masters===1;
-    const notes=Array.isArray(o.notes)?o.notes:[];
-    const hasOverdue=notes.some(isNoteActive);
-    const hasNotes=notes.length>0;
-    if(isInwork&&isMasters){
-      if(hasOverdue) return 0;
-      if(hasNotes)   return 1;
-      return 2;
-    }
-    if(isInwork){
-      if(hasOverdue) return 0;
-      if(hasNotes)   return 1;
-      return 3;
-    }
-    if(isMasters) return 4;
-    return 5;
-  };
-  // Stable sort with explicit numeric rank + original-index tiebreaker
-  const withIdx=objects.map((o,idx)=>({o,idx,r:rank(o)}));
-  withIdx.sort((a,b)=> a.r-b.r || a.idx-b.idx);
-  objects=withIdx.map(x=>x.o);
-}
-
-function objIdx(id){
-  return objects.findIndex(o=>String(o.id)===String(id));
-}
-
-// Estimate row length in characters (name + addr + pack + area + stage)
-function estimateRowLen(o){
-  let len=0;
-  if(o.inwork) len+=2;       // ☆
-  if(o.masters) len+=4;      // М + circle
-  if(o.name) len+=o.name.length;
-  if(o.addr) len+=o.addr.length+3; // (addr)
-  if(o.area) len+=String(o.area).length+3; // Xм²
-  if(o.pack) len+=o.pack.length+2;
-  if(o.stage) len+=0; // stage no longer in row
-  return len;
-}
-
-// Threshold: if row fits in 1/3 width (~40 chars), put in right col
-const SHORT_THRESHOLD = 38;
-
-function render(){
-  const layout=document.getElementById('objectsLayout');
-  if(!layout) return;
-  layout.innerHTML='';
-  if(!objects.length){
-    layout.innerHTML='<div style="font-size:22px;color:#ccc;font-style:italic;padding:8px 30px">Немає об\'єктів...</div>';
-    return;
-  }
-  sortObjects();
-  const PER_ROW=7;
-  for(let r=0;r<objects.length;r+=PER_ROW){
-    const rowObjs=objects.slice(r,r+PER_ROW);
-    // Object cards row
-    const row=document.createElement('div');
-    row.className='obj-row';
-    rowObjs.forEach((o,j)=>{
-      const i=r+j;
-      const card=buildObjCard(o,i,i+1);
-      row.appendChild(card);
-    });
-    layout.appendChild(row);
-    // Expanded sticker (if any in this row)
-    rowObjs.forEach((o,j)=>{
-      const i=r+j;
-      if(expandedId===i){
-        const expDiv=document.createElement('div');
-        expDiv.className='exp-wrap';expDiv.id='exp-'+i;
-        expDiv.innerHTML=buildExpanded(o,i);
-        expDiv.classList.add('open');
-        layout.appendChild(expDiv);
-      }
-    });
-    // Notes row for this group
-    const notesRow=document.createElement('div');
-    notesRow.className='obj-notes-row';
-    notesRow.id='notes-row-'+r;
-    notesRow.style.display='none'; // hidden by default
-    layout.appendChild(notesRow);
-  }
-}
-
-function fmtDateShortStr(iso){
-  if(!iso) return '';
+function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
+function isNoteActive(n){return!!(n.time&&new Date()>=new Date(n.time));}
+function hasActiveReminder(o){return (o.notes||[]).some(isNoteActive);}
+function fmtDT(iso){
+  if(!iso)return'';
   const d=new Date(iso);
-  if(isNaN(d)) return '';
+  if(isNaN(d))return'';
+  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+  return d.getDate()+' '+MONTHS[d.getMonth()]+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDate(iso){
+  if(!iso)return'';
+  const d=new Date(iso);if(isNaN(d))return'';
   return d.getDate()+'.'+(d.getMonth()+1)+'.'+String(d.getFullYear()).slice(2);
 }
 
-function buildObjCard(o,i,num){
+// ── API ──
+async function apiGet(){
+  setSyncStatus('syncing','завантаження...');
+  try{
+    const res=await fetch(API_URL+'?action=getAll');
+    const text=await res.text();
+    let data;try{data=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
+    const st=[],ob=[];
+    (data||[]).forEach(o=>{
+      if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
+        const sn={...o};
+        sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
+        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
+        st.push(sn);
+      }else{ob.push(parseObj(o));}
+    });
+    objects=ob;stickyNotes=st;
+    setSyncStatus('ok','збережено ✓');
+  }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
+  finally{render();renderNotes();}
+}
+
+async function apiSave(obj){
+  setSyncStatus('syncing','збереження...');
+  let full;
+  if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
+    full={id:obj.id||'sticky_'+Date.now(),name:obj.name||'',addr:String(obj.col||1),
+      stage:'',status:'sticky',pack:'',area:'',inwork:false,completed:false,masters:false,
+      mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
+      notes:Array.isArray(obj.notes)?obj.notes:[]};
+  }else{
+    full={id:obj.id||'',name:obj.name||'',addr:obj.addr||'',stage:obj.stage||'',
+      status:obj.status||'active',pack:obj.pack||'',area:obj.area||'',
+      inwork:!!obj.inwork,completed:!!obj.completed,masters:!!obj.masters,
+      mastersName:obj.mastersName||'',linkProject:'',linkFolder:obj.linkFolder||'',
+      dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
+      notes:Array.isArray(obj.notes)?obj.notes:[]};
+  }
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save',object:full})});
+    const data=await res.json();
+    if(data.id)obj.id=data.id;
+    setSyncStatus('ok','збережено ✓');return true;
+  }catch(e){setSyncStatus('err','помилка збереження');console.error(e);return false;}
+}
+
+async function apiDelete(id){
+  try{
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'delete',id})});
+  }catch(e){console.error(e);}
+}
+
+// ── SORT ──
+function sortObjects(){
+  objects.sort((a,b)=>{
+    if(!!a.completed!==!!b.completed)return a.completed?1:-1;
+    const rankO=o=>{
+      const over=(o.notes||[]).some(isNoteActive);
+      const hasN=(o.notes||[]).length>0;
+      if(o.inwork&&o.masters)return over?0:hasN?1:2;
+      if(o.inwork)return over?0:hasN?1:3;
+      if(o.masters)return 4;
+      return 5;
+    };
+    return rankO(a)-rankO(b);
+  });
+}
+
+// ── RENDER OBJECTS ──
+function render(){
+  try{_renderObjects();}catch(e){console.error('render error:',e);}
+}
+function _renderObjects(){
+  const grid=document.getElementById('objectsGrid');
+  if(!grid)return;
+  grid.innerHTML='';
+  if(!objects.length){
+    grid.innerHTML='<div style="font-size:20px;color:#ccc;font-style:italic;padding:16px;grid-column:1/-1">Немає об\'єктів</div>';
+    return;
+  }
+  sortObjects();
+  objects.forEach((o,i)=>{
+    try{grid.appendChild(buildCard(o,i));}catch(e){
+      console.error('buildCard error:',e,o);
+      const d=document.createElement('div');d.className='obj-card';d.textContent=o.name||'?';grid.appendChild(d);
+    }
+  });
+}
+
+function buildCard(o,i){
   const card=document.createElement('div');
-  card.className='obj-card';
-  card.id='wrap-'+i;
+  card.className='obj-card'+(o.completed?' completed':'');
+  card.id='card-'+i;
   card.dataset.objid=o.id;
 
-  const hasNotes=o.notes&&o.notes.length>0;
-  const hasReminder=hasActiveReminder(o);
+  const hasNotes=(o.notes||[]).length>0;
+  const hasRem=hasActiveReminder(o);
 
   // Name
-  const name=document.createElement('span');
-  name.className='obj-card-name'+(o.completed?' done':'')+(hasNotes?' has-notes':'');
-  name.textContent=(o.inwork?'☆ ':'')+o.name;
-  name.onclick=()=>toggleExpand(i);
+  const name=document.createElement('div');
+  name.className='obj-card-name'+(hasNotes?' has-notes':'');
+  let nameText='';
+  if(o.inwork) nameText+='☆ ';
+  nameText+=o.name||'—';
+  name.textContent=nameText;
+  if(o.completed) name.style.textDecoration='line-through';
   card.appendChild(name);
 
   // Address
   if(o.addr){
-    const addr=document.createElement('a');
-    addr.className='obj-card-addr';
-    addr.href=mapsUrl(o.addr);addr.target='_blank';
-    addr.textContent=o.addr.split(',')[0];
-    addr.onclick=e=>e.stopPropagation();
-    card.appendChild(addr);
+    const a=document.createElement('a');
+    a.className='obj-card-addr';
+    a.href=mapsUrl(o.addr);a.target='_blank';
+    a.textContent=o.addr;
+    card.appendChild(a);
   }
 
-  // Meta: pack, area, M badge, dot
+  // Meta
   const meta=document.createElement('div');
   meta.className='obj-card-meta';
-  if(o.pack) meta.innerHTML+='<span class="obj-card-badge">'+o.pack+'</span>';
-  if(o.area) meta.innerHTML+='<span style="font-size:13px;color:#aaa">'+o.area+'м²</span> ';
-  if(o.masters) meta.innerHTML+='<span class="obj-card-m">М</span>';
-  if(hasReminder) meta.innerHTML+='<span class="obj-card-dot"></span>';
+  if(o.pack) meta.innerHTML+='<span class="obj-badge">'+o.pack+'</span>';
+  if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
+  if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
+  if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
+  if(hasRem) meta.innerHTML+='<span class="obj-dot"></span>';
   if(meta.innerHTML) card.appendChild(meta);
 
   // Dates — always shown
-  const dateStart=fmtDateShortStr(o.dateStart);
-  const dateEnd=fmtDateShortStr(o.dateEnd);
-  if(dateStart||dateEnd){
+  const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
+  if(ds||de){
     const dates=document.createElement('div');
     dates.className='obj-card-dates';
-    dates.textContent=(dateStart?'▶ '+dateStart:'')+(dateStart&&dateEnd?' → ':'')+(dateEnd?dateEnd:'');
+    dates.innerHTML=(ds?'<span>▶</span> '+ds:'')+(ds&&de?' <span>→</span> ':'')+(de?de:'');
     card.appendChild(dates);
   }
 
-  // Exp div
-  const expDiv=document.createElement('div');
-  expDiv.className='exp-wrap';expDiv.id='exp-'+i;
-  card.appendChild(expDiv);
+  // Notes (always expanded)
+  if(hasNotes){
+    const nl=document.createElement('div');nl.className='obj-notes-list';
+    const sorted=[...o.notes].sort((a,b)=>isNoteActive(b)-isNoteActive(a));
+    sorted.forEach((n,ni)=>{
+      const active=isNoteActive(n);
+      const row=document.createElement('div');row.className='obj-note-row';
+      const txt=document.createElement('span');
+      txt.className='obj-note-text'+(active?' overdue':'');
+      txt.textContent='— '+n.text;
+      txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni});
+      row.appendChild(txt);
+      if(n.time){
+        const hasFuture=!active&&!!n.time;
+        const t=document.createElement('span');
+        t.className='obj-note-time'+(hasFuture?' has-rem':'');
+        t.textContent=fmtDT(n.time);
+        row.appendChild(t);
+      }
+      const del=document.createElement('button');del.className='obj-note-del';del.textContent='✕';
+      del.onclick=()=>deleteObjNote(o.id,ni);
+      row.appendChild(del);
+      nl.appendChild(row);
+    });
+    card.appendChild(nl);
+  }
+
+  // Add note input
+  const addRow=document.createElement('div');addRow.className='obj-add-note';
+  const inp=document.createElement('input');
+  inp.placeholder='+ замітка...';
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addObjNote(o.id,inp);}};
+  const btn=document.createElement('button');btn.textContent='↵';
+  btn.onclick=()=>addObjNote(o.id,inp);
+  // Edit button
+  const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
+  editBtn.onclick=()=>openEditModal(i);
+  const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
+  delBtn.style.color='#e07070';
+  delBtn.onclick=()=>deleteCard(i);
+  addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(editBtn);addRow.appendChild(delBtn);
+  card.appendChild(addRow);
 
   return card;
 }
 
-function buildItemWrap(o,i,globalNum){
-  const wrap=document.createElement('div');
-  wrap.className='list-item-wrap';wrap.id='wrap-'+i;
-  wrap.dataset.objid=o.id;
-  // ROW
-  const row=document.createElement('div');row.className='list-row';
-  // number — global sequential
-  const num=document.createElement('span');
-  num.style.cssText='font-size:18px;color:#ccc;flex-shrink:0;min-width:26px;text-align:right;margin-right:2px;font-weight:400';
-  num.textContent=(globalNum!=null?globalNum:i+1)+'.';
-  row.appendChild(num);
-  // star
-  const star=document.createElement('span');
-  if(o.inwork){star.className='list-star'+(o.completed?' crossed':'');star.textContent='☆';}
-  else{star.className='list-star-empty';}
-  row.appendChild(star);
-  // name
-  const name=document.createElement('span');
-  const hasNotes=(o.notes&&o.notes.length>0);
-  name.className='list-name'+(o.completed?' done':'')+(hasNotes?' has-notes':'');
-  name.textContent=o.name||'—';
-  name.onclick=()=>toggleExpand(i);
-  row.appendChild(name);
-  // address
-  if(o.addr){
-    const aw=document.createElement('span');aw.className='list-addr-wrap';
-    aw.innerHTML=` (<a href="${mapsUrl(o.addr)}" target="_blank" onclick="event.stopPropagation()">${o.addr}</a>)`;
-    row.appendChild(aw);
-  }
-  // area, then pack, then stage
-  if(o.area){const a=document.createElement('span');a.style.cssText='font-size:22px;color:#888;flex-shrink:0';a.textContent=' '+o.area+'м²';row.appendChild(a);}
-  if(o.pack){const p=document.createElement('span');p.className='list-pack';p.textContent=' '+o.pack+'.';row.appendChild(p);}
-  // M badge
-  if(o.masters){const m=document.createElement('span');m.className='m-badge';m.textContent='М';row.appendChild(m);}
-  // reminder dot
-  if(hasActiveReminder(o)){const dot=document.createElement('span');dot.className='reminder-dot';row.appendChild(dot);}
-
-  // INLINE ADD NOTE — right side of row
-  // No icon in row — pencil goes below notes
-
-  wrap.appendChild(row);
-
-  // STICKER — right after the row
-  const expDiv=document.createElement('div');expDiv.className='exp-wrap';expDiv.id='exp-'+i;
-  wrap.appendChild(expDiv);
-
-  // No pencil — notes created in random notes zone only
-  return wrap;
-}
-
-function buildNotesHTML(o,i){
-  const notes=o.notes||[];
-  if(!notes.length) return '';
-  // Sort: overdue first
-  const indexed=notes.map((n,ni)=>({n,ni}))
-    .sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
-  let html='';
-  indexed.forEach(({n,ni})=>{
-    const active=isNoteActive(n);
-    const cl=active?'overdue':'';
-    const timeStr=n.time?`<span class="obj-note-time">${fmtDT(n.time)}</span>`:'';
-    // Notes are collapsed under object — click to expand/edit via random zone
-    html+=`<div class="obj-note-item obj-notes-hidden" id="note-item-${i}-${ni}">
-      <span class="obj-note-text ${cl}">— ${n.text}</span>
-      ${timeStr}
-      <button class="obj-note-del" onclick="event.stopPropagation();deleteNoteQuick(${i},${ni})">✕</button>
-    </div>`;
-  });
-  return html;
-}
-
-// ── NOTE EDIT MODAL ──
-let noteEditCtx=null;
-
-function openNoteEditModal(slot,ni){
-  try{
-    const wrap=document.getElementById('wrap-'+slot);
-    const oid=wrap?wrap.dataset.objid:null;
-    const ri=oid?objIdx(oid):slot;
-    if(ri<0||ri>=objects.length)return;
-    const n=objects[ri].notes[ni];
-    noteEditCtx={ri,slot,ni};
-    document.getElementById('ne-text').value=n.text||'';
-    document.getElementById('ne-date').value=n.time?n.time.slice(0,10):'';
-    const neH=document.getElementById('ne-hour');
-    if(neH&&n.time) neH.value=parseInt(n.time.slice(11,13))||9;
-    document.getElementById('ne-err').style.display='none';
-    document.getElementById('noteEditModal').classList.add('open');
-    setTimeout(()=>document.getElementById('ne-text').focus(),50);
-  }catch(err){console.error('openNoteEditModal:',err);}
-}
-
-function closeNoteEditModal(){
-  document.getElementById('noteEditModal').classList.remove('open');
-  noteEditCtx=null;
-  randomEditIdx=null;
-  const objRow=document.getElementById('ne-obj-row');
-  if(objRow) objRow.style.display='none';
-  delete document.getElementById('noteEditModal').dataset.mode;
-}
-
-async function saveNoteEdit(){
-  try{
-    const text=document.getElementById('ne-text').value.trim();
-    if(!text){document.getElementById('ne-err').style.display='block';return;}
-    const date=document.getElementById('ne-date').value;
-    const hourEl2=document.getElementById('ne-hour');
-    const neHour=hourEl2?String(hourEl2.value).padStart(2,'0'):'09';
-    const mode=document.getElementById('noteEditModal').dataset.mode;
-
-    if(mode==='random'){
-      const sn=stickyNotes[randomEditIdx];
-      const selObjId=document.getElementById('ne-obj-select')?document.getElementById('ne-obj-select').value:'';
-
-      // If user linked to an object — convert to object note
-      if(selObjId){
-        const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
-        if(ri>=0){
-          if(!objects[ri].notes) objects[ri].notes=[];
-          objects[ri].notes.push({text,time:date?date+'T'+neHour+':00':''});
-          // Remove from sticky notes
-          const delId=sn.id;
-          stickyNotes.splice(randomEditIdx,1);
-          try{ await apiSave(objects[ri]); } catch(e){ console.error('save obj note:',e); }
-          try{ await apiDelete(delId); } catch(e){ console.error('del sticky:',e); }
-          closeNoteEditModal();
-          render();
-          renderRandomNotes();
-          if(isMobile()) renderMobNotes();
-          return;
-        }
-      }
-
-      // No object — keep as random note
-      sn.name=text;
-      sn.notes=date?[{text,time:date+'T'+neHour+':00'}]:[];
-      sn.linkedObjId='';
-      renderRandomNotes();
-      closeNoteEditModal();
-      if(isMobile()) renderMobNotes();
-      try{ await apiSave(sn); } catch(e){ console.error('save sticky:',e); setSyncStatus('err','помилка збереження'); }
-      return;
-    }
-
-    // Edit object note
-    const {ri,slot,ni}=noteEditCtx;
-    objects[ri].notes[ni].text=text;
-    objects[ri].notes[ni].time=date?date+'T'+neHour+':00':'';
-    if(expandedId===slot){
-      const el=document.getElementById('exp-'+slot);
-      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
-    }
-    closeNoteEditModal();
-    renderRandomNotes();
-    if(isMobile()) renderMobNotes();
-    try{ await apiSave(objects[ri]); } catch(e){ console.error('save note:',e); setSyncStatus('err','помилка збереження'); }
-  }catch(err){console.error('saveNoteEdit:',err);}
-}
-
-function toggleNoteInput(i){
-  const wrap=document.getElementById('ni-wrap-'+i);
-  if(!wrap)return;
-  const isOpen=wrap.style.display!=='none';
-  wrap.style.display=isOpen?'none':'block';
-  if(!isOpen){
-    const inp=document.getElementById('qi-text-'+i);
-    if(inp)setTimeout(()=>inp.focus(),50);
-  }
-}
-
-function toggleDT(i){
-  const row=document.getElementById('dt-row-'+i);
-  const btn=document.getElementById('dt-btn-'+i);
-  if(!row)return;
-  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
-  else{row.classList.add('vis');btn.textContent='− прибрати';}
-}
-
-async function deleteNoteQuick(slot,ni){
-  try{
-    const wrap=document.getElementById('wrap-'+slot);
-    const oid=wrap?wrap.dataset.objid:null;
-    const ri=oid!==null?objIdx(oid):slot;
-    if(ri<0||ri>=objects.length)return;
-    const deletedNote = {...objects[ri].notes[ni]};
-    addHistory({type:'note',action:'delete',label:deletedNote.text,parentName:objects[ri].name,objId:objects[ri].id,data:deletedNote});
-    objects[ri].notes.splice(ni,1);
-    if(expandedId===slot){
-      const el=document.getElementById('exp-'+slot);
-      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],slot);
-    }
-    renderRandomNotes();
-    if(isMobile()) renderMobNotes();
-    try{ await apiSave(objects[ri]); } catch(e){ console.error('save after del note:',e); }
-  }catch(err){console.error('deleteNoteQuick error:',err);}
-}
-
-async function submitQuickNote(i){
-  try{
-    const wrap=document.getElementById('wrap-'+i);
-    if(!wrap){console.error('wrap-'+i+' not found');return;}
-    const oid=wrap.dataset.objid;
-    const ri=oid?objIdx(oid):i;
-    if(ri<0||ri>=objects.length){console.error('object not found for slot '+i+' oid '+oid);return;}
-
-    const textEl=document.getElementById('qi-text-'+i);
-    const text=(textEl?textEl.value:'').trim();
-    if(!text)return;
-
-    const dateEl=document.getElementById('qi-date-'+i);
-    const date=dateEl?dateEl.value:'';
-    const time=date?date+'T09:00':'';
-
-    if(!Array.isArray(objects[ri].notes)) objects[ri].notes=[];
-    objects[ri].notes.push({text,time});
-
-    // Clear UI without full re-render
-    if(textEl) textEl.value='';
-    if(dateEl) dateEl.value='';
-    const dtRow=document.getElementById('dt-row-'+i);
-    const dtBtn=document.getElementById('dt-btn-'+i);
-    if(dtRow) dtRow.classList.remove('vis');
-    if(dtBtn) dtBtn.textContent='+ нагадати';
-    const niWrap=document.getElementById('ni-wrap-'+i);
-    if(niWrap) niWrap.style.display='none';
-
-    // Save FIRST, then update UI
-    try{ await apiSave(objects[ri]); } catch(e){ console.error('save error',e); }
-
-    // Update sticker if open
-    if(expandedId===i){
-      const el=document.getElementById('exp-'+i);
-      if(el&&el.classList.contains('open')) el.innerHTML=buildSticker(objects[ri],i);
-    }
-    renderRandomNotes();
-    if(isMobile()) renderMobNotes();
-
-  }catch(err){
-    console.error('submitQuickNote error:',err);
-  }
-}
-
-// ── REMINDER MODAL (click on existing note) ──
-function openReminderModal(slot,ni){
-  const wrap=document.getElementById('wrap-'+slot);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):slot;
-  reminderCtx={objIdx:ri,slot,ni};
-  if(ri<0||ri>=objects.length)return;
-  const n=objects[ri].notes[ni];
-  document.getElementById('reminderNoteText').textContent='«'+n.text+'»';
-  document.getElementById('r-date').value=n.time?n.time.slice(0,10):'';
-  document.getElementById('r-error').style.display='none';
-  document.getElementById('reminderModal').classList.add('open');
-}
-function closeReminderModal(){document.getElementById('reminderModal').classList.remove('open');reminderCtx=null;}
-async function saveReminder(){
-  const date=document.getElementById('r-date').value;
-  if(!date){document.getElementById('r-error').style.display='block';return;}
-  document.getElementById('r-error').style.display='none';
-  const ri=reminderCtx.objIdx;   // real array index
-  const slot=reminderCtx.slot;   // DOM slot
-  const ni=reminderCtx.ni;
-  if(ri<0||ri>=objects.length)return;
-  objects[ri].notes[ni].time=date+'T09:00';
-  const notesEl=document.getElementById('notes-'+slot);
-  if(notesEl) notesEl.innerHTML=buildNotesHTML(objects[ri],slot);
-  if(expandedId===slot){const el=document.getElementById('exp-'+slot);if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],slot);}
-  closeReminderModal();
-  await apiSave(objects[ri]);
-}
-
-function expNoteClick(el){
-  var oid=el.dataset.oid;
-  var ni=parseInt(el.dataset.ni);
-  openObjNoteEdit(oid,ni);
-}
-function expNoteDelete(el){
-  var oid=el.dataset.oid;
-  var ni=parseInt(el.dataset.ni);
-  deleteObjNoteById(oid,ni);
-}
-
-// ── STICKER (expanded card) + notes side by side ──
-function buildSticker(o,i){ return buildExpanded(o,i); }
-
-function buildExpanded(o,i){
-  const statusOpts=STATUSES.map(s=>{
-    const sel=s===o.status?' selected':'';
-    return '<option value="'+s+'"'+sel+'>'+STATUS_LABELS[s]+'</option>';
-  }).join('');
-  const stageOpts=STAGES.map(s=>{
-    const sel=s===o.stage?' selected':'';
-    return '<option value="'+s+'"'+sel+'>'+s+'</option>';
-  }).join('');
-  const startStr=fmtDateShort(o.dateStart)||'';
-  const endStr=fmtDateShort(o.dateEnd)||'';
-  const linksHtml=o.linkFolder
-    ?'<a class="sticker-link" href="'+o.linkFolder+'" target="_blank">📁 Папка Фінал</a>'
-    :'';
-
-  const notes=o.notes||[];
-  let notesHtml='';
-  if(notes.length){
-    notes.forEach(function(n,ni){
-      var active=isNoteActive(n);
-      var cls=active?' overdue':'';
-      var itemCls=active?' overdue-item':'';
-      var timeStr=n.time?('<span class="exp-note-time">'+fmtDT(n.time)+'</span>'):'';
-      var oid=String(o.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      notesHtml+='<div class="exp-note-item'+itemCls+'" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="expNoteClick(this)">'
-        +'<span class="exp-note-text'+cls+'">— '+n.text+'</span>'
-        +timeStr
-        +'<button class="obj-note-del" data-oid="'+o.id+'" data-ni="'+ni+'" onclick="event.stopPropagation();expNoteDelete(this)">✕</button>'
-        +'</div>';
-    });
-  } else {
-    notesHtml='<div style="font-size:16px;color:#bbb;font-style:italic">Немає заміток</div>';
-  }
-
-  let datesHtml='';
-  if(startStr||endStr){
-    datesHtml='<div class="sticker-row">'
-      +(startStr?'<span class="sticker-label">старт</span><span class="sticker-val" style="font-size:15px">'+startStr+'</span>':'')
-      +(endStr?'<span class="sticker-label" style="margin-left:6px">фініш</span><span class="sticker-val" style="font-size:15px">'+endStr+'</span>':'')
-      +'</div>';
-  }
-
-  return '<div class="exp-layout">'
-    +'<div class="sticker">'
-      +'<div class="sticker-title">'+(o.name||'—')+'</div>'
-      +'<div class="sticker-fields">'
-        +'<div class="sticker-row"><span class="sticker-label">статус</span>'
-          +'<select class="sticker-select" onchange="changeStatus('+i+',this.value)">'+statusOpts+'</select></div>'
-        +'<div class="sticker-row"><span class="sticker-label">етап</span>'
-          +'<select class="sticker-select" onchange="changeStage('+i+',this.value)">'+stageOpts+'</select></div>'
-        +(o.mastersName?'<div class="sticker-row"><span class="sticker-label">майстри</span><span class="sticker-val" style="font-size:15px">'+o.mastersName+'</span></div>':'')
-        +(o.area?'<div class="sticker-row"><span class="sticker-label">площа</span><span class="sticker-val">'+o.area+' м²</span></div>':'')
-        +datesHtml
-        +(linksHtml?'<div class="sticker-links">'+linksHtml+'</div>':'')
-      +'</div>'
-      +'<div class="sticker-divider"></div>'
-      +'<div class="sticker-actions">'
-        +'<button class="sticker-btn" onclick="openEditModal('+i+')">✏ ред.</button>'
-        +'<button class="sticker-btn red" onclick="deleteCard('+i+')">✕</button>'
-        +'<button class="sticker-btn col" onclick="closeExpand('+i+')">↑</button>'
-      +'</div>'
-    +'</div>'
-    +'<div class="exp-notes-panel">'
-      +'<div class="exp-notes-label">Замітки</div>'
-      +notesHtml
-    +'</div>'
-  +'</div>';
-}
-
-
-async function changeStatus(i,val){
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  if(ri<0||ri>=objects.length)return;
-  objects[ri].status=val;await apiSave(objects[ri]);
-  const el=document.getElementById('exp-'+i);
-  if(el&&el.classList.contains('open'))el.innerHTML=buildSticker(objects[ri],i);
-  renderRandomNotes();
-}
-async function changeStage(i,val){
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  if(ri<0||ri>=objects.length)return;
-  objects[ri].stage=val;await apiSave(objects[ri]);
-  if(wrap){const s=wrap.querySelector('.inline-select');if(s)s.value=val;}
-}
-
-function toggleExpand(i){
-  if(expandedId===i){closeExpand(i);return;}
-  if(expandedId!==null){const prev=document.getElementById('exp-'+expandedId);if(prev){prev.classList.remove('open');prev.innerHTML='';}}
-  expandedId=i;
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  const el=document.getElementById('exp-'+i);
-  if(el&&ri>=0&&ri<objects.length){el.innerHTML=buildSticker(objects[ri],i);el.classList.add('open');}
-}
-function closeExpand(i){const el=document.getElementById('exp-'+i);if(el){el.classList.remove('open');el.innerHTML='';}if(expandedId===i)expandedId=null;}
-
-// ── RANDOM NOTES (top strip) ──
-function isRandomNoteActive(sn){
-  if(!sn.notes||!sn.notes.length)return false;
-  return sn.notes.some(n=>n.time&&new Date()>=new Date(n.time));
-}
-
-function renderRandomNotes(){
-  const list0=document.getElementById('randomNotesList0');
-  const list1=document.getElementById('randomNotesList1');
-  if(!list0||!list1)return;
-  list0.innerHTML='';list1.innerHTML='';
+// ── RENDER NOTES (bottom zone) ──
+function renderNotes(){
+  const leftEl=document.getElementById('notesLeft');
+  const rightEl=document.getElementById('notesRight');
+  if(!leftEl||!rightEl)return;
+  leftEl.innerHTML='';rightEl.innerHTML='';
 
   const now=new Date();
+  const all=[];
 
-  // Collect ALL items (random + obj notes)
-  const allItems=[];
-
+  // Sticky notes
   stickyNotes.forEach((sn,idx)=>{
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
     const overdue=!!(note&&note.time&&now>=new Date(note.time));
-    const hasFuture=!!(note&&note.time&&now<new Date(note.time));
-    allItems.push({
-      type:'random',idx,
-      text:sn.name||'',
-      objName:null,objAddr:null,objId:null,ni:null,
-      overdue,hasFuture,
-      timeRaw:note&&note.time?new Date(note.time):null,
-      time:note&&note.time?fmtDT(note.time):''
-    });
+    const hasFut=!!(note&&note.time&&now<new Date(note.time));
+    all.push({type:'sticky',idx,text:sn.name||'',objName:null,objAddr:null,objId:null,ni:null,
+      overdue,hasFut,timeRaw:note&&note.time?new Date(note.time):null,time:note&&note.time?fmtDT(note.time):''});
   });
 
+  // Object notes
   objects.forEach(o=>{
     (o.notes||[]).forEach((n,ni)=>{
       const overdue=!!isNoteActive(n);
-      const hasFuture=!!(n.time&&now<new Date(n.time));
-      allItems.push({
-        type:'objnote',idx:null,
-        text:n.text||'',
-        objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
-        overdue,hasFuture,
-        timeRaw:n.time?new Date(n.time):null,
-        time:n.time?fmtDT(n.time):''
-      });
+      const hasFut=!!(n.time&&now<new Date(n.time));
+      all.push({type:'objnote',idx:null,text:n.text||'',objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
+        overdue,hasFut,timeRaw:n.time?new Date(n.time):null,time:n.time?fmtDT(n.time):''});
     });
   });
 
-  // Sort: overdue first, then by date asc (with date), then no-date last
-  allItems.sort((a,b)=>{
-    if(a.overdue!==b.overdue) return b.overdue-a.overdue;
-    if(a.timeRaw&&b.timeRaw) return a.timeRaw-b.timeRaw;
-    if(a.timeRaw) return -1;
-    if(b.timeRaw) return 1;
+  // Sort: overdue first, then by date, no-date last
+  all.sort((a,b)=>{
+    if(a.overdue!==b.overdue)return b.overdue-a.overdue;
+    if(a.timeRaw&&b.timeRaw)return a.timeRaw-b.timeRaw;
+    if(a.timeRaw)return -1;if(b.timeRaw)return 1;
     return 0;
   });
 
-  // Left col = first half, right col = second half
-  const half=Math.ceil(allItems.length/2);
-  allItems.forEach((item,i)=>{
-    const list=i<half?list0:list1;
-    const active=item.overdue;
-    const timeCls=item.hasFuture?' has-reminder':'';
-    const timeHtml=item.time?'<span class="random-note-time'+timeCls+'">'+item.time+'</span>':'';
-
-    const row=document.createElement('div');
-    row.className='random-note-item';
-
-    if(item.type==='random'){
-      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" onclick="openRandomNoteEdit('+item.idx+')">— '+item.text+'</span>'+timeHtml+'<button class="random-note-del" onclick="deleteRandomNote('+item.idx+')">✕</button>';
-    } else {
-      var oid=String(item.objId);
-      var mLink=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
-      var objTag=mLink
-        ?'<a class="rn-obj-name" href="'+mLink+'" target="_blank">('+item.objName+')</a>'
-        :'<span class="rn-obj-name">('+item.objName+')</span>';
-      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-oid="'+oid+'" data-ni="'+item.ni+'" style="cursor:pointer">— '+item.text+'</span>'+objTag+timeHtml+'<button class="random-note-del" data-oid="'+oid+'" data-ni="'+item.ni+'">✕</button>';
-      row.querySelector('[data-ni="'+item.ni+'"][data-oid="'+oid+'"]:not(button)').onclick=function(){openObjNoteEdit(oid,item.ni);};
-      row.querySelector('button[data-ni="'+item.ni+'"]').onclick=function(){deleteObjNoteById(oid,item.ni);};
+  const half=Math.ceil(all.length/2);
+  all.forEach((item,i)=>{
+    const el=i<half?leftEl:rightEl;
+    const row=document.createElement('div');row.className='note-item';
+    const txt=document.createElement('span');
+    txt.className='note-text'+(item.overdue?' overdue':'');
+    txt.textContent='— '+item.text;
+    txt.onclick=()=>{
+      if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
+      else openNoteModal({type:'obj',objId:item.objId,ni:item.ni});
+    };
+    row.appendChild(txt);
+    if(item.objName){
+      const a=document.createElement('a');a.className='note-obj-link';
+      if(item.objAddr){a.href=mapsUrl(item.objAddr);a.target='_blank';}
+      else{a.style.pointerEvents='none';}
+      a.textContent='('+item.objName+')';
+      row.appendChild(a);
     }
-    list.appendChild(row);
+    if(item.time){
+      const t=document.createElement('span');
+      t.className='note-time'+(item.hasFut?' has-rem':'');
+      t.textContent=item.time;row.appendChild(t);
+    }
+    const del=document.createElement('button');del.className='note-del';del.textContent='✕';
+    del.onclick=()=>{
+      if(item.type==='sticky') deleteStickyNote(item.idx);
+      else deleteObjNote(item.objId,item.ni);
+    };
+    row.appendChild(del);
+    el.appendChild(row);
   });
 }
 
-
-function toggleObjNoteVisible(objId,ni){
-  // Find the DOM wrap for this object and show/hide that specific note
-  const wrap=[...document.querySelectorAll('[data-objid]')]
-    .find(w=>String(w.dataset.objid)===String(objId));
-  if(!wrap) return;
-  const noteItem=wrap.querySelector('#note-item-'+wrap.id.replace('wrap-','')+'\-'+ni);
-  if(noteItem){
-    const hidden=noteItem.classList.contains('obj-notes-hidden');
-    // toggle all notes for this object first hide all, then show this one
-    if(hidden){
-      noteItem.classList.remove('obj-notes-hidden');
-    } else {
-      noteItem.classList.add('obj-notes-hidden');
-    }
-  } else {
-    // fallback — show entire notes block
-    const slot=parseInt(wrap.id.replace('wrap-',''));
-    const notesEl=document.getElementById('notes-'+slot);
-    if(notesEl) notesEl.style.display=notesEl.style.display==='none'?'':'none';
-  }
-}
-
-function openObjNoteEdit(objId,ni){
-  const ri=objects.findIndex(o=>String(o.id)===String(objId));
-  if(ri<0)return;
-  // Find DOM slot
-  const wrap=[...document.querySelectorAll('[data-objid]')]
-    .find(w=>String(w.dataset.objid)===String(objId));
-  const slot=wrap?parseInt(wrap.id.replace('wrap-','')):-1;
-  if(slot<0){
-    // fallback: open note edit modal directly
-    noteEditCtx={ri,slot:ri,ni};
-    document.getElementById('ne-text').value=objects[ri].notes[ni].text||'';
-    document.getElementById('ne-date').value=objects[ri].notes[ni].time?objects[ri].notes[ni].time.slice(0,10):'';
-    document.getElementById('ne-err').style.display='none';
-    document.getElementById('noteEditModal').dataset.mode='obj';
-    document.getElementById('noteEditModal').classList.add('open');
-    return;
-  }
-  openNoteEditModal(slot,ni);
-}
-
-async function deleteObjNoteById(objId,ni){
-  const ri=objects.findIndex(o=>String(o.id)===String(objId));
-  if(ri<0)return;
-  addHistory({type:'note',action:'delete',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
-  objects[ri].notes.splice(ni,1);
-  // update DOM notes block if visible
-  const wrap=[...document.querySelectorAll('[data-objid]')]
-    .find(w=>String(w.dataset.objid)===String(objId));
-  renderRandomNotes();
-  apiSave(objects[ri]).catch(e=>console.error(e));
-}
-
-function toggleRandomDt(col){
-  const row=document.getElementById('randomDtRow'+col);
-  const btn=document.getElementById('randomDtBtn'+col);
-  if(!row)return;
-  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
-  else{row.classList.add('vis');btn.textContent='− прибрати';}
-}
-
-async function addSingleNote(){
-  const inp=document.getElementById('singleNoteInput');
-  const text=inp?inp.value.trim():'';
-  if(!text)return;
-  const dateEl=document.getElementById('singleDtDate');
-  const date=dateEl?dateEl.value:'';
-  const hourEl=document.getElementById('singleDtHour');
-  const hour=hourEl?hourEl.value:'9';
-  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
-  stickyNotes.push(sn);
-  inp.value='';
-  if(dateEl) dateEl.value='';
-  const dtRow=document.getElementById('singleDtRow');
-  const dtBtn=document.getElementById('singleDtBtn');
-  if(dtRow) dtRow.classList.remove('vis');
-  if(dtBtn) dtBtn.textContent='+ нагадати';
-  renderRandomNotes();
-  if(isMobile()) renderMobNotes();
-  try{
-    const result = await apiSave(sn);
-    if(!result){ setSyncStatus('err','не збережено'); }
-  } catch(e){
-    console.error('addSingleNote error:',e);
-    setSyncStatus('err','помилка збереження');
-  }
-}
-
-function toggleSingleDt(){
-  const row=document.getElementById('singleDtRow');
-  const btn=document.getElementById('singleDtBtn');
-  if(!row)return;
-  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
-  else{row.classList.add('vis');btn.textContent='− прибрати';}
-}
-
-async function addRandomNote(col){
-  col=col||0;
-  const inp=document.getElementById('randomAddInput'+col);
+// ── OBJ NOTE ACTIONS ──
+async function addObjNote(objId,inp){
   const text=inp.value.trim();if(!text)return;
-  const date=document.getElementById('randomDtDate'+col).value;
-  const time=date?date+'T09:00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,col,addr:String(col),stage:'',status:'sticky',pack:'',area:'',notes:time?[{text,time}]:[]};
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  if(!objects[ri].notes)objects[ri].notes=[];
+  objects[ri].notes.push({text,time:''});
+  inp.value='';
+  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  render();renderNotes();
+}
+
+async function deleteObjNote(objId,ni){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
+  objects[ri].notes.splice(ni,1);
+  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  render();renderNotes();
+}
+
+// ── STICKY NOTE ACTIONS ──
+async function addGlobalNote(){
+  const inp=document.getElementById('noteAddInput');
+  const text=inp?inp.value.trim():'';if(!text)return;
+  const date=document.getElementById('noteDtDate')?.value||'';
+  const hour=document.getElementById('noteDtHour')?.value||'9';
+  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
+    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
+    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
+    notes:time?[{text,time}]:[]};
   stickyNotes.push(sn);
   inp.value='';
-  document.getElementById('randomDtDate'+col).value='';
-  const dtRow=document.getElementById('randomDtRow'+col);
-  if(dtRow)dtRow.classList.remove('vis');
-  document.getElementById('randomDtBtn'+col).textContent='+ нагадати';
-  renderRandomNotes();
-  if(isMobile()) renderMobNotes();
-  try{
-    await apiSave(sn);
-  }catch(e){
-    console.error('addRandomNote save error:',e);
-    setSyncStatus('err','помилка збереження');
+  if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
+  document.getElementById('noteDtRow')?.classList.remove('vis');
+  document.getElementById('noteDtBtn').textContent='+ нагадати';
+  try{await apiSave(sn);}catch(e){console.error(e);}
+  renderNotes();
+}
+
+async function deleteStickyNote(idx){
+  const sn=stickyNotes[idx];
+  addHistory({type:'sticky',label:sn.name,data:{...sn}});
+  const id=sn.id;stickyNotes.splice(idx,1);
+  try{await apiDelete(id);}catch(e){console.error(e);}
+  renderNotes();
+}
+
+function toggleNoteDt(){
+  const row=document.getElementById('noteDtRow');
+  const btn=document.getElementById('noteDtBtn');
+  if(!row)return;
+  if(row.classList.contains('vis')){row.classList.remove('vis');btn.textContent='+ нагадати';}
+  else{row.classList.add('vis');btn.textContent='− прибрати';}
+}
+
+// ── NOTE MODAL ──
+function openNoteModal(ctx){
+  noteCtx=ctx;
+  let text='',time='';
+  if(ctx.type==='sticky'){
+    const sn=stickyNotes[ctx.idx];text=sn.name||'';
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    time=note&&note.time?note.time:'';
+  }else{
+    const ri=objects.findIndex(o=>String(o.id)===String(ctx.objId));
+    if(ri<0)return;
+    const n=objects[ri].notes[ctx.ni];text=n.text||'';time=n.time||'';
   }
-}
-
-async function deleteRandomNote(idx){
-  const sn=stickyNotes[idx];
-  addHistory({type:'randomNote',action:'delete',label:sn.name,data:{...sn,notes:sn.notes?[...sn.notes]:[]}});
-  const id=sn.id;
-  stickyNotes.splice(idx,1);
-  renderRandomNotes();
-  if(isMobile()) renderMobNotes();
-  try{ await apiDelete(id); } catch(e){ console.error('del random note:',e); }
-}
-
-// Edit random note — reuse noteEditModal
-let randomEditIdx=null;
-function openRandomNoteEdit(idx){
-  randomEditIdx=idx;
-  const sn=stickyNotes[idx];
-  const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-  document.getElementById('ne-text').value=sn.name||'';
-  document.getElementById('ne-date').value=note&&note.time?note.time.slice(0,10):'';
-  const neHr=document.getElementById('ne-hour');
-  if(neHr&&note&&note.time) neHr.value=parseInt(note.time.slice(11,13))||9;
-  document.getElementById('ne-err').style.display='none';
-  document.getElementById('noteEditModal').dataset.mode='random';
-
-  // Show object selector and populate with current objects
-  const objRow=document.getElementById('ne-obj-row');
-  const objSel=document.getElementById('ne-obj-select');
-  if(objRow&&objSel){
+  document.getElementById('nm-text').value=text;
+  document.getElementById('nm-date').value=time?time.slice(0,10):'';
+  const h=document.getElementById('nm-hour');
+  if(h&&time) h.value=parseInt(time.slice(11,13))||9;
+  document.getElementById('nm-err').style.display='none';
+  // Show obj selector for sticky notes
+  const objRow=document.getElementById('nm-obj-row');
+  const objSel=document.getElementById('nm-obj-select');
+  if(ctx.type==='sticky'&&objRow&&objSel){
     objRow.style.display='flex';
-    objSel.innerHTML='<option value="">\u2014 без об\u2019єкту \u2014</option>';
-    const sorted=[...objects].sort((a,b)=>{
-      if(!!a.completed!==!!b.completed) return a.completed?1:-1;
-      if(!!a.inwork!==!!b.inwork) return a.inwork?-1:1;
-      return (a.name||'').localeCompare(b.name||'','uk');
+    objSel.innerHTML='<option value="">\u2014 без прив\u2019язки \u2014</option>';
+    [...objects].sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
+      const opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');objSel.appendChild(opt);
     });
-    sorted.forEach(o=>{
-      const opt=document.createElement('option');
-      opt.value=o.id;
-      const star=o.inwork?'☆ ':'';
-      const done=o.completed?'✓ ':'';
-      opt.textContent=done+star+(o.name||'')+(o.addr?' ('+o.addr.split(',')[0]+')':'');
-      if(o.completed) opt.style.color='#bbb';
-      objSel.appendChild(opt);
-    });
-    // Pre-select if already linked (sn.linkedObjId)
-    objSel.value=sn.linkedObjId||'';
-  }
-  document.getElementById('noteEditModal').classList.add('open');
-  setTimeout(()=>document.getElementById('ne-text').focus(),50);
+  }else if(objRow){objRow.style.display='none';}
+  document.getElementById('noteModal').classList.add('open');
+  setTimeout(()=>document.getElementById('nm-text').focus(),50);
 }
 
-// ── OBJECT CRUD ──
+function closeNoteModal(){
+  document.getElementById('noteModal').classList.remove('open');
+  noteCtx=null;
+}
+
+async function saveNoteModal(){
+  const text=document.getElementById('nm-text').value.trim();
+  if(!text){document.getElementById('nm-err').style.display='block';return;}
+  const date=document.getElementById('nm-date').value;
+  const hour=document.getElementById('nm-hour')?.value||'9';
+  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+
+  if(noteCtx.type==='sticky'){
+    const selObjId=document.getElementById('nm-obj-select')?.value||'';
+    if(selObjId){
+      // Convert to obj note
+      const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
+      if(ri>=0){
+        if(!objects[ri].notes)objects[ri].notes=[];
+        objects[ri].notes.push({text,time});
+        const delId=stickyNotes[noteCtx.idx].id;
+        stickyNotes.splice(noteCtx.idx,1);
+        closeNoteModal();
+        try{await apiSave(objects[ri]);await apiDelete(delId);}catch(e){console.error(e);}
+        render();renderNotes();return;
+      }
+    }
+    const sn=stickyNotes[noteCtx.idx];
+    sn.name=text;sn.notes=time?[{text,time}]:[];
+    closeNoteModal();
+    try{await apiSave(sn);}catch(e){console.error(e);}
+    renderNotes();
+  }else{
+    const ri=objects.findIndex(o=>String(o.id)===String(noteCtx.objId));
+    if(ri<0)return;
+    objects[ri].notes[noteCtx.ni].text=text;
+    objects[ri].notes[noteCtx.ni].time=time;
+    closeNoteModal();
+    try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+    render();renderNotes();
+  }
+}
+
+// ── ADD/EDIT OBJECT MODAL ──
 function openAddModal(){
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); 
-  document.getElementById('f-stage').value='Підготовка';
-  document.getElementById('f-status').value='active';
-  document.getElementById('f-pack').value='Comf';
-  document.getElementById('f-inwork').checked=false;
-  document.getElementById('f-completed').checked=false;
-  document.getElementById('f-masters').checked=false;
+  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  ['f-inwork','f-masters','f-completed'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.checked=false;
+  });
+  document.getElementById('f-pack').value='';
+  document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
 }
 
 function openEditModal(i){
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  editIdx=ri;const o=objects[ri];
-  if(!o)return;
-  document.getElementById('modalTitle').textContent='Редагувати';
+  editIdx=i;const o=objects[i];if(!o)return;
+  document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
   document.getElementById('f-addr').value=o.addr||'';
-  document.getElementById('f-stage').value=o.stage||'Підготовка';
-  document.getElementById('f-status').value=o.status||'active';
-  document.getElementById('f-pack').value=o.pack||'Comf';
   document.getElementById('f-area').value=o.area||'';
-  document.getElementById('f-link-folder').value=o.linkFolder||'';
+  document.getElementById('f-pack').value=o.pack||'';
   document.getElementById('f-start').value=o.dateStart||'';
   document.getElementById('f-end').value=o.dateEnd||'';
-  document.getElementById('f-inwork').checked=!!o.inwork;
-  document.getElementById('f-completed').checked=!!o.completed;
-  document.getElementById('f-masters').checked=!!o.masters;
   document.getElementById('f-masters-name').value=o.mastersName||'';
+  document.getElementById('f-link-folder').value=o.linkFolder||'';
+  document.getElementById('f-inwork').checked=!!o.inwork;
+  document.getElementById('f-masters').checked=!!o.masters;
+  document.getElementById('f-completed').checked=!!o.completed;
+  document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
 }
-function closeAddModal(){document.getElementById('addModal').classList.remove('open')}
+
+function closeAddModal(){document.getElementById('addModal').classList.remove('open');}
 
 async function saveCard(){
-  const btn=document.getElementById('btnSaveObj');
-  try{
-  btn.disabled=true;btn.textContent='Збереження...';
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-err').style.display='block';return;}
+  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Збереження...';
   const obj={
-    name:document.getElementById('f-name').value.trim()||'Без назви',
+    name,
     addr:document.getElementById('f-addr').value.trim(),
-    stage:document.getElementById('f-stage').value,
-    status:document.getElementById('f-status').value,
+    area:document.getElementById('f-area').value.trim(),
     pack:document.getElementById('f-pack').value,
-    area:document.getElementById('f-area').value,
-    inwork:document.getElementById('f-inwork').checked,
-    completed:document.getElementById('f-completed').checked,
-    masters:document.getElementById('f-masters').checked,
-    mastersName:document.getElementById('f-masters-name').value.trim(),
-    linkProject:editIdx!==null?(objects[editIdx].linkProject||''):'',
-    linkFolder:document.getElementById('f-link-folder').value.trim(),
     dateStart:document.getElementById('f-start').value,
     dateEnd:document.getElementById('f-end').value,
+    mastersName:document.getElementById('f-masters-name').value.trim(),
+    linkFolder:document.getElementById('f-link-folder').value.trim(),
+    inwork:document.getElementById('f-inwork').checked,
+    masters:document.getElementById('f-masters').checked,
+    completed:document.getElementById('f-completed').checked,
+    status:'active',stage:'',linkProject:'',
     notes:editIdx!==null?(objects[editIdx].notes||[]):[]
   };
   if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
   else{await apiSave(obj);objects.push(obj);}
   btn.disabled=false;btn.textContent='Зберегти';
-  closeAddModal();expandedId=null;render();
-  }catch(err){
-    console.error('saveCard error:',err);
-    btn.disabled=false;btn.textContent='Зберегти';
-    alert('Помилка збереження: '+err.message);
-  }
+  closeAddModal();render();renderNotes();
 }
 
+// ── DELETE CARD ──
 async function deleteCard(i){
-  const wrap=document.getElementById('wrap-'+i);
-  const oid=wrap?wrap.dataset.objid:null;
-  const ri=oid!==null?objIdx(oid):i;
-  if(ri<0||ri>=objects.length)return;
-  if(!confirm('Видалити "'+objects[ri].name+'"?'))return;
-  addHistory({type:'obj',action:'delete',label:objects[ri].name,data:{...objects[ri],notes:[...(objects[ri].notes||[])]}});
-  const id=objects[ri].id;expandedId=null;objects.splice(ri,1);render();
-  await apiDelete(id);
+  const o=objects[i];if(!o)return;
+  if(!confirm('Видалити "'+o.name+'"?'))return;
+  addHistory({type:'obj',label:o.name,data:{...o,notes:[...(o.notes||[])]}});
+  const id=o.id;objects.splice(i,1);render();renderNotes();
+  try{await apiDelete(id);}catch(e){console.error(e);}
 }
 
-// addModal: ONLY close via "Скасувати" button — never on outside click (prevents accidental close while editing)
-document.getElementById('reminderModal').addEventListener('click',function(e){
-  if(e.target===this) closeReminderModal();
-});
-document.getElementById('noteEditModal').addEventListener('click',function(e){
-  if(e.target===this) closeNoteEditModal();
-});
-
-loadActionLog();
-apiGet();
-loadCalendar();
-
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){ apiGet(); loadCalendar(); }
-});
-window.addEventListener('pageshow',function(e){
-  if(e.persisted){ apiGet(); loadCalendar(); }
-});
-
-setInterval(()=>{
-  const activeInput=document.activeElement;
-  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
-  if(!isTypingNote) render();
-},30000);
-
-// ── MOBILE ──────────────────────────────────────────────
-function isMobile(){ return window.innerWidth <= 900; }
-
-function renderMobile(){
-  if(!isMobile()) return;
-  renderMobCalendar();
-  renderMobNotes();
-}
-
-function renderMobCalendar(){
-  const dayEl=document.getElementById('mobCalDay');
-  const evEl=document.getElementById('mobCalEvents');
-  if(!dayEl||!evEl) return;
+// ── CALENDAR ──
+async function loadCalendar(){
+  const dateEl=document.getElementById('calStripDate');
+  const evEl=document.getElementById('calStripEvents');
+  if(!dateEl||!evEl)return;
   const now=new Date();
-  const DAYS=['Неділя','Понеділок','Вівторок','Середа','Четвер','Пятниця','Субота'];
-  const MONTHS=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
-  dayEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
-
-  // Re-use already-rendered calWeekEvents
-  const src=document.getElementById('calWeekEvents');
-  if(src&&src.innerHTML&&!src.innerHTML.includes('завантаження')){
-    evEl.innerHTML=src.innerHTML;
-  } else {
-    evEl.innerHTML='<div class="mob-cal-empty">Завантаження...</div>';
-    loadCalendar().then(()=>{
-      const src2=document.getElementById('calWeekEvents');
-      if(src2) evEl.innerHTML=src2.innerHTML||'<div class="mob-cal-empty">Подій немає</div>';
-    }).catch(()=>{
-      evEl.innerHTML='<div class="mob-cal-empty">Недоступно</div>';
-    });
-  }
-}
-
-function renderMobNotes(){
-  const list=document.getElementById('mobNotesList');
-  if(!list) return;
-  list.innerHTML='';
-  const now=new Date();
-
-  // obj notes first, then random — within each group overdue first
-  const objItems=[], randomItems=[];
-  stickyNotes.forEach((sn,idx)=>{
-    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    const overdue=!!(note&&note.time&&now>=new Date(note.time));
-    randomItems.push({type:'random',idx,text:sn.name||'',overdue,time:note&&note.time?fmtDT(note.time):''});
-  });
-  objects.forEach(o=>{
-    (o.notes||[]).forEach((n,ni)=>{
-      objItems.push({type:'objnote',objId:o.id,ni,text:n.text||'',objName:o.name,objAddr:o.addr||'',overdue:!!isNoteActive(n),time:n.time?fmtDT(n.time):''});
-    });
-  });
-  const sortByOverdue=(a,b)=>Number(b.overdue)-Number(a.overdue);
-  objItems.sort(sortByOverdue);
-  randomItems.sort(sortByOverdue);
-  // Overdue from both groups go to top, then obj, then random
-  const overdueAll=[...objItems,...randomItems].filter(x=>x.overdue);
-  const notOverdueObj=objItems.filter(x=>!x.overdue);
-  const notOverdueRandom=randomItems.filter(x=>!x.overdue);
-  const allItems=[...overdueAll,...notOverdueObj,...notOverdueRandom];
-
-  allItems.forEach(item=>{
-    const row=document.createElement('div');
-    row.className='random-note-item';
-    const active=item.overdue;
-    const timeHtml=item.time?('<span class="random-note-time'+(item.time&&!active?' has-reminder':'')+'">'+item.time+'</span>'):'';
-    if(item.type==='random'){
-      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" onclick="openRandomNoteEdit('+item.idx+')">— '+item.text+'</span>'+timeHtml+'<button class="random-note-del" onclick="deleteRandomNote('+item.idx+')">✕</button>';
-    } else {
-      var oid2=String(item.objId);
-      row.setAttribute('data-oid',oid2);
-      row.setAttribute('data-ni',item.ni);
-      var mapsHref=item.objAddr?'https://www.google.com/maps/search/'+encodeURIComponent(item.objAddr):'';
-      row.innerHTML='<span class="random-note-text'+(active?' overdue':'')+'" data-action="editobj">— '+item.text+'</span>'+(mapsHref?'<a class="rn-obj-name" href="'+mapsHref+'" target="_blank">('+item.objName+')</a>':'<span class="rn-obj-name">('+item.objName+')</span>')+timeHtml+'<button class="random-note-del" data-action="delobj">✕</button>';
-      row.querySelector('[data-action="editobj"]').onclick=function(){openObjNoteEdit(oid2,item.ni);};
-      row.querySelector('[data-action="delobj"]').onclick=function(){deleteObjNoteById(oid2,item.ni);};
-    }
-    list.appendChild(row);
-  });
-}
-
-async function mobAddNote(){
-  const inp=document.getElementById('mobAddInput');
-  const text=inp?inp.value.trim():'';
-  if(!text) return;
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',stage:'',status:'sticky',pack:'',area:'',notes:[]};
-  stickyNotes.push(sn);
-  inp.value='';
-  renderMobNotes();
-  renderRandomNotes();
+  const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+  dateEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
-    await apiSave(sn);
-  }catch(e){
-    console.error('mobAddNote save error:',e);
-    setSyncStatus('err','помилка збереження');
-  }
+    const res=await fetch(API_URL+'?action=getCalendar');
+    const data=await res.json();
+    if(!Array.isArray(data)||!data.length){
+      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';return;
+    }
+    evEl.innerHTML='';
+    data.forEach(ev=>{
+      const start=new Date(ev.start);const end=new Date(ev.end||ev.start);
+      const diff=start-now;
+      let cls='future';
+      if(!ev.allDay){
+        if(end<now)cls='past';
+        else if(diff<=0||diff<=3600000)cls='now';
+      }
+      const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+      const span=document.createElement('span');span.className='cal-ev '+cls;
+      const a=document.createElement('a');
+      a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
+      a.textContent='— '+ev.title+' '+timeStr;
+      span.appendChild(a);evEl.appendChild(span);
+    });
+  }catch(e){evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';}
 }
 
+// ── HISTORY ──
+const MAX_HIST=50;
+function addHistory(entry){
+  entry.time=new Date().toISOString();actionLog.unshift(entry);
+  if(actionLog.length>MAX_HIST)actionLog.pop();
+  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
+}
+function loadHistory(){
+  try{actionLog=JSON.parse(localStorage.getItem('crm_history')||'[]');}catch{actionLog=[];}
+}
+function openHistory(){
+  const list=document.getElementById('historyList');
+  const empty=document.getElementById('historyEmpty');
+  list.innerHTML='';
+  if(!actionLog.length){list.style.display='none';empty.style.display='block';}
+  else{
+    list.style.display='block';empty.style.display='none';
+    actionLog.forEach((h,idx)=>{
+      const d=new Date(h.time);
+      const ts=d.getDate()+'.'+(d.getMonth()+1)+' '+d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+      const item=document.createElement('div');item.className='hist-item';
+      item.innerHTML='<span class="hist-badge">видалено</span><div class="hist-body"><div class="hist-name">'+h.label+'</div><div class="hist-meta">'+(h.parentName?h.parentName+' · ':'')+ts+'</div></div>';
+      const btn=document.createElement('button');btn.className='hist-restore';btn.textContent='↩ Відновити';
+      btn.onclick=()=>restoreHistory(idx);
+      item.appendChild(btn);list.appendChild(item);
+    });
+  }
+  document.getElementById('historyModal').classList.add('open');
+}
+function closeHistory(){document.getElementById('historyModal').classList.remove('open');}
+async function restoreHistory(idx){
+  const h=actionLog[idx];if(!h)return;
+  if(h.type==='obj'){
+    const o={...h.data,id:''};await apiSave(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
+  }else if(h.type==='note'){
+    const ri=objects.findIndex(o=>String(o.id)===String(h.objId));
+    if(ri>=0){if(!objects[ri].notes)objects[ri].notes=[];objects[ri].notes.push(h.data);await apiSave(objects[ri]);render();renderNotes();}
+  }else if(h.type==='sticky'){
+    const sn={...h.data,id:'sticky_'+Date.now()};stickyNotes.push(sn);await apiSave(sn);renderNotes();
+  }
+  actionLog.splice(idx,1);
+  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
+  closeHistory();openHistory();
+}
 
-setInterval(()=>{
-  // Don't re-render if user is actively typing in a note input
-  const activeInput=document.activeElement;
-  const isTypingNote=activeInput&&activeInput.classList.contains('note-input-field');
-  if(!isTypingNote) render();
-},30000);
+// ── STARTUP ──
+document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
+document.getElementById('noteModal').addEventListener('click',function(e){if(e.target===this)closeNoteModal();});
+document.getElementById('historyModal').addEventListener('click',function(e){if(e.target===this)closeHistory();});
+document.querySelector('#addModal .modal').addEventListener('click',e=>e.stopPropagation());
+document.querySelector('#noteModal .modal').addEventListener('click',e=>e.stopPropagation());
 
-
-loadActionLog();
+loadHistory();
+render();
+renderNotes();
 apiGet();
 loadCalendar();
 
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){ apiGet(); loadCalendar(); }
-});
-window.addEventListener('pageshow',function(e){
-  if(e.persisted){ apiGet(); loadCalendar(); }
-});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
+window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
+setInterval(()=>{if(document.activeElement?.tagName!=='INPUT')render();},30000);
 </script>
 </body>
 </html>
