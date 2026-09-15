@@ -58,7 +58,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 /* ── OBJECTS GRID ── */
 .objects-grid{
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:0;
   padding:0 6px;
 }
@@ -67,8 +67,8 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
   display:flex;flex-direction:column;gap:3px;
   background:#fff;
   border-radius:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
-  margin:5px;
+  box-shadow:0 4px 16px rgba(0,0,0,.13),0 1px 4px rgba(0,0,0,.06);
+  margin:6px;
 }
 .obj-card.completed{opacity:.55}
 .obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
@@ -227,6 +227,41 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
     <span class="cal-ev" style="color:#ccc">завантаження...</span>
   </div>
 
+</div>
+
+<!-- QUICK NOTE INPUT -->
+<div style="padding:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <input id="quickNoteInput" placeholder="нова нотатка..." 
+    onkeydown="if(event.key==='Enter')addQuickNote()"
+    style="font-family:'Google Sans',Arial,sans-serif;font-size:15px;border:none;
+      border-bottom:1.5px solid #ddd;background:transparent;outline:none;
+      flex:1;min-width:200px;max-width:420px;padding:3px 2px;color:#333">
+  <button onclick="addQuickNote()" 
+    style="font-family:'Google Sans',Arial,sans-serif;font-size:15px;border:none;
+      background:transparent;color:#aaa;cursor:pointer;padding:0 6px">↵</button>
+  <button id="quickDtBtn" onclick="toggleQuickDt()"
+    style="font-family:'Google Sans',Arial,sans-serif;font-size:13px;color:#bbb;
+      cursor:pointer;border:none;background:transparent;text-decoration:underline;text-underline-offset:2px">+ нагадати</button>
+</div>
+<div id="quickDtRow" style="display:none;align-items:center;gap:8px;padding-bottom:8px;flex-wrap:wrap">
+  <span style="font-size:13px;color:#bbb">коли:</span>
+  <input type="date" id="quickDtDate" 
+    style="font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
+      border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
+      -webkit-appearance:none;appearance:none">
+  <select id="quickDtHour" 
+    style="font-family:'Google Sans',Arial,sans-serif;font-size:14px;color:#888;border:none;
+      border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
+      -webkit-appearance:none;appearance:none">
+    <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
+    <option value="9" selected>9:00</option><option value="10">10:00</option>
+    <option value="11">11:00</option><option value="12">12:00</option>
+    <option value="13">13:00</option><option value="14">14:00</option>
+    <option value="15">15:00</option><option value="16">16:00</option>
+    <option value="17">17:00</option><option value="18">18:00</option>
+    <option value="19">19:00</option><option value="20">20:00</option>
+    <option value="21">21:00</option><option value="22">22:00</option>
+  </select>
 </div>
 
 <!-- OBJECTS -->
@@ -543,7 +578,7 @@ function buildCard(o,i){
       const row=document.createElement('div');row.className='obj-note-row';
       const txt=document.createElement('span');
       txt.className='obj-note-text'+(active?' overdue':'');
-      txt.textContent='· '+n.text;
+      txt.textContent='\u2013 '+n.text;
       txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni});
       row.appendChild(txt);
       if(n.time){
@@ -623,7 +658,7 @@ function renderNotes(){
     const row=document.createElement('div');row.className='note-item';
     const txt=document.createElement('span');
     txt.className='note-text'+(item.overdue?' overdue':'');
-    txt.textContent='· '+item.text;
+    txt.textContent='\u2013 '+item.text;
     txt.onclick=()=>{
       if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
       else openNoteModal({type:'obj',objId:item.objId,ni:item.ni});
@@ -673,6 +708,33 @@ async function deleteObjNote(objId,ni){
 }
 
 // ── STICKY NOTE ACTIONS ──
+function toggleQuickDt(){
+  const row=document.getElementById('quickDtRow');
+  const btn=document.getElementById('quickDtBtn');
+  if(!row)return;
+  if(row.style.display==='flex'){row.style.display='none';btn.textContent='+ нагадати';}
+  else{row.style.display='flex';btn.textContent='− прибрати';}
+}
+
+async function addQuickNote(){
+  const inp=document.getElementById('quickNoteInput');
+  const text=inp?inp.value.trim():'';if(!text)return;
+  const date=document.getElementById('quickDtDate')?.value||'';
+  const hour=document.getElementById('quickDtHour')?.value||'9';
+  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
+    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
+    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
+    notes:time?[{text,time}]:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  if(document.getElementById('quickDtDate')) document.getElementById('quickDtDate').value='';
+  document.getElementById('quickDtRow').style.display='none';
+  document.getElementById('quickDtBtn').textContent='+ нагадати';
+  try{await apiSave(sn);}catch(e){console.error(e);}
+  renderNotes();
+}
+
 async function addGlobalNote(){
   const inp=document.getElementById('noteAddInput');
   const text=inp?inp.value.trim():'';if(!text)return;
