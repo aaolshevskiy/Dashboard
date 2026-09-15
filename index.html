@@ -47,7 +47,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .sync-status{font-size:13px;color:var(--apple-tertiary);font-weight:400}
 .sync-status.ok .sync-text{color:#2a7a3a}
 .sync-status.err .sync-text{color:#c0392b}
-.btn{font-family:inherit;font-size:13px;padding:7px 16px;border:none;
+.btn{font-family:inherit;font-size:13px;padding:8px 18px;border:none;
   border-radius:20px;background:rgba(0,0,0,.06);cursor:pointer;color:var(--apple-text);
   font-weight:500;letter-spacing:-.01em;transition:background .15s}
 .btn:hover{background:rgba(0,0,0,.1)}
@@ -79,8 +79,9 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   padding:0 6px;
 }
 .obj-card{
-  padding:14px 16px 16px;
+  padding:14px 16px 14px;
   display:flex;flex-direction:column;gap:4px;
+  min-height:180px;
   background:var(--apple-card);
   border-radius:var(--apple-radius);
   box-shadow:var(--apple-shadow-md);
@@ -112,10 +113,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 /* Notes under obj */
 .obj-notes-list{margin-top:5px;display:flex;flex-direction:column;gap:1px}
 .obj-note-row{display:flex;align-items:baseline;gap:3px;flex-wrap:wrap}
-.obj-note-text{font-size:13px;color:var(--apple-text);cursor:pointer;line-height:1.4}
+.obj-note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4}
 .obj-note-text:hover{color:#1a1a8a}
 .obj-note-text.overdue{color:#c0392b}
-.obj-note-time{font-size:13px;color:#bbb}
+.obj-note-time{font-size:13px;color:var(--apple-tertiary)}
 .obj-note-time.has-rem{color:#2a7a3a}
 .obj-note-del{font-size:13px;border:none;background:transparent;color:#ccc;cursor:pointer;padding:0 2px;line-height:1}
 .obj-note-del:hover{color:#c0392b}
@@ -138,9 +139,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0}
 .note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;font-weight:400}
+.note-text.linked{color:var(--apple-secondary)}
 .note-text:hover{text-decoration:underline}
 .note-text.overdue{color:#c0392b}
-.note-obj-link{font-size:18px;color:#1a1a8a;text-decoration:none;flex-shrink:0}
+.note-obj-link{font-size:15px;color:var(--apple-secondary);text-decoration:none;flex-shrink:0}
 .note-obj-link:hover{text-decoration:underline}
 .note-time{font-size:14px;color:#bbb;flex-shrink:0}
 .note-time.has-rem{color:#2a7a3a}
@@ -215,12 +217,45 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 /* ── DRAWING ── */
 
 
+
+/* ── OVERDUE ZONE ── */
+.overdue-zone{
+  margin-bottom:16px;
+  background:rgba(255,59,48,.05);
+  border:1px solid rgba(255,59,48,.15);
+  border-radius:var(--apple-radius-sm);
+  padding:10px 14px;
+}
+.overdue-zone-title{
+  font-size:11px;font-weight:600;color:rgba(255,59,48,.7);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;
+  display:flex;align-items:center;gap:5px;
+}
+.overdue-item{
+  display:flex;align-items:baseline;gap:6px;padding:2px 0;flex-wrap:wrap;
+  animation:pulse-red 2s ease-in-out infinite;
+}
+@keyframes pulse-red{
+  0%,100%{opacity:1} 50%{opacity:.7}
+}
+.overdue-item-text{
+  font-size:15px;font-weight:500;color:rgb(255,59,48);cursor:pointer;
+}
+.overdue-item-obj{
+  font-size:13px;color:rgba(255,59,48,.7);
+}
+.overdue-item-time{font-size:12px;color:rgba(255,59,48,.5);}
+
 /* ── MOBILE ── */
-@media(max-width:900px){
+@media(max-width:768px){
   body{padding:6px;min-width:unset}
   .board-inner{padding:12px 12px 0}
-  .objects-grid{grid-template-columns:repeat(2,1fr)}
+  .objects-grid,.section-label,.overdue-zone{display:none!important}
   .notes-cols{grid-template-columns:1fr}
+}
+@media(min-width:769px) and (max-width:1024px){
+  body{padding:8px;}
+  .objects-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -247,6 +282,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 </div>
 
+<div id="overdueZone" style="display:none"></div>
 <!-- QUICK NOTE INPUT -->
 <div style="padding:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
   <input id="quickNoteInput" placeholder="нова нотатка..." 
@@ -341,13 +377,11 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="fsec">Додатково</div>
     <div class="form-row"><label>Майстер</label><input id="f-masters-name" placeholder="Ім'я майстра"></div>
     <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
-        <input type="checkbox" id="f-inwork"> ☆ В реалізації</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
-        <input type="checkbox" id="f-masters"> М Знайти майстрів</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:17px;color:#1a1a1a;cursor:pointer">
-        <input type="checkbox" id="f-completed"> ✓ Завершено</label>
+      <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
+        <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
+
     </div>
     <div class="err-msg" id="f-err">Введіть назву</div>
     <div class="modal-footer">
@@ -425,10 +459,12 @@ function setSyncStatus(state,text){
 }
 function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 function parseObj(o){
-  return{...o,
+  const parsed={...o,
     inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
     notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
   };
+  if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
+  return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
 function isNoteActive(n){return!!(n.time&&new Date()>=new Date(n.time));}
@@ -479,8 +515,8 @@ async function apiSave(obj){
   }else{
     full={id:obj.id||'',name:obj.name||'',addr:obj.addr||'',stage:obj.stage||'',
       status:obj.status||'active',pack:obj.pack||'',area:obj.area||'',
-      inwork:!!obj.inwork,completed:!!obj.completed,masters:!!obj.masters,
-      mastersName:obj.mastersName||'',linkProject:'',linkFolder:obj.linkFolder||'',
+      inwork:!!obj.inwork,completed:false,masters:false,
+      mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
@@ -504,18 +540,12 @@ async function apiDelete(id){
 function sortObjects(){
   objects.sort((a,b)=>{
     if(!!a.completed!==!!b.completed)return a.completed?1:-1;
-    const rankO=o=>{
-      const over=(o.notes||[]).some(isNoteActive);
-      const hasN=(o.notes||[]).length>0;
-      if(o.inwork&&o.masters)return over?0:hasN?1:2;
-      if(o.inwork)return over?0:hasN?1:3;
-      if(o.masters)return 4;
-      return 5;
-    };
-    const ra=rankO(a),rb=rankO(b);
-    if(ra!==rb)return ra-rb;
-    // Within same rank: more notes first
-    return (b.notes||[]).length-(a.notes||[]).length;
+    // Primary: more notes first
+    const na=(a.notes||[]).length, nb=(b.notes||[]).length;
+    if(na!==nb)return nb-na;
+    // Secondary: inwork
+    if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;
+    return 0;
   });
 }
 
@@ -575,7 +605,7 @@ function buildCard(o,i){
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
-  if(hasRem) meta.innerHTML+='<span class="obj-dot"></span>';
+
   if(meta.innerHTML) card.appendChild(meta);
 
   // Dates — always shown
@@ -628,13 +658,53 @@ function buildCard(o,i){
   delBtn.style.color='#e07070';
   delBtn.onclick=()=>deleteCard(i);
   addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(editBtn);addRow.appendChild(delBtn);
+  addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
   card.appendChild(addRow);
 
   return card;
 }
 
 // ── RENDER NOTES (bottom zone) ──
+function renderOverdueZone(){
+  const zone=document.getElementById('overdueZone');
+  if(!zone)return;
+  const now=new Date();
+  const items=[];
+  stickyNotes.forEach((sn,idx)=>{
+    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
+    if(note&&note.time&&now>=new Date(note.time))
+      items.push({text:sn.name,objName:null,time:fmtDT(note.time),onClick:()=>openNoteModal({type:'sticky',idx})});
+  });
+  objects.forEach(o=>{
+    (o.notes||[]).forEach((n,ni)=>{
+      if(isNoteActive(n))
+        items.push({text:n.text,objName:o.name,time:fmtDT(n.time),onClick:()=>openNoteModal({type:'obj',objId:o.id,ni})});
+    });
+  });
+  if(!items.length){zone.style.display='none';return;}
+  zone.style.display='block';
+  zone.innerHTML='<div class="overdue-zone"><div class="overdue-zone-title">🔥 Протерміновано</div>'
+    +items.map(it=>'<div class="overdue-item"><span class="overdue-item-text">'+it.text+'</span>'
+      +(it.objName?'<span class="overdue-item-obj">('+it.objName+')</span>':'')
+      +'<span class="overdue-item-time">'+it.time+'</span></div>').join('')+'</div>';
+  zone.querySelectorAll('.overdue-item-text').forEach((el,i)=>{
+    el.onclick=items[i].onClick;
+  });
+}
+
 function renderNotes(){
+  // Populate obj selector
+  const objSel=document.getElementById('noteObjSelect');
+  if(objSel){
+    const cur=objSel.value;
+    objSel.innerHTML='<option value="">— без об’єкту —</option>';
+    [...objects].sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
+      const opt=document.createElement('option');opt.value=o.id;
+      opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');
+      objSel.appendChild(opt);
+    });
+    objSel.value=cur;
+  }
   const leftEl=document.getElementById('notesLeft');
   const rightEl=document.getElementById('notesRight');
   if(!leftEl||!rightEl)return;
@@ -675,7 +745,7 @@ function renderNotes(){
     const el=i<half?leftEl:rightEl;
     const row=document.createElement('div');row.className='note-item';
     const txt=document.createElement('span');
-    txt.className='note-text'+(item.overdue?' overdue':'');
+    txt.className='note-text'+(item.overdue?' overdue':'')+(item.objName&&!item.overdue?' linked':'');
     txt.textContent='\u2013 '+item.text;
     txt.onclick=()=>{
       if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
@@ -683,10 +753,12 @@ function renderNotes(){
     };
     row.appendChild(txt);
     if(item.objName){
-      const a=document.createElement('a');a.className='note-obj-link';
-      if(item.objAddr){a.href=mapsUrl(item.objAddr);a.target='_blank';}
-      else{a.style.pointerEvents='none';}
+      const a=document.createElement('span');a.className='note-obj-link';
+      a.style.cursor='pointer';a.title='Змінити об’єкт';
       a.textContent='('+item.objName+')';
+      a.onclick=()=>{
+        if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
+      };
       row.appendChild(a);
     }
     if(item.time){
@@ -759,6 +831,20 @@ async function addGlobalNote(){
   const date=document.getElementById('noteDtDate')?.value||'';
   const hour=document.getElementById('noteDtHour')?.value||'9';
   const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  const selObjId=document.getElementById('noteObjSelect')?.value||'';
+  if(selObjId){
+    // Add directly to object
+    const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
+    if(ri>=0){
+      if(!objects[ri].notes)objects[ri].notes=[];
+      objects[ri].notes.push({text,time});
+      inp.value='';
+      document.getElementById('noteObjSelect').value='';
+      if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
+      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+      render();renderNotes();renderOverdueZone();return;
+    }
+  }
   const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
@@ -769,7 +855,7 @@ async function addGlobalNote(){
   document.getElementById('noteDtRow')?.classList.remove('vis');
   document.getElementById('noteDtBtn').textContent='+ нагадати';
   try{await apiSave(sn);}catch(e){console.error(e);}
-  renderNotes();
+  renderNotes();renderOverdueZone();
 }
 
 async function deleteStickyNote(idx){
@@ -890,9 +976,8 @@ function openEditModal(i){
   document.getElementById('f-end').value=o.dateEnd||'';
   document.getElementById('f-masters-name').value=o.mastersName||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
+  if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
-  document.getElementById('f-masters').checked=!!o.masters;
-  document.getElementById('f-completed').checked=!!o.completed;
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
 }
@@ -912,9 +997,10 @@ async function saveCard(){
     dateEnd:document.getElementById('f-end').value,
     mastersName:document.getElementById('f-masters-name').value.trim(),
     linkFolder:document.getElementById('f-link-folder').value.trim(),
+    bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     inwork:document.getElementById('f-inwork').checked,
-    masters:document.getElementById('f-masters').checked,
-    completed:document.getElementById('f-completed').checked,
+    masters:false,
+    completed:false,
     status:'active',stage:'',linkProject:'',
     notes:editIdx!==null?(objects[editIdx].notes||[]):[]
   };
@@ -1022,6 +1108,7 @@ document.querySelector('#noteModal .modal').addEventListener('click',e=>e.stopPr
 loadHistory();
 render();
 renderNotes();
+renderOverdueZone();
 apiGet();
 loadCalendar();
 
