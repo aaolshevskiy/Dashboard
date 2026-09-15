@@ -290,12 +290,19 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 </div>
 
 <!-- CALENDAR STRIP -->
-<div class="cal-strip" id="calStrip">
-  <span class="cal-strip-date" id="calStripDate"></span>
-  <div class="cal-strip-events" id="calStripEvents">
-    <span class="cal-ev" style="color:#ccc">завантаження...</span>
+<div class="cal-strip" id="calStrip" style="flex-direction:column;align-items:stretch;gap:6px">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span class="cal-strip-date" id="calStripDate"></span>
+    <div class="cal-strip-events" id="calStripEvents">
+      <span class="cal-ev" style="color:#ccc">завантаження...</span>
+    </div>
   </div>
-
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span class="cal-strip-date" id="calStripDateTomorrow" style="font-size:13px;color:var(--apple-tertiary)"></span>
+    <div class="cal-strip-events" id="calStripEventsTomorrow">
+      <span style="font-size:13px;color:#ddd">завантаження...</span>
+    </div>
+  </div>
 </div>
 
 
