@@ -6,11 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
 <style>
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
+body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:100vh;
   display:flex;align-items:flex-start;justify-content:center;padding:16px}
 
 /* ── BOARD ── */
@@ -31,7 +32,7 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
 .sync-status{font-size:15px;color:#aaa}
 .sync-status.ok .sync-text{color:#2a7a3a}
 .sync-status.err .sync-text{color:#c0392b}
-.btn{font-family:Arial,sans-serif;font-size:14px;padding:6px 16px;border:1.5px solid #ccc;
+.btn{font-family:'Google Sans',Arial,sans-serif;font-size:14px;padding:6px 16px;border:1.5px solid #ccc;
   border-radius:6px;background:transparent;cursor:pointer;color:#555;font-weight:500}
 .btn:hover{background:rgba(0,0,0,.05)}
 .btn-primary{border-color:#1a1a8a;color:#fff;background:#1a1a8a}
@@ -59,10 +60,15 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:0;
+  padding:0 6px;
 }
 .obj-card{
-  padding:10px 12px;
-  display:flex;flex-direction:column;gap:2px;
+  padding:12px 14px 14px;
+  display:flex;flex-direction:column;gap:3px;
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  margin:5px;
 }
 .obj-card.completed{opacity:.55}
 .obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
@@ -93,18 +99,17 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
 .obj-note-text.overdue{color:#c0392b}
 .obj-note-time{font-size:13px;color:#bbb}
 .obj-note-time.has-rem{color:#2a7a3a}
-.obj-note-del{font-size:13px;border:none;background:transparent;color:#ddd;
-  cursor:pointer;padding:0 2px;font-family:Arial,sans-serif}
+.obj-note-del{font-size:13px;border:none;background:transparent;color:#ccc;cursor:pointer;padding:0 2px;line-height:1}
 .obj-note-del:hover{color:#c0392b}
 /* Add note input */
 .obj-add-note{margin-top:4px;display:flex;align-items:center;gap:4px}
 .obj-add-note input{
-  font-family:Arial,sans-serif;font-size:14px;border:none;
+  font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:0;padding:0 2px;color:#1a1a1a;
 }
 .obj-add-note input::placeholder{color:#ccc}
-.obj-add-note button{font-family:Arial,sans-serif;font-size:14px;border:none;
+.obj-add-note button{font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 2px;flex-shrink:0}
 .obj-add-note button:hover{color:#1a1a8a}
 
@@ -121,29 +126,28 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
 .note-obj-link:hover{text-decoration:underline}
 .note-time{font-size:14px;color:#bbb;flex-shrink:0}
 .note-time.has-rem{color:#2a7a3a}
-.note-del{font-size:12px;padding:0 4px;border-radius:2px;
-  background:transparent;color:#ddd;cursor:pointer;font-family:Arial,sans-serif;flex-shrink:0}
-.note-del:hover{color:#c0392b;border-color:#c0392b}
+.note-del{font-size:13px;padding:0 2px;border:none;background:transparent;color:#ccc;cursor:pointer;flex-shrink:0;line-height:1}
+.note-del:hover{color:#c0392b}
 /* Add note input (bottom zone) */
 .notes-add{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .notes-add input{
-  font-family:Arial,sans-serif;font-size:20px;border:none;
+  font-family:'Google Sans',Arial,sans-serif;font-size:20px;border:none;
   border-bottom:1.5px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:200px;max-width:480px;padding:1px 2px;color:#1a1a1a;
 }
 .notes-add input::placeholder{color:#ccc}
-.notes-add button{font-family:Arial,sans-serif;font-size:20px;border:none;
+.notes-add button{font-family:'Google Sans',Arial,sans-serif;font-size:20px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 4px}
 .notes-add button:hover{color:#1a1a8a}
-.dt-btn{font-family:Arial,sans-serif;font-size:16px;color:#ccc;cursor:pointer;
+.dt-btn{font-family:'Google Sans',Arial,sans-serif;font-size:16px;color:#ccc;cursor:pointer;
   border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
 .dt-btn:hover{color:#888}
 .dt-row{display:none;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
 .dt-row.vis{display:flex}
-.dt-row input[type=date]{font-family:Arial,sans-serif;font-size:17px;border:none;
+.dt-row input[type=date]{font-family:'Google Sans',Arial,sans-serif;font-size:17px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
   -webkit-appearance:none;appearance:none}
-.hour-sel{font-family:Arial,sans-serif;font-size:16px;color:#888;border:none;
+.hour-sel{font-family:'Google Sans',Arial,sans-serif;font-size:16px;color:#888;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
   -webkit-appearance:none;appearance:none}
 .dt-label{font-size:15px;color:#bbb}
@@ -159,16 +163,16 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
 .form-row{margin-bottom:12px;display:flex;flex-direction:column;gap:3px}
 .form-row label{font-size:14px;color:#aaa}
 .form-row input,.form-row select{
-  font-family:Arial,sans-serif;font-size:19px;border:none;
+  font-family:'Google Sans',Arial,sans-serif;font-size:19px;border:none;
   border-bottom:1.5px solid #e0e0e0;background:transparent;
   color:#1a1a1a;padding:3px 2px;outline:none;
   -webkit-appearance:none;appearance:none;
 }
 .form-row input:focus,.form-row select:focus{border-bottom-color:#1a1a8a}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-.btn-cancel{font-family:Arial,sans-serif;font-size:17px;padding:4px 14px;
+.btn-cancel{font-family:'Google Sans',Arial,sans-serif;font-size:17px;padding:4px 14px;
   border:1.5px solid #ccc;border-radius:4px;background:transparent;cursor:pointer;color:#999}
-.btn-save{font-family:Arial,sans-serif;font-size:17px;padding:4px 18px;
+.btn-save{font-family:'Google Sans',Arial,sans-serif;font-size:17px;padding:4px 18px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:#1a1a8a;cursor:pointer;color:#fff}
 .fsec{font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;
   margin:14px 0 6px;border-bottom:0.5px solid #e8e8e0;padding-bottom:4px}
@@ -182,7 +186,7 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
 .hist-body{flex:1;min-width:0}
 .hist-name{font-size:16px;font-weight:600;color:#1a1a1a}
 .hist-meta{font-size:12px;color:#aaa;margin-top:1px}
-.hist-restore{font-family:Arial,sans-serif;font-size:14px;padding:2px 8px;
+.hist-restore{font-family:'Google Sans',Arial,sans-serif;font-size:14px;padding:2px 8px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;
   color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .hist-restore:hover{background:rgba(26,26,138,.06)}
@@ -305,13 +309,13 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
   <div class="modal" style="width:420px">
     <div class="modal-title">Замітка</div>
     <div class="form-row"><label>Текст</label>
-      <textarea id="nm-text" rows="3" style="font-family:Arial,sans-serif;font-size:19px;
+      <textarea id="nm-text" rows="3" style="font-family:'Google Sans',Arial,sans-serif;font-size:19px;
         border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
         resize:vertical;background:transparent;outline:none"></textarea>
     </div>
     <div class="form-row"><label>Нагадування</label>
       <div class="note-edit-date-row">
-        <input id="nm-date" type="date" style="font-size:18px;font-family:Arial,sans-serif;
+        <input id="nm-date" type="date" style="font-size:18px;font-family:'Google Sans',Arial,sans-serif;
           border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
           outline:none;padding:2px;-webkit-appearance:none;appearance:none">
         <select class="hour-sel" id="nm-hour" style="font-size:18px">
@@ -328,7 +332,7 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
     </div>
     <div class="form-row" id="nm-obj-row" style="display:none">
       <label>Прив'язати до об'єкту</label>
-      <select id="nm-obj-select" style="font-family:Arial,sans-serif;font-size:18px;
+      <select id="nm-obj-select" style="font-family:'Google Sans',Arial,sans-serif;font-size:18px;
         border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
         outline:none;-webkit-appearance:none;appearance:none"></select>
     </div>
@@ -539,7 +543,7 @@ function buildCard(o,i){
       const row=document.createElement('div');row.className='obj-note-row';
       const txt=document.createElement('span');
       txt.className='obj-note-text'+(active?' overdue':'');
-      txt.textContent='— '+n.text;
+      txt.textContent='· '+n.text;
       txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni});
       row.appendChild(txt);
       if(n.time){
@@ -619,7 +623,7 @@ function renderNotes(){
     const row=document.createElement('div');row.className='note-item';
     const txt=document.createElement('span');
     txt.className='note-text'+(item.overdue?' overdue':'');
-    txt.textContent='— '+item.text;
+    txt.textContent='· '+item.text;
     txt.onclick=()=>{
       if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
       else openNoteModal({type:'obj',objId:item.objId,ni:item.ni});
