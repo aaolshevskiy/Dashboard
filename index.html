@@ -6,45 +6,61 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
 <style>
+
+/* ── APPLE DESIGN SYSTEM ── */
+:root{
+  --apple-blue:#0071e3;
+  --apple-blue-hover:#0077ed;
+  --apple-text:#1d1d1f;
+  --apple-secondary:#6e6e73;
+  --apple-tertiary:#aeaeb2;
+  --apple-bg:#f5f5f7;
+  --apple-card:#ffffff;
+  --apple-border:rgba(0,0,0,.08);
+  --apple-radius:12px;
+  --apple-radius-sm:8px;
+  --apple-shadow:0 2px 12px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.05);
+  --apple-shadow-md:0 4px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
+}
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:100vh;
+body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;background:#f0f0f0;min-height:100vh;
   display:flex;align-items:flex-start;justify-content:center;padding:16px}
 
 /* ── BOARD ── */
 .board{
-  background:#fafafa;
+  background:var(--apple-bg);
   box-shadow:none;
   width:100%;max-width:1400px;min-height:85vh;
   position:relative;
   padding-bottom:40px;
 }
 
-.board-inner{padding:18px 24px 0}
+.board-inner{padding:20px 28px 0}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.board-title{font-size:30px;font-weight:700;color:#1a1a1a}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--apple-border)}
+.board-title{font-size:28px;font-weight:700;color:var(--apple-text);letter-spacing:-.03em}
 .topbar-right{display:flex;align-items:center;gap:10px}
-.sync-status{font-size:15px;color:#aaa}
+.sync-status{font-size:13px;color:var(--apple-tertiary);font-weight:400}
 .sync-status.ok .sync-text{color:#2a7a3a}
 .sync-status.err .sync-text{color:#c0392b}
-.btn{font-family:'Google Sans',Arial,sans-serif;font-size:14px;padding:6px 16px;border:1.5px solid #ccc;
-  border-radius:6px;background:transparent;cursor:pointer;color:#555;font-weight:500}
-.btn:hover{background:rgba(0,0,0,.05)}
-.btn-primary{border-color:#1a1a8a;color:#fff;background:#1a1a8a}
-.btn-primary:hover{background:rgba(26,26,138,.07)}
+.btn{font-family:inherit;font-size:13px;padding:7px 16px;border:none;
+  border-radius:20px;background:rgba(0,0,0,.06);cursor:pointer;color:var(--apple-text);
+  font-weight:500;letter-spacing:-.01em;transition:background .15s}
+.btn:hover{background:rgba(0,0,0,.1)}
+.btn-primary{background:var(--apple-blue);color:#fff}
+.btn-primary:hover{background:var(--apple-blue-hover)}
 
 /* ── CALENDAR STRIP ── */
 .cal-strip{
   padding:5px 0 8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
 }
-.cal-strip-date{font-size:17px;font-weight:700;color:#888;flex-shrink:0}
+.cal-strip-date{font-size:14px;font-weight:600;color:var(--apple-secondary);flex-shrink:0;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
 .cal-strip-events{display:flex;gap:10px;flex-wrap:wrap;flex:1}
-.cal-ev{font-size:16px;white-space:nowrap}
+.cal-ev{font-size:14px;white-space:nowrap;font-weight:500}
 .cal-ev a{text-decoration:none;color:inherit}
 .cal-ev a:hover{text-decoration:underline}
 .cal-ev.past{color:#bbb}
@@ -53,7 +69,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 .cal-strip-link{font-size:14px;color:#aaa;text-decoration:none;flex-shrink:0}
 
 /* ── SECTION LABEL ── */
-.section-label{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:8px}
+.section-label{font-size:13px;font-weight:600;color:var(--apple-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
 
 /* ── OBJECTS GRID ── */
 .objects-grid{
@@ -63,28 +79,30 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
   padding:0 6px;
 }
 .obj-card{
-  padding:12px 14px 14px;
-  display:flex;flex-direction:column;gap:3px;
-  background:#fff;
-  border-radius:10px;
-  box-shadow:0 4px 16px rgba(0,0,0,.13),0 1px 4px rgba(0,0,0,.06);
+  padding:14px 16px 16px;
+  display:flex;flex-direction:column;gap:4px;
+  background:var(--apple-card);
+  border-radius:var(--apple-radius);
+  box-shadow:var(--apple-shadow-md);
   margin:6px;
+  transition:box-shadow .2s;
 }
+.obj-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.13),0 2px 6px rgba(0,0,0,.07);}
 .obj-card.completed{opacity:.55}
 .obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
 .obj-card-name{
-  font-size:26px;font-weight:700;color:#1a1a8a;
-  line-height:1.2;cursor:default;
+  font-size:16px;font-weight:600;color:var(--apple-text);
+  line-height:1.3;cursor:default;letter-spacing:-.02em;
 }
 .obj-card-name.has-notes{}
-.obj-card-addr{font-size:15px;color:#888;text-decoration:none;line-height:1.2;display:block}
+.obj-card-addr{font-size:13px;color:var(--apple-secondary);text-decoration:none;line-height:1.3;display:block}
 .obj-card-addr:hover{text-decoration:underline}
-.obj-card-meta{font-size:15px;color:#999;line-height:1.3}
-.obj-card-dates{font-size:15px;color:#666;line-height:1.3;margin-top:3px}
+.obj-card-meta{font-size:12px;color:var(--apple-secondary);line-height:1.4}
+.obj-card-dates{font-size:12px;color:var(--apple-secondary);line-height:1.4;margin-top:4px}
 .obj-card-dates span{color:#aaa}
 .obj-badge{
-  display:inline-block;font-size:11px;background:rgba(0,0,0,.07);
-  border-radius:2px;padding:0 4px;color:#777;margin-right:2px;
+  display:inline-block;font-size:11px;background:rgba(0,113,227,.1);
+  border-radius:4px;padding:1px 6px;color:var(--apple-blue);margin-right:3px;font-weight:500;
 }
 .obj-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#c0392b;margin-left:4px;vertical-align:middle}
 .obj-m{display:inline-block;width:16px;height:16px;border:1.5px solid #888;
@@ -94,7 +112,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 /* Notes under obj */
 .obj-notes-list{margin-top:5px;display:flex;flex-direction:column;gap:1px}
 .obj-note-row{display:flex;align-items:baseline;gap:3px;flex-wrap:wrap}
-.obj-note-text{font-size:19px;color:#444;cursor:pointer;line-height:1.3}
+.obj-note-text{font-size:13px;color:var(--apple-text);cursor:pointer;line-height:1.4}
 .obj-note-text:hover{color:#1a1a8a}
 .obj-note-text.overdue{color:#c0392b}
 .obj-note-time{font-size:13px;color:#bbb}
@@ -104,12 +122,12 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 /* Add note input */
 .obj-add-note{margin-top:4px;display:flex;align-items:center;gap:4px}
 .obj-add-note input{
-  font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
+  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:0;padding:0 2px;color:#1a1a1a;
 }
 .obj-add-note input::placeholder{color:#ccc}
-.obj-add-note button{font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
+.obj-add-note button{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 2px;flex-shrink:0}
 .obj-add-note button:hover{color:#1a1a8a}
 
@@ -119,7 +137,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 }
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0}
-.note-text{font-size:20px;color:#1a1a1a;cursor:pointer;line-height:1.3}
+.note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;font-weight:400}
 .note-text:hover{text-decoration:underline}
 .note-text.overdue{color:#c0392b}
 .note-obj-link{font-size:18px;color:#1a1a8a;text-decoration:none;flex-shrink:0}
@@ -131,23 +149,23 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 /* Add note input (bottom zone) */
 .notes-add{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .notes-add input{
-  font-family:'Google Sans',Arial,sans-serif;font-size:20px;border:none;
+  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:20px;border:none;
   border-bottom:1.5px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:200px;max-width:480px;padding:1px 2px;color:#1a1a1a;
 }
 .notes-add input::placeholder{color:#ccc}
-.notes-add button{font-family:'Google Sans',Arial,sans-serif;font-size:20px;border:none;
+.notes-add button{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:20px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 4px}
 .notes-add button:hover{color:#1a1a8a}
-.dt-btn{font-family:'Google Sans',Arial,sans-serif;font-size:16px;color:#ccc;cursor:pointer;
+.dt-btn{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:16px;color:#ccc;cursor:pointer;
   border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
 .dt-btn:hover{color:#888}
 .dt-row{display:none;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
 .dt-row.vis{display:flex}
-.dt-row input[type=date]{font-family:'Google Sans',Arial,sans-serif;font-size:17px;border:none;
+.dt-row input[type=date]{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
   -webkit-appearance:none;appearance:none}
-.hour-sel{font-family:'Google Sans',Arial,sans-serif;font-size:16px;color:#888;border:none;
+.hour-sel{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:16px;color:#888;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
   -webkit-appearance:none;appearance:none}
 .dt-label{font-size:15px;color:#bbb}
@@ -156,23 +174,23 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);
   z-index:100;align-items:center;justify-content:center}
 .overlay.open{display:flex}
-.modal{background:#f8f7f2;border-radius:8px;padding:24px 28px;
+.modal{background:#fff;border-radius:20px;padding:28px 32px;
   width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;
-  box-shadow:0 8px 32px rgba(0,0,0,.18)}
-.modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px}
+  box-shadow:0 20px 60px rgba(0,0,0,.20),0 4px 12px rgba(0,0,0,.08)}
+.modal-title{font-size:20px;font-weight:700;color:var(--apple-text);margin-bottom:20px;letter-spacing:-.03em}
 .form-row{margin-bottom:12px;display:flex;flex-direction:column;gap:3px}
 .form-row label{font-size:14px;color:#aaa}
 .form-row input,.form-row select{
-  font-family:'Google Sans',Arial,sans-serif;font-size:19px;border:none;
+  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;border:none;
   border-bottom:1.5px solid #e0e0e0;background:transparent;
   color:#1a1a1a;padding:3px 2px;outline:none;
   -webkit-appearance:none;appearance:none;
 }
 .form-row input:focus,.form-row select:focus{border-bottom-color:#1a1a8a}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-.btn-cancel{font-family:'Google Sans',Arial,sans-serif;font-size:17px;padding:4px 14px;
+.btn-cancel{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;padding:4px 14px;
   border:1.5px solid #ccc;border-radius:4px;background:transparent;cursor:pointer;color:#999}
-.btn-save{font-family:'Google Sans',Arial,sans-serif;font-size:17px;padding:4px 18px;
+.btn-save{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;padding:4px 18px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:#1a1a8a;cursor:pointer;color:#fff}
 .fsec{font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;
   margin:14px 0 6px;border-bottom:0.5px solid #e8e8e0;padding-bottom:4px}
@@ -186,7 +204,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 .hist-body{flex:1;min-width:0}
 .hist-name{font-size:16px;font-weight:600;color:#1a1a1a}
 .hist-meta{font-size:12px;color:#aaa;margin-top:1px}
-.hist-restore{font-family:'Google Sans',Arial,sans-serif;font-size:14px;padding:2px 8px;
+.hist-restore{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;padding:2px 8px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;
   color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .hist-restore:hover{background:rgba(26,26,138,.06)}
@@ -233,24 +251,24 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
 <div style="padding:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
   <input id="quickNoteInput" placeholder="нова нотатка..." 
     onkeydown="if(event.key==='Enter')addQuickNote()"
-    style="font-family:'Google Sans',Arial,sans-serif;font-size:15px;border:none;
+    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:15px;border:none;
       border-bottom:1.5px solid #ddd;background:transparent;outline:none;
       flex:1;min-width:200px;max-width:420px;padding:3px 2px;color:#333">
   <button onclick="addQuickNote()" 
-    style="font-family:'Google Sans',Arial,sans-serif;font-size:15px;border:none;
+    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:15px;border:none;
       background:transparent;color:#aaa;cursor:pointer;padding:0 6px">↵</button>
   <button id="quickDtBtn" onclick="toggleQuickDt()"
-    style="font-family:'Google Sans',Arial,sans-serif;font-size:13px;color:#bbb;
+    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:13px;color:#bbb;
       cursor:pointer;border:none;background:transparent;text-decoration:underline;text-underline-offset:2px">+ нагадати</button>
 </div>
 <div id="quickDtRow" style="display:none;align-items:center;gap:8px;padding-bottom:8px;flex-wrap:wrap">
   <span style="font-size:13px;color:#bbb">коли:</span>
   <input type="date" id="quickDtDate" 
-    style="font-family:'Google Sans',Arial,sans-serif;font-size:14px;border:none;
+    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
       border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
       -webkit-appearance:none;appearance:none">
   <select id="quickDtHour" 
-    style="font-family:'Google Sans',Arial,sans-serif;font-size:14px;color:#888;border:none;
+    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;color:#888;border:none;
       border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
       -webkit-appearance:none;appearance:none">
     <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
@@ -344,13 +362,13 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
   <div class="modal" style="width:420px">
     <div class="modal-title">Замітка</div>
     <div class="form-row"><label>Текст</label>
-      <textarea id="nm-text" rows="3" style="font-family:'Google Sans',Arial,sans-serif;font-size:19px;
+      <textarea id="nm-text" rows="3" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;
         border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
         resize:vertical;background:transparent;outline:none"></textarea>
     </div>
     <div class="form-row"><label>Нагадування</label>
       <div class="note-edit-date-row">
-        <input id="nm-date" type="date" style="font-size:18px;font-family:'Google Sans',Arial,sans-serif;
+        <input id="nm-date" type="date" style="font-size:18px;font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;
           border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
           outline:none;padding:2px;-webkit-appearance:none;appearance:none">
         <select class="hour-sel" id="nm-hour" style="font-size:18px">
@@ -367,7 +385,7 @@ body{font-family:'Google Sans',Arial,sans-serif;background:#f0f0f0;min-height:10
     </div>
     <div class="form-row" id="nm-obj-row" style="display:none">
       <label>Прив'язати до об'єкту</label>
-      <select id="nm-obj-select" style="font-family:'Google Sans',Arial,sans-serif;font-size:18px;
+      <select id="nm-obj-select" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:18px;
         border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
         outline:none;-webkit-appearance:none;appearance:none"></select>
     </div>
@@ -923,7 +941,7 @@ async function loadCalendar(){
   const now=new Date();
   const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-  dateEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+  dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
