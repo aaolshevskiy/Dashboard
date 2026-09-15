@@ -744,15 +744,7 @@ function renderNotes(){
       overdue,hasFut,timeRaw:note&&note.time?new Date(note.time):null,time:note&&note.time?fmtDT(note.time):''});
   });
 
-  // Object notes
-  objects.forEach(o=>{
-    (o.notes||[]).forEach((n,ni)=>{
-      const overdue=!!isNoteActive(n);
-      const hasFut=!!(n.time&&now<new Date(n.time));
-      all.push({type:'objnote',idx:null,text:n.text||'',objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
-        overdue,hasFut,timeRaw:n.time?new Date(n.time):null,time:n.time?fmtDT(n.time):''});
-    });
-  });
+  // Object notes are shown under each card — NOT duplicated here
 
   // Sort: 1=red(overdue), 2=black(future/no-obj), 3=grey(linked obj no reminder)
   const noteRank=item=>{
@@ -1094,29 +1086,68 @@ async function loadCalendar(){
   const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+  // Tomorrow date info
+  const tomorrow=new Date(now);tomorrow.setDate(now.getDate()+1);
+  const tomorrowEl=document.getElementById('calStripDateTomorrow');
+  const tomorrowEvEl=document.getElementById('calStripEventsTomorrow');
+  if(tomorrowEl) tomorrowEl.innerHTML='📅 '+DAYS[tomorrow.getDay()]+', '+tomorrow.getDate()+' '+MONTHS[tomorrow.getMonth()];
+
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
-    if(!Array.isArray(data)||!data.length){
-      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';return;
+
+    // Today's events
+    const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
+    const todayEnd=new Date(now);todayEnd.setHours(23,59,59,999);
+    const tomorrowStart=new Date(tomorrow);tomorrowStart.setHours(0,0,0,0);
+    const tomorrowEnd=new Date(tomorrow);tomorrowEnd.setHours(23,59,59,999);
+
+    const todayEvs=Array.isArray(data)?data.filter(ev=>{const d=new Date(ev.start);return d>=todayStart&&d<=todayEnd;}):[]; 
+    const tomEvs=Array.isArray(data)?data.filter(ev=>{const d=new Date(ev.start);return d>=tomorrowStart&&d<=tomorrowEnd;}):[]; 
+
+    if(!todayEvs.length){
+      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
+    } else {
+      evEl.innerHTML='';
+      todayEvs.forEach(ev=>{
+        const start=new Date(ev.start);const end=new Date(ev.end||ev.start);
+        const diff=start-now;
+        let cls='future';
+        if(!ev.allDay){
+          if(end<now)cls='past';
+          else if(diff<=0||diff<=3600000)cls='now';
+        }
+        const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+        const span=document.createElement('span');span.className='cal-ev '+cls;
+        const a=document.createElement('a');
+        a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
+        a.textContent='– '+ev.title+' '+timeStr;
+        span.appendChild(a);evEl.appendChild(span);
+      });
     }
-    evEl.innerHTML='';
-    data.forEach(ev=>{
-      const start=new Date(ev.start);const end=new Date(ev.end||ev.start);
-      const diff=start-now;
-      let cls='future';
-      if(!ev.allDay){
-        if(end<now)cls='past';
-        else if(diff<=0||diff<=3600000)cls='now';
+
+    if(tomorrowEvEl){
+      if(!tomEvs.length){
+        tomorrowEvEl.innerHTML='<span style="color:#ddd;font-size:13px">Подій немає</span>';
+      } else {
+        tomorrowEvEl.innerHTML='';
+        tomEvs.forEach(ev=>{
+          const start=new Date(ev.start);
+          const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+          const span=document.createElement('span');
+          span.style.cssText='font-size:13px;color:var(--apple-secondary);white-space:nowrap';
+          const a=document.createElement('a');
+          a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
+          a.style.cssText='color:inherit;text-decoration:none';
+          a.textContent='– '+ev.title+' '+timeStr;
+          span.appendChild(a);tomorrowEvEl.appendChild(span);
+        });
       }
-      const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-      const span=document.createElement('span');span.className='cal-ev '+cls;
-      const a=document.createElement('a');
-      a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
-      a.textContent='— '+ev.title+' '+timeStr;
-      span.appendChild(a);evEl.appendChild(span);
-    });
-  }catch(e){evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';}
+    }
+  }catch(e){
+    evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';
+    if(tomorrowEvEl) tomorrowEvEl.innerHTML='';
+  }
 }
 
 // ── HISTORY ──
