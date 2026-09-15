@@ -7,28 +7,21 @@
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
+body{font-family:Arial,sans-serif;background:#f0f0f0;min-height:100vh;
   display:flex;align-items:flex-start;justify-content:center;padding:16px}
 
 /* ── BOARD ── */
 .board{
-  background:#f8f7f2;
-  border-radius:4px;
-  box-shadow:0 4px 24px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.6);
+  background:#fafafa;
+  box-shadow:none;
   width:100%;max-width:1400px;min-height:85vh;
   position:relative;
   padding-bottom:40px;
 }
-/* Corner brackets */
-.board::before,.board::after{content:'';position:absolute;width:22px;height:22px;border-color:#999;border-style:solid}
-.board::before{top:10px;left:10px;border-width:2px 0 0 2px}
-.board::after{top:10px;right:10px;border-width:2px 2px 0 0}
+
 .board-inner{padding:18px 24px 0}
 
 /* ── TOPBAR ── */
@@ -38,10 +31,10 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
 .sync-status{font-size:15px;color:#aaa}
 .sync-status.ok .sync-text{color:#2a7a3a}
 .sync-status.err .sync-text{color:#c0392b}
-.btn{font-family:'Inter',sans-serif;font-size:17px;padding:4px 14px;border:1.5px solid #888;
-  border-radius:4px;background:transparent;cursor:pointer;color:#555}
+.btn{font-family:Arial,sans-serif;font-size:14px;padding:6px 16px;border:1.5px solid #ccc;
+  border-radius:6px;background:transparent;cursor:pointer;color:#555;font-weight:500}
 .btn:hover{background:rgba(0,0,0,.05)}
-.btn-primary{border-color:#1a1a8a;color:#1a1a8a}
+.btn-primary{border-color:#1a1a8a;color:#fff;background:#1a1a8a}
 .btn-primary:hover{background:rgba(26,26,138,.07)}
 
 /* ── CALENDAR STRIP ── */
@@ -77,11 +70,7 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
   font-size:26px;font-weight:700;color:#1a1a8a;
   line-height:1.2;cursor:default;
 }
-.obj-card-name.has-notes{
-  text-decoration:underline;text-decoration-style:wavy;
-  text-decoration-color:#1a1a8a;text-underline-offset:3px;
-  text-decoration-thickness:1.5px;
-}
+.obj-card-name.has-notes{}
 .obj-card-addr{font-size:15px;color:#888;text-decoration:none;line-height:1.2;display:block}
 .obj-card-addr:hover{text-decoration:underline}
 .obj-card-meta{font-size:15px;color:#999;line-height:1.3}
@@ -105,17 +94,17 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
 .obj-note-time{font-size:13px;color:#bbb}
 .obj-note-time.has-rem{color:#2a7a3a}
 .obj-note-del{font-size:13px;border:none;background:transparent;color:#ddd;
-  cursor:pointer;padding:0 2px;font-family:'Inter',sans-serif}
+  cursor:pointer;padding:0 2px;font-family:Arial,sans-serif}
 .obj-note-del:hover{color:#c0392b}
 /* Add note input */
 .obj-add-note{margin-top:4px;display:flex;align-items:center;gap:4px}
 .obj-add-note input{
-  font-family:'Inter',sans-serif;font-size:14px;border:none;
+  font-family:Arial,sans-serif;font-size:14px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:0;padding:0 2px;color:#1a1a1a;
 }
 .obj-add-note input::placeholder{color:#ccc}
-.obj-add-note button{font-family:'Inter',sans-serif;font-size:14px;border:none;
+.obj-add-note button{font-family:Arial,sans-serif;font-size:14px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 2px;flex-shrink:0}
 .obj-add-note button:hover{color:#1a1a8a}
 
@@ -133,28 +122,28 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
 .note-time{font-size:14px;color:#bbb;flex-shrink:0}
 .note-time.has-rem{color:#2a7a3a}
 .note-del{font-size:12px;padding:0 4px;border-radius:2px;
-  background:transparent;color:#ddd;cursor:pointer;font-family:'Inter',sans-serif;flex-shrink:0}
+  background:transparent;color:#ddd;cursor:pointer;font-family:Arial,sans-serif;flex-shrink:0}
 .note-del:hover{color:#c0392b;border-color:#c0392b}
 /* Add note input (bottom zone) */
 .notes-add{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .notes-add input{
-  font-family:'Inter',sans-serif;font-size:20px;border:none;
+  font-family:Arial,sans-serif;font-size:20px;border:none;
   border-bottom:1.5px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:200px;max-width:480px;padding:1px 2px;color:#1a1a1a;
 }
 .notes-add input::placeholder{color:#ccc}
-.notes-add button{font-family:'Inter',sans-serif;font-size:20px;border:none;
+.notes-add button{font-family:Arial,sans-serif;font-size:20px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 4px}
 .notes-add button:hover{color:#1a1a8a}
-.dt-btn{font-family:'Inter',sans-serif;font-size:16px;color:#ccc;cursor:pointer;
+.dt-btn{font-family:Arial,sans-serif;font-size:16px;color:#ccc;cursor:pointer;
   border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
 .dt-btn:hover{color:#888}
 .dt-row{display:none;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
 .dt-row.vis{display:flex}
-.dt-row input[type=date]{font-family:'Inter',sans-serif;font-size:17px;border:none;
+.dt-row input[type=date]{font-family:Arial,sans-serif;font-size:17px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
   -webkit-appearance:none;appearance:none}
-.hour-sel{font-family:'Inter',sans-serif;font-size:16px;color:#888;border:none;
+.hour-sel{font-family:Arial,sans-serif;font-size:16px;color:#888;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
   -webkit-appearance:none;appearance:none}
 .dt-label{font-size:15px;color:#bbb}
@@ -170,16 +159,16 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
 .form-row{margin-bottom:12px;display:flex;flex-direction:column;gap:3px}
 .form-row label{font-size:14px;color:#aaa}
 .form-row input,.form-row select{
-  font-family:'Inter',sans-serif;font-size:19px;border:none;
+  font-family:Arial,sans-serif;font-size:19px;border:none;
   border-bottom:1.5px solid #e0e0e0;background:transparent;
   color:#1a1a1a;padding:3px 2px;outline:none;
   -webkit-appearance:none;appearance:none;
 }
 .form-row input:focus,.form-row select:focus{border-bottom-color:#1a1a8a}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-.btn-cancel{font-family:'Inter',sans-serif;font-size:17px;padding:4px 14px;
+.btn-cancel{font-family:Arial,sans-serif;font-size:17px;padding:4px 14px;
   border:1.5px solid #ccc;border-radius:4px;background:transparent;cursor:pointer;color:#999}
-.btn-save{font-family:'Inter',sans-serif;font-size:17px;padding:4px 18px;
+.btn-save{font-family:Arial,sans-serif;font-size:17px;padding:4px 18px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:#1a1a8a;cursor:pointer;color:#fff}
 .fsec{font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;
   margin:14px 0 6px;border-bottom:0.5px solid #e8e8e0;padding-bottom:4px}
@@ -193,7 +182,7 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
 .hist-body{flex:1;min-width:0}
 .hist-name{font-size:16px;font-weight:600;color:#1a1a1a}
 .hist-meta{font-size:12px;color:#aaa;margin-top:1px}
-.hist-restore{font-family:'Inter',sans-serif;font-size:14px;padding:2px 8px;
+.hist-restore{font-family:Arial,sans-serif;font-size:14px;padding:2px 8px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;
   color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .hist-restore:hover{background:rgba(26,26,138,.06)}
@@ -233,7 +222,7 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
   <div class="cal-strip-events" id="calStripEvents">
     <span class="cal-ev" style="color:#ccc">завантаження...</span>
   </div>
-  <a class="cal-strip-link" href="https://calendar.google.com/calendar/r/day" target="_blank">📅</a>
+
 </div>
 
 <!-- OBJECTS -->
@@ -316,13 +305,13 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
   <div class="modal" style="width:420px">
     <div class="modal-title">Замітка</div>
     <div class="form-row"><label>Текст</label>
-      <textarea id="nm-text" rows="3" style="font-family:'Inter',sans-serif;font-size:19px;
+      <textarea id="nm-text" rows="3" style="font-family:Arial,sans-serif;font-size:19px;
         border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
         resize:vertical;background:transparent;outline:none"></textarea>
     </div>
     <div class="form-row"><label>Нагадування</label>
       <div class="note-edit-date-row">
-        <input id="nm-date" type="date" style="font-size:18px;font-family:'Inter',sans-serif;
+        <input id="nm-date" type="date" style="font-size:18px;font-family:Arial,sans-serif;
           border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
           outline:none;padding:2px;-webkit-appearance:none;appearance:none">
         <select class="hour-sel" id="nm-hour" style="font-size:18px">
@@ -339,7 +328,7 @@ body{font-family:'Inter',sans-serif;background:#b0b0a8;min-height:100vh;
     </div>
     <div class="form-row" id="nm-obj-row" style="display:none">
       <label>Прив'язати до об'єкту</label>
-      <select id="nm-obj-select" style="font-family:'Inter',sans-serif;font-size:18px;
+      <select id="nm-obj-select" style="font-family:Arial,sans-serif;font-size:18px;
         border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
         outline:none;-webkit-appearance:none;appearance:none"></select>
     </div>
