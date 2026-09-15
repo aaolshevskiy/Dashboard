@@ -1172,6 +1172,9 @@ function estimateRowLen(o){
 const SHORT_THRESHOLD = 38;
 
 function render(){
+  try{ _renderInner(); }catch(e){ console.error('render error:',e); }
+}
+function _renderInner(){
   const layout=document.getElementById('objectsLayout');
   if(!layout) return;
   layout.innerHTML='';
@@ -1204,6 +1207,9 @@ function fmtDateShortStr(iso){
 }
 
 function buildObjCard(o,i,num){
+  try{ return _buildObjCardInner(o,i,num); }catch(e){ console.error('buildObjCard error:',e,o); const d=document.createElement('div');d.className='obj-card';d.textContent=o.name||'?';return d; }
+}
+function _buildObjCardInner(o,i,num){
   const card=document.createElement('div');
   card.className='obj-card';
   card.id='wrap-'+i;
