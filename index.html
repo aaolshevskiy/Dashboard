@@ -74,9 +74,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 /* ── OBJECTS GRID ── */
 .objects-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:0;
   padding:0 6px;
+  align-items:start;
 }
 .obj-card{
   padding:14px 16px 14px;
@@ -112,8 +113,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .obj-star{color:#e0a020;margin-right:2px}
 /* Notes under obj */
 .obj-notes-list{margin-top:5px;display:flex;flex-direction:column;gap:1px}
-.obj-note-row{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
-.obj-note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obj-note-row{display:flex;align-items:flex-start;gap:4px;flex-wrap:nowrap}
+.obj-note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;flex:1;min-width:0;word-break:break-word}
 .obj-note-text:hover{color:#1a1a8a}
 .obj-note-text.overdue{color:#c0392b}
 .obj-note-time{font-size:13px;color:var(--apple-tertiary)}
@@ -138,7 +139,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 }
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0}
-.note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;font-weight:400;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;font-weight:400;flex:1;min-width:0;word-break:break-word}
 .note-text.linked{color:var(--apple-secondary)}
 .note-text:hover{text-decoration:underline}
 .note-text.overdue{color:#c0392b}
@@ -282,41 +283,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 </div>
 
-<div id="overdueZone" style="display:none"></div>
-<!-- QUICK NOTE INPUT -->
-<div style="padding:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-  <input id="quickNoteInput" placeholder="нова нотатка..." 
-    onkeydown="if(event.key==='Enter')addQuickNote()"
-    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:15px;border:none;
-      border-bottom:1.5px solid #ddd;background:transparent;outline:none;
-      flex:1;min-width:200px;max-width:420px;padding:3px 2px;color:#333">
-  <button onclick="addQuickNote()" 
-    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:15px;border:none;
-      background:transparent;color:#aaa;cursor:pointer;padding:0 6px">↵</button>
-  <button id="quickDtBtn" onclick="toggleQuickDt()"
-    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:13px;color:#bbb;
-      cursor:pointer;border:none;background:transparent;text-decoration:underline;text-underline-offset:2px">+ нагадати</button>
-</div>
-<div id="quickDtRow" style="display:none;align-items:center;gap:8px;padding-bottom:8px;flex-wrap:wrap">
-  <span style="font-size:13px;color:#bbb">коли:</span>
-  <input type="date" id="quickDtDate" 
-    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
-      border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
-      -webkit-appearance:none;appearance:none">
-  <select id="quickDtHour" 
-    style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;color:#888;border:none;
-      border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
-      -webkit-appearance:none;appearance:none">
-    <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
-    <option value="9" selected>9:00</option><option value="10">10:00</option>
-    <option value="11">11:00</option><option value="12">12:00</option>
-    <option value="13">13:00</option><option value="14">14:00</option>
-    <option value="15">15:00</option><option value="16">16:00</option>
-    <option value="17">17:00</option><option value="18">18:00</option>
-    <option value="19">19:00</option><option value="20">20:00</option>
-    <option value="21">21:00</option><option value="22">22:00</option>
-  </select>
-</div>
+
 
 <!-- OBJECTS -->
 <div class="section-label">Об'єкти в роботі</div>
@@ -579,15 +546,33 @@ function buildCard(o,i){
   const hasNotes=(o.notes||[]).length>0;
   const hasRem=hasActiveReminder(o);
 
-  // Name
+  // Name row with Drive+Bitrix icons
+  const nameRow=document.createElement('div');
+  nameRow.style.cssText='display:flex;align-items:center;gap:5px;flex-wrap:nowrap';
   const name=document.createElement('div');
   name.className='obj-card-name'+(hasNotes?' has-notes':'');
+  name.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   let nameText='';
-  if(o.inwork) nameText+='☆ ';
+  if(o.inwork) nameText+='★ ';
   nameText+=o.name||'—';
   name.textContent=nameText;
   if(o.completed) name.style.textDecoration='line-through';
-  card.appendChild(name);
+  nameRow.appendChild(name);
+  if(o.linkFolder){
+    const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
+    gd.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
+    gd.onclick=e=>e.stopPropagation();
+    gd.innerHTML='<svg viewBox="0 0 87.3 78" width="13" height="13"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>';
+    nameRow.appendChild(gd);
+  }
+  if(o.bitrix){
+    const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
+    bx.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
+    bx.onclick=e=>e.stopPropagation();
+    bx.innerHTML='<svg viewBox="0 0 24 24" width="13" height="13"><rect x="2" y="2" width="20" height="20" rx="4" fill="#FF5722"/><path d="M7 7h4.5a2.5 2.5 0 0 1 0 5H7zm0 5h5a2.5 2.5 0 0 1 0 5H7z" fill="white"/></svg>';
+    nameRow.appendChild(bx);
+  }
+  card.appendChild(nameRow);
 
   // Address
   if(o.addr){
@@ -607,33 +592,14 @@ function buildCard(o,i){
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
 
   if(meta.innerHTML) card.appendChild(meta);
-  // Drive + Bitrix icons after meta
-  if(o.linkFolder||o.bitrix){
-    const iconRow=document.createElement('div');
-    iconRow.style.cssText='display:flex;gap:8px;align-items:center;margin-top:2px';
-    if(o.linkFolder){
-      const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
-      gd.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--apple-secondary);text-decoration:none;opacity:.8';
-      gd.onclick=e=>e.stopPropagation();
-      gd.innerHTML='<svg viewBox="0 0 87.3 78" width="14" height="14"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg> Диск';
-      iconRow.appendChild(gd);
-    }
-    if(o.bitrix){
-      const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
-      bx.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--apple-secondary);text-decoration:none;opacity:.8';
-      bx.onclick=e=>e.stopPropagation();
-      bx.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="4" fill="#FF5722"/><path d="M7 7h4.5a2.5 2.5 0 0 1 0 5H7zm0 5h5a2.5 2.5 0 0 1 0 5H7z" fill="white"/></svg> Bitrix';
-      iconRow.appendChild(bx);
-    }
-    card.appendChild(iconRow);
-  }
+
 
   // Dates — always shown
   const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
   if(ds||de){
     const dates=document.createElement('div');
     dates.className='obj-card-dates';
-    dates.innerHTML=(ds?'<span>▶</span> '+ds:'')+(ds&&de?' <span>→</span> ':'')+(de?de:'');
+    dates.innerHTML=(ds?'<span style="filter:grayscale(1)">🔧</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
     card.appendChild(dates);
   }
 
