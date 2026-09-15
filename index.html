@@ -675,10 +675,10 @@ function buildCard(o,i){
   btn.onclick=()=>addObjNote(o.id,inp);
   // Edit button
   const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
-  editBtn.onclick=()=>openEditModal(i);
+  editBtn.onclick=()=>openEditModal(o.id);
   const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
   delBtn.style.color='#e07070';
-  delBtn.onclick=()=>deleteCard(i);
+  delBtn.onclick=()=>deleteCard(o.id);
   addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(editBtn);addRow.appendChild(delBtn);
   addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
   card.appendChild(addRow);
@@ -814,7 +814,7 @@ async function addObjNote(objId,inp){
   objects[ri].notes.push({text,time:''});
   inp.value='';
   try{await apiSave(objects[ri]);}catch(e){console.error(e);}
-  render();renderNotes();
+  render();renderNotes();renderOverdueZone();
 }
 
 async function deleteObjNote(objId,ni){
@@ -1020,8 +1020,10 @@ function openAddModal(){
   setTimeout(()=>document.getElementById('f-name').focus(),50);
 }
 
-function openEditModal(i){
-  editIdx=i;const o=objects[i];if(!o)return;
+function openEditModal(objId){
+  const i=objects.findIndex(o=>String(o.id)===String(objId));
+  if(i<0)return;
+  editIdx=i;const o=objects[i];
   document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
   document.getElementById('f-addr').value=o.addr||'';
@@ -1040,6 +1042,7 @@ function openEditModal(i){
 function closeAddModal(){document.getElementById('addModal').classList.remove('open');}
 
 async function saveCard(){
+  try{
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-err').style.display='block';return;}
   const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Збереження...';
@@ -1062,15 +1065,23 @@ async function saveCard(){
   if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
   else{await apiSave(obj);objects.push(obj);}
   btn.disabled=false;btn.textContent='Зберегти';
-  closeAddModal();render();renderNotes();
+  closeAddModal();render();renderNotes();renderOverdueZone();
+  }catch(err){
+    console.error('saveCard error:',err);
+    const btn2=document.getElementById('btnSave');
+    if(btn2){btn2.disabled=false;btn2.textContent='Зберегти';}
+    alert('Помилка збереження: '+err.message);
+  }
 }
 
 // ── DELETE CARD ──
-async function deleteCard(i){
-  const o=objects[i];if(!o)return;
+async function deleteCard(objId){
+  const i=objects.findIndex(o=>String(o.id)===String(objId));
+  if(i<0)return;
+  const o=objects[i];
   if(!confirm('Видалити "'+o.name+'"?'))return;
   addHistory({type:'obj',label:o.name,data:{...o,notes:[...(o.notes||[])]}});
-  const id=o.id;objects.splice(i,1);render();renderNotes();
+  const id=o.id;objects.splice(i,1);render();renderNotes();renderOverdueZone();
   try{await apiDelete(id);}catch(e){console.error(e);}
 }
 
