@@ -290,18 +290,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 </div>
 
 <!-- CALENDAR STRIP -->
-<div class="cal-strip" id="calStrip" style="flex-direction:column;align-items:stretch;gap:6px">
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <span class="cal-strip-date" id="calStripDate"></span>
-    <div class="cal-strip-events" id="calStripEvents">
-      <span class="cal-ev" style="color:#ccc">завантаження...</span>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <span class="cal-strip-date" id="calStripDateTomorrow" style="font-size:13px;color:var(--apple-tertiary)"></span>
-    <div class="cal-strip-events" id="calStripEventsTomorrow">
-      <span style="font-size:13px;color:#ddd">завантаження...</span>
-    </div>
+<div class="cal-strip" id="calStrip">
+  <span class="cal-strip-date" id="calStripDate"></span>
+  <div class="cal-strip-events" id="calStripEvents">
+    <span class="cal-ev" style="color:#ccc">завантаження...</span>
   </div>
 </div>
 
@@ -1095,38 +1087,10 @@ async function loadCalendar(){
   const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
-  // Tomorrow date info
-  const tomorrow=new Date(now);tomorrow.setDate(now.getDate()+1);
-  const tomorrowEl=document.getElementById('calStripDateTomorrow');
-  const tomorrowEvEl=document.getElementById('calStripEventsTomorrow');
-  if(tomorrowEl) tomorrowEl.innerHTML='📅 '+DAYS[tomorrow.getDay()]+', '+tomorrow.getDate()+' '+MONTHS[tomorrow.getMonth()];
-
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
-
-    // Today's events
-    const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
-    const todayEnd=new Date(now);todayEnd.setHours(23,59,59,999);
-    const tomorrowStart=new Date(tomorrow);tomorrowStart.setHours(0,0,0,0);
-    const tomorrowEnd=new Date(tomorrow);tomorrowEnd.setHours(23,59,59,999);
-
-    // Use local date string for reliable comparison
-    const pad=n=>String(n).padStart(2,'0');
-    const localDateStr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-    const todayStr=localDateStr(now);
-    const tomorrowStr=localDateStr(tomorrow);
-
-    // Use dateStr from server (already in correct TZ) if available
-    // Fall back to local date parsing
-    const todayEvs=Array.isArray(data)?data.filter(ev=>{
-      const ds=ev.dateStr||localDateStr(new Date(ev.start));
-      return ds===todayStr;
-    }):[]; 
-    const tomEvs=Array.isArray(data)?data.filter(ev=>{
-      const ds=ev.dateStr||localDateStr(new Date(ev.start));
-      return ds===tomorrowStr;
-    }):[];
+    const todayEvs=Array.isArray(data)?data:[];
 
     if(!todayEvs.length){
       evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
@@ -1149,27 +1113,8 @@ async function loadCalendar(){
       });
     }
 
-    if(tomorrowEvEl){
-      if(!tomEvs.length){
-        tomorrowEvEl.innerHTML='<span style="color:#ddd;font-size:13px">Подій немає</span>';
-      } else {
-        tomorrowEvEl.innerHTML='';
-        tomEvs.forEach(ev=>{
-          const start=new Date(ev.start);
-          const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-          const span=document.createElement('span');
-          span.style.cssText='font-size:13px;color:var(--apple-secondary);white-space:nowrap';
-          const a=document.createElement('a');
-          a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
-          a.style.cssText='color:inherit;text-decoration:none';
-          a.textContent='– '+ev.title+' '+timeStr;
-          span.appendChild(a);tomorrowEvEl.appendChild(span);
-        });
-      }
-    }
   }catch(e){
     evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';
-    if(tomorrowEvEl) tomorrowEvEl.innerHTML='';
   }
 }
 
