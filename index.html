@@ -213,7 +213,26 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .hist-restore:hover{background:rgba(26,26,138,.06)}
 
 /* ── NOTE EDIT MODAL ── */
-.note-edit-date-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.note-edit-date-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.note-edit-date-row input[type=date]{
+  min-height:36px;padding:4px 6px;border-radius:6px;
+  border:1.5px solid #e0e0e0!important;
+  font-size:16px!important;
+  background:#fff;
+  width:160px;
+  -webkit-appearance:none;appearance:none;
+  color:var(--apple-text);
+  cursor:pointer;
+}
+.note-edit-date-row select{
+  min-height:36px;padding:4px 6px;border-radius:6px;
+  border:1.5px solid #e0e0e0!important;
+  font-size:16px!important;
+  background:#fff;
+  -webkit-appearance:none;appearance:none;
+  color:var(--apple-text);
+  cursor:pointer;
+}
 
 /* ── DRAWING ── */
 
@@ -265,9 +284,18 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 /* ── MOBILE ── */
 @media(max-width:768px){
   body{padding:6px;min-width:unset}
-  .board-inner{padding:12px 12px 0}
-  .objects-grid,.section-label,.overdue-zone{display:none!important}
+  .board-inner{padding:10px 10px 0}
+  /* Objects in single column on mobile */
+  .objects-grid{grid-template-columns:1fr!important}
+  .obj-card{margin:4px 0}
+  /* Notes in single column */
   .notes-cols{grid-template-columns:1fr}
+  /* Slightly smaller fonts on mobile */
+  .obj-card-name{font-size:15px!important}
+  .obj-note-text{font-size:14px!important}
+  .obj-card-addr{font-size:12px!important}
+  .obj-card-dates{font-size:12px!important}
+  .obj-card-meta{font-size:12px!important}
 }
 @media(min-width:769px) and (max-width:1024px){
   body{padding:8px;}
@@ -390,7 +418,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 <!-- NOTE EDIT -->
 <div class="overlay" id="noteModal">
-  <div class="modal" style="width:420px">
+  <div class="modal" style="width:420px;max-width:calc(100vw - 32px)">
     <div class="modal-title">Замітка</div>
     <div class="form-row"><label>Текст</label>
       <textarea id="nm-text" rows="3" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;
@@ -399,10 +427,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     </div>
     <div class="form-row"><label>Нагадування</label>
       <div class="note-edit-date-row">
-        <input id="nm-date" type="date" style="font-size:18px;font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;
-          border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
-          outline:none;padding:2px;-webkit-appearance:none;appearance:none">
-        <select class="hour-sel" id="nm-hour" style="font-size:18px">
+<input id="nm-date" type="date">
+        <select id="nm-hour">
           <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
           <option value="9" selected>9:00</option><option value="10">10:00</option>
           <option value="11">11:00</option><option value="12">12:00</option>
@@ -419,6 +445,13 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
       <select id="nm-obj-select" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:18px;
         border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
         outline:none;-webkit-appearance:none;appearance:none"></select>
+    </div>
+    <div style="margin-top:4px">
+      <button onclick="document.getElementById('nm-date').value='';document.getElementById('nm-hour').value='9'"
+        style="font-family:inherit;font-size:13px;border:none;background:transparent;
+          color:var(--apple-tertiary);cursor:pointer;text-decoration:underline;padding:0">
+        × прибрати нагадування
+      </button>
     </div>
     <div class="err-msg" id="nm-err">Введіть текст</div>
     <div class="modal-footer">
@@ -965,6 +998,7 @@ async function saveNoteModal(){
   const date=document.getElementById('nm-date').value;
   const hour=document.getElementById('nm-hour')?.value||'9';
   const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  // time='' means clear reminder
 
   if(noteCtx.type==='sticky'){
     const selObjId=document.getElementById('nm-obj-select')?.value||'';
