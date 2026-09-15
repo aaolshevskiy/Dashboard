@@ -219,6 +219,21 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 
 
+
+.mobile-add-zone{
+  display:none;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:8px 0 12px;
+  border-bottom:1px solid var(--apple-border);
+  margin-bottom:10px;
+}
+@media(max-width:768px){
+  .mobile-add-zone{display:flex}
+  .notes-add{display:none}  /* hide desktop add on mobile */
+}
+
 /* ── OVERDUE ZONE ── */
 .overdue-zone{
   margin-bottom:16px;
@@ -291,6 +306,22 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 <!-- NOTES ZONE -->
 <div class="notes-zone">
+  <!-- Mobile quick add — shown only on mobile, above notes -->
+  <div id="mobileAddZone" class="mobile-add-zone">
+    <input id="mobileNoteInput" placeholder="нова нотатка..."
+      onkeydown="if(event.key==='Enter')addMobileNote()"
+      style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid #ddd;
+        background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--apple-text)">
+    <select id="mobileObjSelect"
+      style="font-family:inherit;font-size:13px;color:var(--apple-secondary);border:none;
+        border-bottom:1px solid #ddd;background:transparent;outline:none;
+        cursor:pointer;-webkit-appearance:none;appearance:none;max-width:140px">
+      <option value="">— без об’єкту —</option>
+    </select>
+    <button onclick="addMobileNote()"
+      style="font-family:inherit;font-size:14px;border:none;background:transparent;
+        color:var(--apple-secondary);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
+  </div>
   <div class="notes-cols">
     <div id="notesLeft"></div>
     <div id="notesRight"></div>
@@ -507,11 +538,14 @@ async function apiDelete(id){
 function sortObjects(){
   objects.sort((a,b)=>{
     if(!!a.completed!==!!b.completed)return a.completed?1:-1;
-    // Primary: more notes first
-    const na=(a.notes||[]).length, nb=(b.notes||[]).length;
-    if(na!==nb)return nb-na;
-    // Secondary: inwork
+    // inwork (★) first
     if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;
+    // then by dateStart asc — oldest first, no date goes last
+    const da=a.dateStart?new Date(a.dateStart):null;
+    const db=b.dateStart?new Date(b.dateStart):null;
+    if(da&&db)return da-db;
+    if(da)return -1;
+    if(db)return 1;
     return 0;
   });
 }
@@ -819,6 +853,30 @@ async function addQuickNote(){
   document.getElementById('quickDtBtn').textContent='+ нагадати';
   try{await apiSave(sn);}catch(e){console.error(e);}
   renderNotes();
+}
+
+async function addMobileNote(){
+  const inp=document.getElementById('mobileNoteInput');
+  const text=inp?inp.value.trim():'';if(!text)return;
+  const selObjId=document.getElementById('mobileObjSelect')?.value||'';
+  if(selObjId){
+    const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
+    if(ri>=0){
+      if(!objects[ri].notes)objects[ri].notes=[];
+      objects[ri].notes.push({text,time:''});
+      inp.value='';
+      document.getElementById('mobileObjSelect').value='';
+      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+      render();renderNotes();renderOverdueZone();return;
+    }
+  }
+  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
+    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
+    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]};
+  stickyNotes.push(sn);
+  inp.value='';
+  try{await apiSave(sn);}catch(e){console.error(e);}
+  renderNotes();renderOverdueZone();
 }
 
 async function addGlobalNote(){
