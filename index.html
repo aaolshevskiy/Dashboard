@@ -1111,8 +1111,20 @@ async function loadCalendar(){
     const tomorrowStart=new Date(tomorrow);tomorrowStart.setHours(0,0,0,0);
     const tomorrowEnd=new Date(tomorrow);tomorrowEnd.setHours(23,59,59,999);
 
-    const todayEvs=Array.isArray(data)?data.filter(ev=>{const d=new Date(ev.start);return d>=todayStart&&d<=todayEnd;}):[]; 
-    const tomEvs=Array.isArray(data)?data.filter(ev=>{const d=new Date(ev.start);return d>=tomorrowStart&&d<=tomorrowEnd;}):[]; 
+    // Use local date string for reliable comparison
+    const pad=n=>String(n).padStart(2,'0');
+    const localDateStr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    const todayStr=localDateStr(now);
+    const tomorrowStr=localDateStr(tomorrow);
+
+    const todayEvs=Array.isArray(data)?data.filter(ev=>{
+      const d=new Date(ev.start);
+      return localDateStr(d)===todayStr;
+    }):[]; 
+    const tomEvs=Array.isArray(data)?data.filter(ev=>{
+      const d=new Date(ev.start);
+      return localDateStr(d)===tomorrowStr;
+    }):[];
 
     if(!todayEvs.length){
       evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
