@@ -1117,13 +1117,15 @@ async function loadCalendar(){
     const todayStr=localDateStr(now);
     const tomorrowStr=localDateStr(tomorrow);
 
+    // Use dateStr from server (already in correct TZ) if available
+    // Fall back to local date parsing
     const todayEvs=Array.isArray(data)?data.filter(ev=>{
-      const d=new Date(ev.start);
-      return localDateStr(d)===todayStr;
+      const ds=ev.dateStr||localDateStr(new Date(ev.start));
+      return ds===todayStr;
     }):[]; 
     const tomEvs=Array.isArray(data)?data.filter(ev=>{
-      const d=new Date(ev.start);
-      return localDateStr(d)===tomorrowStr;
+      const ds=ev.dateStr||localDateStr(new Date(ev.start));
+      return ds===tomorrowStr;
     }):[];
 
     if(!todayEvs.length){
