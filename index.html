@@ -408,6 +408,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
     <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
+    <div class="form-row"><label>Меблева угода (URL)</label><input id="f-furniture" placeholder="https://..."></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
         <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
@@ -499,6 +500,7 @@ function parseObj(o){
     notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
   };
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
+  if(!parsed.furniture) parsed.furniture='';
   return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
@@ -1114,6 +1116,7 @@ function openEditModal(objId){
   document.getElementById('f-masters-name').value=o.mastersName||o.prorab||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
+  if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
@@ -1136,6 +1139,7 @@ async function saveCard(){
     mastersName:document.getElementById('f-masters-name').value.trim(),
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
+    furniture:document.getElementById('f-furniture')?.value.trim()||'',
     inwork:document.getElementById('f-inwork').checked,
     masters:false,
     completed:false,
