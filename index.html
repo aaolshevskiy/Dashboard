@@ -551,7 +551,7 @@ async function apiGet(){
 }
 
 async function apiSave(obj){
-  setSyncStatus('syncing','збереження...');
+  setSyncStatus('ok','збережено ✓'); // optimistic — show immediately
   let full;
   if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
     full={id:obj.id||'sticky_'+Date.now(),name:obj.name||'',addr:String(obj.col||1),
@@ -880,12 +880,12 @@ async function addObjNoteWithTime(objId,addRow){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time});
   inp.value='';if(dtDate)dtDate.value='';
-  // Hide reminder
   const dtWrap=addRow.querySelector('div');
   if(dtWrap){dtWrap.style.display='none';}
   const dtBtn=addRow.querySelector('button');if(dtBtn)dtBtn.textContent='+ нагадати';
-  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  // Optimistic: render immediately, save in background
   render();renderNotes();renderOverdueZone();
+  apiSave(objects[ri]).catch(e=>console.error(e));
 }
 
 async function addObjNote(objId,inp){
@@ -904,8 +904,8 @@ async function deleteObjNote(objId,ni){
   if(ri<0)return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
-  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
+  apiSave(objects[ri]).catch(e=>console.error(e));
 }
 
 // ── STICKY NOTE ACTIONS ──
@@ -956,8 +956,8 @@ async function addMobileNote(){
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]};
   stickyNotes.push(sn);
   inp.value='';
-  try{await apiSave(sn);}catch(e){console.error(e);}
   renderNotes();renderOverdueZone();
+  apiSave(sn).catch(e=>console.error(e));
 }
 
 async function addGlobalNote(){
@@ -989,16 +989,17 @@ async function addGlobalNote(){
   if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
   document.getElementById('noteDtRow')?.classList.remove('vis');
   document.getElementById('noteDtBtn').textContent='+ нагадати';
-  try{await apiSave(sn);}catch(e){console.error(e);}
+  // Optimistic: show immediately
   renderNotes();renderOverdueZone();
+  apiSave(sn).catch(e=>console.error(e));
 }
 
 async function deleteStickyNote(idx){
   const sn=stickyNotes[idx];
   addHistory({type:'sticky',label:sn.name,data:{...sn}});
   const id=sn.id;stickyNotes.splice(idx,1);
-  try{await apiDelete(id);}catch(e){console.error(e);}
   renderNotes();renderOverdueZone();
+  apiDelete(id).catch(e=>console.error(e));
 }
 
 function toggleNoteDt(){
@@ -1071,17 +1072,15 @@ async function saveNoteModal(){
     }
     const sn=stickyNotes[noteCtx.idx];
     sn.name=text;sn.notes=time?[{text,time}]:[];
-    closeNoteModal();
-    try{await apiSave(sn);}catch(e){console.error(e);}
-    renderNotes();
+    closeNoteModal();renderNotes();
+    apiSave(sn).catch(e=>console.error(e));
   }else{
     const ri=objects.findIndex(o=>String(o.id)===String(noteCtx.objId));
     if(ri<0)return;
     objects[ri].notes[noteCtx.ni].text=text;
     objects[ri].notes[noteCtx.ni].time=time;
-    closeNoteModal();
-    try{await apiSave(objects[ri]);}catch(e){console.error(e);}
-    render();renderNotes();
+    closeNoteModal();render();renderNotes();
+    apiSave(objects[ri]).catch(e=>console.error(e));
   }
 }
 
@@ -1126,7 +1125,7 @@ async function saveCard(){
   try{
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-err').style.display='block';return;}
-  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Збереження...';
+  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Зберігаємо...';
   const obj={
     name,
     addr:document.getElementById('f-addr').value.trim(),
@@ -1146,7 +1145,9 @@ async function saveCard(){
   if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
   else{await apiSave(obj);objects.push(obj);}
   btn.disabled=false;btn.textContent='Зберегти';
-  closeAddModal();render();renderNotes();renderOverdueZone();
+  closeAddModal();
+  // Optimistic: update local state and render immediately
+  render();renderNotes();renderOverdueZone();
   }catch(err){
     console.error('saveCard error:',err);
     const btn2=document.getElementById('btnSave');
