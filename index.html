@@ -536,7 +536,18 @@ async function apiGet(){
     objects=ob;stickyNotes=st;
     setSyncStatus('ok','збережено ✓');
   }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
-  finally{render();renderNotes();}
+  finally{
+    // Save focused input value before render
+    const ae=document.activeElement;
+    const savedVal=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')?ae.value:'';
+    const savedId=ae?ae.id:'';
+    render();renderNotes();renderOverdueZone();
+    // Restore focused input
+    if(savedId&&savedVal){
+      const el=document.getElementById(savedId);
+      if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){el.value=savedVal;el.focus();}
+    }
+  }
 }
 
 async function apiSave(obj){
@@ -707,18 +718,35 @@ function buildCard(o,i){
 
   // Add note input
   const addRow=document.createElement('div');addRow.className='obj-add-note';
+  addRow.style.flexWrap='wrap';
   const inp=document.createElement('input');
   inp.placeholder='+ замітка...';
-  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addObjNote(o.id,inp);}};
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addObjNoteWithTime(o.id,addRow);}};
   const btn=document.createElement('button');btn.textContent='↵';
-  btn.onclick=()=>addObjNote(o.id,inp);
+  btn.onclick=()=>addObjNoteWithTime(o.id,addRow);
+  // Reminder date+time (hidden by default)
+  const dtToggle=document.createElement('button');dtToggle.textContent='+ нагадати';
+  dtToggle.style.cssText='font-family:inherit;font-size:11px;color:var(--apple-tertiary);border:none;background:transparent;cursor:pointer;padding:0 2px;text-decoration:underline;flex-shrink:0';
+  const dtWrap=document.createElement('div');
+  dtWrap.style.cssText='display:none;align-items:center;gap:6px;width:100%;padding-top:2px;flex-wrap:wrap';
+  const dtDate=document.createElement('input');dtDate.type='date';
+  dtDate.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;color:var(--apple-text);-webkit-appearance:none;appearance:none;max-width:140px';
+  const dtHour=document.createElement('select');
+  dtHour.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;color:var(--apple-text);-webkit-appearance:none;appearance:none';
+  dtHour.innerHTML='<option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option><option value="9" selected>9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option>';
+  dtWrap.appendChild(dtDate);dtWrap.appendChild(dtHour);
+  dtToggle.onclick=()=>{
+    const vis=dtWrap.style.display==='flex';
+    dtWrap.style.display=vis?'none':'flex';
+    dtToggle.textContent=vis?'+ нагадати':'− прибрати';
+  };
   // Edit button
   const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
   editBtn.onclick=()=>openEditModal(o.id);
   const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
   delBtn.style.color='#e07070';
   delBtn.onclick=()=>deleteCard(o.id);
-  addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(editBtn);addRow.appendChild(delBtn);
+  addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(dtToggle);addRow.appendChild(editBtn);addRow.appendChild(delBtn);addRow.appendChild(dtWrap);
   addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
   card.appendChild(addRow);
 
@@ -839,6 +867,27 @@ function renderNotes(){
 }
 
 // ── OBJ NOTE ACTIONS ──
+async function addObjNoteWithTime(objId,addRow){
+  const inp=addRow.querySelector('input[placeholder]');
+  const text=inp?inp.value.trim():'';if(!text)return;
+  const dtDate=addRow.querySelector('input[type=date]');
+  const dtHour=addRow.querySelector('select');
+  const date=dtDate?dtDate.value:'';
+  const hour=dtHour?dtHour.value:'9';
+  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  if(!objects[ri].notes)objects[ri].notes=[];
+  objects[ri].notes.push({text,time});
+  inp.value='';if(dtDate)dtDate.value='';
+  // Hide reminder
+  const dtWrap=addRow.querySelector('div');
+  if(dtWrap){dtWrap.style.display='none';}
+  const dtBtn=addRow.querySelector('button');if(dtBtn)dtBtn.textContent='+ нагадати';
+  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  render();renderNotes();renderOverdueZone();
+}
+
 async function addObjNote(objId,inp){
   const text=inp.value.trim();if(!text)return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
@@ -853,7 +902,6 @@ async function addObjNote(objId,inp){
 async function deleteObjNote(objId,ni){
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
-  if(!confirm('Видалити замітку?'))return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
   try{await apiSave(objects[ri]);}catch(e){console.error(e);}
@@ -946,7 +994,6 @@ async function addGlobalNote(){
 }
 
 async function deleteStickyNote(idx){
-  if(!confirm('Видалити нотатку?'))return;
   const sn=stickyNotes[idx];
   addHistory({type:'sticky',label:sn.name,data:{...sn}});
   const id=sn.id;stickyNotes.splice(idx,1);
@@ -1222,7 +1269,11 @@ setTimeout(()=>{render();renderNotes();},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
-setInterval(()=>{if(document.activeElement?.tagName!=='INPUT')render();},30000);
+setInterval(()=>{
+  const ae=document.activeElement;
+  const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
+  if(!typing){render();renderNotes();}
+},30000);
 </script>
 </body>
 </html>
