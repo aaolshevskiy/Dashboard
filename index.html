@@ -1113,7 +1113,9 @@ function openAddModal(){
 function openEditModal(objId){
   const i=objects.findIndex(o=>String(o.id)===String(objId));
   if(i<0)return;
-  editIdx=i;const o=objects[i];
+  editIdx=i;
+  window._editObjId=String(objId); // store id separately
+  const o=objects[i];
   document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
   document.getElementById('f-addr').value=o.addr||'';
@@ -1154,8 +1156,19 @@ async function saveCard(){
     status:'active',stage:'',linkProject:'',
     notes:editIdx!==null?(objects[editIdx].notes||[]):[]
   };
-  if(editIdx!==null){obj.id=objects[editIdx].id;await apiSave(obj);objects[editIdx]=obj;}
-  else{await apiSave(obj);objects.push(obj);}
+  if(editIdx!==null){
+    // Find by id (not index) because sortObjects() may have reordered array
+    const savedId=window._editObjId||( objects[editIdx]?objects[editIdx].id:null);
+    if(savedId) obj.id=savedId;
+    apiSave(obj).catch(e=>console.error(e));
+    const realIdx=objects.findIndex(o=>String(o.id)===String(obj.id));
+    if(realIdx>=0) objects[realIdx]=obj;
+    else objects.push(obj);
+    window._editObjId=null;
+  } else {
+    apiSave(obj).catch(e=>console.error(e));
+    objects.push(obj);
+  }
   btn.disabled=false;btn.textContent='Зберегти';
   closeAddModal();
   // Optimistic: update local state and render immediately
