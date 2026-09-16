@@ -1215,6 +1215,8 @@ renderNotes();
 renderOverdueZone();
 apiGet();
 loadCalendar();
+// Guarantee render after DOM is fully ready
+setTimeout(()=>{render();renderNotes();},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
