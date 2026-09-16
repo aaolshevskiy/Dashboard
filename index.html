@@ -566,6 +566,7 @@ async function apiSave(obj){
       inwork:!!obj.inwork,completed:false,masters:false,
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
+      furniture:obj.furniture||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -657,6 +658,13 @@ function buildCard(o,i){
     bx.style.cssText='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
     bx.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12"><rect x="2" y="2" width="20" height="20" rx="4" fill="#FF5722"/><path d="M7 7h4.5a2.5 2.5 0 0 1 0 5H7zm0 5h5a2.5 2.5 0 0 1 0 5H7z" fill="white"/></svg>Bitrix';
     nameRow.appendChild(bx);
+  }
+  if(o.furniture){
+    const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
+    fw.style.cssText='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
+    fw.onclick=e=>e.stopPropagation();
+    fw.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="20" height="17" rx="2"/><line x1="12" y1="4" x2="12" y2="21"/><line x1="2" y1="9" x2="22" y2="9"/><circle cx="7" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="15" r="1" fill="currentColor" stroke="none"/></svg>Меблі';
+    nameRow.appendChild(fw);
   }
   card.appendChild(nameRow);
 
