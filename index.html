@@ -754,18 +754,20 @@ function renderOverdueZone(){
 }
 
 function renderNotes(){
-  // Populate obj selector
-  const objSel=document.getElementById('noteObjSelect');
-  if(objSel){
-    const cur=objSel.value;
-    objSel.innerHTML='<option value="">— без об’єкту —</option>';
+  // Populate obj selectors — both desktop and mobile
+  ['noteObjSelect','mobileObjSelect'].forEach(function(selId){
+    const sel=document.getElementById(selId);
+    if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— без об’єкту —</option>';
     [...objects].sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
-      const opt=document.createElement('option');opt.value=o.id;
+      const opt=document.createElement('option');
+      opt.value=o.id;
       opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');
-      objSel.appendChild(opt);
+      sel.appendChild(opt);
     });
-    objSel.value=cur;
-  }
+    sel.value=cur;
+  });
   const leftEl=document.getElementById('notesLeft');
   const rightEl=document.getElementById('notesRight');
   if(!leftEl||!rightEl)return;
