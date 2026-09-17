@@ -353,6 +353,9 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <button onclick="addMobileNote()"
       style="font-family:inherit;font-size:14px;border:none;background:transparent;
         color:var(--apple-secondary);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
+    <button id="micBtnMob" onclick="toggleMic('mobileNoteInput','micBtnMob')" title="Голосовий ввід"
+      style="font-size:18px;border:none;background:transparent;cursor:pointer;padding:0 4px;
+        color:var(--apple-tertiary);flex-shrink:0;transition:color .2s">🎤</button>
   </div>
   <div class="notes-cols">
     <div id="notesLeft"></div>
@@ -362,6 +365,9 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <input id="noteAddInput" placeholder="нова нотатка..."
       onkeydown="if(event.key==='Enter')addGlobalNote()">
     <button onclick="addGlobalNote()">↵</button>
+    <button id="micBtn" onclick="toggleMic('noteAddInput','micBtn')" title="Голосовий ввід"
+      style="font-size:16px;border:none;background:transparent;cursor:pointer;padding:0 4px;
+        color:var(--apple-tertiary);transition:color .2s">🎤</button>
     <button class="dt-btn" id="noteDtBtn" onclick="toggleNoteDt()">+ нагадати</button>
   </div>
   <div class="dt-row" id="noteDtRow" style="padding-top:4px">
@@ -1116,13 +1122,30 @@ function openEditModal(objId){
   editIdx=i;
   window._editObjId=String(objId); // store id separately
   const o=objects[i];
+  // Helper: normalize any date value to YYYY-MM-DD for input[type=date]
+  const toInputDate=v=>{
+    if(!v)return'';
+    // Already YYYY-MM-DD
+    if(/^\d{4}-\d{2}-\d{2}/.test(String(v)))return String(v).slice(0,10);
+    // Try parsing as Date
+    const d=new Date(v);
+    if(!isNaN(d)){
+      const pad=n=>String(n).padStart(2,'0');
+      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    }
+    return'';
+  };
   document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
   document.getElementById('f-addr').value=o.addr||'';
   document.getElementById('f-area').value=o.area||'';
   document.getElementById('f-pack').value=o.pack||'';
-  document.getElementById('f-start').value=o.dateStart||'';
-  document.getElementById('f-end').value=o.dateEnd||'';
+  document.getElementById('f-start').value=toInputDate(o.dateStart);
+  document.getElementById('f-end').value=toInputDate(o.dateEnd);
+  console.log('[DATE DEBUG] dateStart raw:', JSON.stringify(o.dateStart), 'type:', typeof o.dateStart);
+  console.log('[DATE DEBUG] dateEnd raw:', JSON.stringify(o.dateEnd), 'type:', typeof o.dateEnd);
+  console.log('[DATE DEBUG] toInputDate result:', toInputDate(o.dateStart), toInputDate(o.dateEnd));
+  console.log('[DATE DEBUG] f-start value after set:', document.getElementById('f-start').value);
   document.getElementById('f-masters-name').value=o.mastersName||o.prorab||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
@@ -1283,6 +1306,64 @@ document.getElementById('noteModal').addEventListener('click',function(e){if(e.t
 document.getElementById('historyModal').addEventListener('click',function(e){if(e.target===this)closeHistory();});
 document.querySelector('#addModal .modal').addEventListener('click',e=>e.stopPropagation());
 document.querySelector('#noteModal .modal').addEventListener('click',e=>e.stopPropagation());
+
+// ── SPEECH RECOGNITION ──────────────────────────────────
+let _recognition=null;
+let _micActive=false;
+let _micInputId=null;
+let _micBtnId=null;
+
+function toggleMic(inputId, btnId){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert('Голосовий ввід не підтримується у вашому браузері. Спробуйте Safari або Chrome.');
+    return;
+  }
+  if(_micActive){
+    stopMic();return;
+  }
+  _micInputId=inputId;
+  _micBtnId=btnId;
+  _recognition=new SpeechRecognition();
+  _recognition.lang='uk-UA';
+  _recognition.continuous=false;
+  _recognition.interimResults=true;
+  const btn=document.getElementById(btnId);
+  const inp=document.getElementById(inputId);
+  _micActive=true;
+  if(btn){btn.textContent='🔴';btn.style.color='#ff3b30';}
+  _recognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(inp) inp.value=(final||interim).trim();
+  };
+  _recognition.onend=()=>{
+    _micActive=false;
+    if(btn){btn.textContent='🎤';btn.style.color='';}
+    // Auto-save if text present
+    const inp=document.getElementById(_micInputId);
+    if(inp&&inp.value.trim()){
+      if(_micInputId==='noteAddInput') addGlobalNote();
+      else if(_micInputId==='mobileNoteInput') addMobileNote();
+    }
+  };
+  _recognition.onerror=e=>{
+    _micActive=false;
+    if(btn){btn.textContent='🎤';btn.style.color='';}
+    if(e.error!=='no-speech') console.error('Speech error:',e.error);
+  };
+  _recognition.start();
+}
+
+function stopMic(){
+  if(_recognition){ try{_recognition.stop();}catch(e){} }
+  _micActive=false;
+  const btn=document.getElementById(_micBtnId);
+  if(btn){btn.textContent='🎤';btn.style.color='';}
+}
 
 loadHistory();
 render();
