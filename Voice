@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Нотатка">
+<title>Нотатка</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23007AFF'/><text y='.85em' font-size='65' x='18'>🎤</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
+  background:#000;
+  color:#fff;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:32px;
+  padding:40px 24px;
+  -webkit-font-smoothing:antialiased;
+}
+.mic-btn{
+  width:120px;height:120px;border-radius:50%;
+  background:#007AFF;border:none;
+  font-size:52px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 0 rgba(0,122,255,.4);
+  transition:transform .15s,background .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mic-btn:active{transform:scale(.95)}
+.mic-btn.recording{
+  background:#ff3b30;
+  animation:pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(255,59,48,.5)}
+  70%{box-shadow:0 0 0 30px rgba(255,59,48,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}
+}
+.status{
+  font-size:20px;font-weight:500;
+  color:rgba(255,255,255,.7);
+  text-align:center;min-height:28px;
+  letter-spacing:-.02em;
+}
+.transcript{
+  font-size:22px;font-weight:400;
+  color:#fff;text-align:center;
+  min-height:60px;max-width:320px;
+  line-height:1.4;letter-spacing:-.01em;
+}
+.send-btn{
+  background:#34c759;border:none;border-radius:24px;
+  color:#fff;font-size:17px;font-weight:600;
+  padding:14px 40px;cursor:pointer;
+  font-family:inherit;letter-spacing:-.02em;
+  display:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.send-btn:active{opacity:.8}
+.back-link{
+  position:fixed;top:20px;left:20px;
+  font-size:17px;color:rgba(255,255,255,.6);
+  text-decoration:none;
+  display:flex;align-items:center;gap:4px;
+}
+.obj-select{
+  font-family:inherit;font-size:16px;
+  background:rgba(255,255,255,.1);
+  color:#fff;border:1px solid rgba(255,255,255,.2);
+  border-radius:12px;padding:10px 16px;
+  outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  max-width:280px;width:100%;text-align:center;
+  display:none;
+}
+</style>
+</head>
+<body>
+
+<a class="back-link" href="https://aaolshevskiy.github.io/Dashboard/crm.html">‹ Дашборд</a>
+
+<div class="transcript" id="transcript">Натисніть щоб надиктувати нотатку</div>
+
+<button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+
+<div class="status" id="status"></div>
+
+<select class="obj-select" id="objSelect">
+  <option value="">— без об'єкту —</option>
+</select>
+
+<button class="send-btn" id="sendBtn" onclick="saveNote()">Зберегти ✓</button>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyS6GtaZuWAzs-mM47yl_qkc1N3yllhYu_UadXNiVu2ESg32A5hDQ2A7IJ8Jo_-7iP-/exec";
+
+let recognition = null;
+let isRecording = false;
+let finalText = '';
+let objects = [];
+
+// Load objects for selector
+async function loadObjects(){
+  try{
+    const res = await fetch(API_URL + '?action=getAll');
+    const data = await res.json();
+    objects = (data||[]).filter(o => !String(o.id).startsWith('sticky_') && o.status !== 'sticky');
+    const sel = document.getElementById('objSelect');
+    objects.sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = o.name;
+      sel.appendChild(opt);
+    });
+  }catch(e){ console.error(e); }
+}
+
+function setStatus(txt){ document.getElementById('status').textContent = txt; }
+function setTranscript(txt){ document.getElementById('transcript').textContent = txt || 'Натисніть щоб надиктувати нотатку'; }
+
+function showSend(txt){
+  finalText = txt;
+  document.getElementById('sendBtn').style.display = 'block';
+  document.getElementById('objSelect').style.display = 'block';
+}
+function hideSend(){
+  document.getElementById('sendBtn').style.display = 'none';
+  document.getElementById('objSelect').style.display = 'none';
+}
+
+function toggleMic(){
+  if(isRecording){ stopRec(); return; }
+  startRec();
+}
+
+function startRec(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ setStatus('Голосовий ввід не підтримується'); return; }
+
+  recognition = new SR();
+  recognition.lang = 'uk-UA';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = ()=>{
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+    setStatus('Слухаю...');
+    setTranscript('');
+    hideSend();
+  };
+
+  recognition.onresult = e=>{
+    let interim = '', final = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      if(e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    setTranscript(final || interim);
+    if(final) showSend(final.trim());
+  };
+
+  recognition.onend = ()=>{
+    stopRec();
+    const txt = document.getElementById('transcript').textContent;
+    if(txt && txt !== 'Натисніть щоб надиктувати нотатку'){
+      showSend(txt.trim());
+      setStatus('Натисніть Зберегти або ще раз 🎤');
+    }
+  };
+
+  recognition.onerror = e=>{
+    stopRec();
+    if(e.error === 'not-allowed') setStatus('Дозвольте доступ до мікрофону в налаштуваннях');
+    else if(e.error !== 'no-speech') setStatus('Помилка: ' + e.error);
+  };
+
+  recognition.start();
+}
+
+function stopRec(){
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  if(recognition){ try{ recognition.stop(); }catch(e){} }
+}
+
+async function saveNote(){
+  const text = finalText || document.getElementById('transcript').textContent;
+  if(!text || text === 'Натисніть щоб надиктувати нотатку') return;
+
+  const selObjId = document.getElementById('objSelect').value;
+  const btn = document.getElementById('sendBtn');
+  btn.textContent = 'Зберігаю...';
+  btn.disabled = true;
+
+  try{
+    let obj;
+    if(selObjId){
+      // Add to existing object
+      const o = objects.find(o=>String(o.id)===String(selObjId));
+      if(o){
+        const notes = Array.isArray(o.notes)?o.notes:[];
+        notes.push({text, time:''});
+        obj = {...o, notes};
+      }
+    }
+    if(!obj){
+      // Create sticky note
+      obj = {
+        id:'sticky_'+Date.now(), name:text, col:1, addr:'1',
+        status:'sticky', stage:'', pack:'', area:'',
+        inwork:false, completed:false, masters:false,
+        mastersName:'', linkProject:'', linkFolder:'',
+        dateStart:'', dateEnd:'', furniture:'', notes:[]
+      };
+    }
+
+    await fetch(API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'save', object:obj})
+    });
+
+    // Success UI
+    btn.textContent = '✓ Збережено!';
+    btn.style.background = '#34c759';
+    setStatus('');
+    setTranscript('Нотатку збережено!');
+    document.getElementById('objSelect').value = '';
+
+    setTimeout(()=>{
+      btn.textContent = 'Зберегти ✓';
+      btn.disabled = false;
+      setTranscript('Натисніть щоб надиктувати нотатку');
+      hideSend();
+      finalText = '';
+    }, 2000);
+
+  }catch(e){
+    btn.textContent = 'Помилка — спробуйте ще';
+    btn.disabled = false;
+    console.error(e);
+  }
+}
+
+// Auto-start mic on page load (after short delay for iOS)
+loadObjects();
+setTimeout(()=>{
+  startRec();
+}, 600);
+</script>
+</body>
+</html>
