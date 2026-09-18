@@ -592,19 +592,48 @@ async function apiDelete(id){
 }
 
 // ── SORT ──
+// Manual order stored in localStorage
+function loadCardOrder(){
+  try{ return JSON.parse(localStorage.getItem('crm_card_order')||'[]'); }catch{return[];}
+}
+function saveCardOrder(){
+  const order=objects.map(o=>String(o.id));
+  localStorage.setItem('crm_card_order', JSON.stringify(order));
+}
+
 function sortObjects(){
-  objects.sort((a,b)=>{
-    if(!!a.completed!==!!b.completed)return a.completed?1:-1;
-    // inwork (★) first
-    if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;
-    // then by dateStart asc — oldest first, no date goes last
-    const da=a.dateStart?new Date(a.dateStart):null;
-    const db=b.dateStart?new Date(b.dateStart):null;
-    if(da&&db)return da-db;
-    if(da)return -1;
-    if(db)return 1;
-    return 0;
-  });
+  const order=loadCardOrder();
+  if(order.length){
+    // Apply manual order where possible
+    const orderMap={};
+    order.forEach((id,i)=>{ orderMap[id]=i; });
+    objects.sort((a,b)=>{
+      const ia=orderMap[String(a.id)];
+      const ib=orderMap[String(b.id)];
+      // Both in manual order
+      if(ia!==undefined&&ib!==undefined) return ia-ib;
+      // New items (not in order) go by date
+      if(ia===undefined&&ib!==undefined) return 1;
+      if(ia!==undefined&&ib===undefined) return -1;
+      // Both new — sort by date
+      const da=a.dateStart?new Date(a.dateStart):null;
+      const db=b.dateStart?new Date(b.dateStart):null;
+      if(da&&db)return da-db;
+      if(da)return -1;if(db)return 1;
+      return 0;
+    });
+  } else {
+    // No manual order yet — default sort
+    objects.sort((a,b)=>{
+      if(!!a.completed!==!!b.completed)return a.completed?1:-1;
+      if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;
+      const da=a.dateStart?new Date(a.dateStart):null;
+      const db=b.dateStart?new Date(b.dateStart):null;
+      if(da&&db)return da-db;
+      if(da)return -1;if(db)return 1;
+      return 0;
+    });
+  }
 }
 
 // ── RENDER OBJECTS ──
@@ -633,6 +662,39 @@ function buildCard(o,i){
   card.className='obj-card'+(o.completed?' completed':'');
   card.id='card-'+i;
   card.dataset.objid=o.id;
+  card.draggable=true;
+
+  card.addEventListener('dragstart',e=>{
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',String(o.id));
+    setTimeout(()=>card.classList.add('dragging'),0);
+  });
+  card.addEventListener('dragend',()=>{
+    card.classList.remove('dragging');
+    document.querySelectorAll('.obj-card').forEach(c=>c.classList.remove('drag-over'));
+  });
+  card.addEventListener('dragover',e=>{
+    e.preventDefault();
+    e.dataTransfer.dropEffect='move';
+    document.querySelectorAll('.obj-card').forEach(c=>c.classList.remove('drag-over'));
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+  card.addEventListener('drop',e=>{
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const fromId=e.dataTransfer.getData('text/plain');
+    const toId=String(o.id);
+    if(fromId===toId)return;
+    // Reorder objects array
+    const fromIdx=objects.findIndex(x=>String(x.id)===fromId);
+    const toIdx=objects.findIndex(x=>String(x.id)===toId);
+    if(fromIdx<0||toIdx<0)return;
+    const [moved]=objects.splice(fromIdx,1);
+    objects.splice(toIdx,0,moved);
+    saveCardOrder();
+    render();
+  });
 
   const hasNotes=(o.notes||[]).length>0;
   const hasRem=hasActiveReminder(o);
@@ -764,6 +826,9 @@ function buildCard(o,i){
   delBtn.onclick=()=>deleteCard(o.id);
   addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(dtToggle);addRow.appendChild(editBtn);addRow.appendChild(delBtn);addRow.appendChild(dtWrap);
   addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
+  // Prevent drag when interacting with inputs
+  addRow.addEventListener('mousedown',e=>e.stopPropagation());
+  addRow.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
   card.appendChild(addRow);
 
   return card;
