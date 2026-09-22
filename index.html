@@ -741,7 +741,14 @@ function buildCard(o,i){
     row.appendChild(editB);
     card.appendChild(row);
     // Click to expand — open edit modal
-    card.onclick=()=>openEditModal(o.id);
+    card.onclick=e=>{
+      if(e.target.closest('button')) return; // ignore edit button clicks
+      const ri=objects.findIndex(x=>String(x.id)===String(o.id));
+      if(ri<0)return;
+      objects[ri].closed=false;
+      apiSave(objects[ri]).catch(err=>console.error(err));
+      render();
+    };
     return card;
   }
 
