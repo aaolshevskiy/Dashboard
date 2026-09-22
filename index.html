@@ -90,6 +90,27 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   transition:box-shadow .2s;
 }
 .obj-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.13),0 2px 6px rgba(0,0,0,.07);}
+.obj-card.closed{
+  padding:10px 16px;
+  cursor:pointer;
+  opacity:.65;
+  min-height:unset;
+}
+.obj-card.closed:hover{opacity:.85;}
+.obj-card-closed-row{
+  display:flex;align-items:center;gap:10px;
+}
+.obj-card-closed-label{
+  font-size:11px;font-weight:600;color:var(--apple-tertiary);
+  text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;
+}
+.obj-card-closed-name{
+  font-size:14px;font-weight:600;color:var(--apple-text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;
+}
+.obj-card-closed-dates{
+  font-size:12px;color:var(--apple-tertiary);flex-shrink:0;
+}
 .obj-card.completed{opacity:.55}
 .obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
 .obj-card-name{
@@ -418,6 +439,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
         <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content;margin-top:8px">
+        <input type="checkbox" id="f-closed" style="width:16px;height:16px;accent-color:#8e8e93;cursor:pointer"> 🔒 Закрито</label>
 
     </div>
     <div class="err-msg" id="f-err">Введіть назву</div>
@@ -506,6 +529,7 @@ function parseObj(o){
     notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
   };
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
+  parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
   return parsed;
 }
@@ -569,7 +593,7 @@ async function apiSave(obj){
   }else{
     full={id:obj.id||'',name:obj.name||'',addr:obj.addr||'',stage:obj.stage||'',
       status:obj.status||'active',pack:obj.pack||'',area:obj.area||'',
-      inwork:!!obj.inwork,completed:false,masters:false,
+      inwork:!!obj.inwork,completed:false,masters:false,closed:!!obj.closed||false,
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       furniture:obj.furniture||'',
@@ -659,7 +683,8 @@ function _renderObjects(){
 
 function buildCard(o,i){
   const card=document.createElement('div');
-  card.className='obj-card'+(o.completed?' completed':'');
+  const isClosed=!!o.closed;
+  card.className='obj-card'+(o.completed?' completed':'')+(isClosed?' closed':'');
   card.id='card-'+i;
   card.dataset.objid=o.id;
   card.draggable=true;
@@ -698,6 +723,27 @@ function buildCard(o,i){
 
   const hasNotes=(o.notes||[]).length>0;
   const hasRem=hasActiveReminder(o);
+
+  // CLOSED STATE — compact row
+  if(isClosed){
+    const row=document.createElement('div');
+    row.className='obj-card-closed-row';
+    const lbl=document.createElement('span');lbl.className='obj-card-closed-label';lbl.textContent='Закрито';
+    const nm=document.createElement('span');nm.className='obj-card-closed-name';nm.textContent=(o.inwork?'★ ':'')+o.name;
+    const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
+    const dt=document.createElement('span');dt.className='obj-card-closed-dates';
+    dt.textContent=(ds&&de)?ds+' → '+de:(ds||de||'');
+    row.appendChild(lbl);row.appendChild(nm);if(ds||de)row.appendChild(dt);
+    // Edit btn
+    const editB=document.createElement('button');editB.textContent='✏';
+    editB.style.cssText='border:none;background:transparent;color:var(--apple-tertiary);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px';
+    editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};
+    row.appendChild(editB);
+    card.appendChild(row);
+    // Click to expand — open edit modal
+    card.onclick=()=>openEditModal(o.id);
+    return card;
+  }
 
   // Name row with Drive+Bitrix icons
   const nameRow=document.createElement('div');
@@ -1172,7 +1218,7 @@ function openAddModal(){
   ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  ['f-inwork','f-masters','f-completed'].forEach(id=>{
+  ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.checked=false;
   });
   document.getElementById('f-pack').value='';
@@ -1216,6 +1262,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
+  if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
 }
@@ -1239,6 +1286,7 @@ async function saveCard(){
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
     inwork:document.getElementById('f-inwork').checked,
+    closed:document.getElementById('f-closed')?.checked||false,
     masters:false,
     completed:false,
     status:'active',stage:'',linkProject:'',
