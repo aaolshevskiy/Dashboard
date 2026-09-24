@@ -7,60 +7,53 @@
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-
-/* ── APPLE DESIGN SYSTEM ── */
-:root{
-  --apple-blue:#0071e3;
-  --apple-blue-hover:#0077ed;
-  --apple-text:#1d1d1f;
-  --apple-secondary:#6e6e73;
-  --apple-tertiary:#aeaeb2;
-  --apple-bg:#f5f5f7;
-  --apple-card:#ffffff;
-  --apple-border:rgba(0,0,0,.08);
-  --apple-radius:12px;
-  --apple-radius-sm:8px;
-  --apple-shadow:0 2px 12px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.05);
-  --apple-shadow-md:0 4px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
-}
+:root{--apple-blue:#0071e3;--apple-text:#1d1d1f;--apple-secondary:#6e6e73;--apple-tertiary:#aeaeb2;--apple-bg:#f5f5f7;--apple-card:#fff;--apple-radius:12px;--apple-shadow-md:0 4px 20px rgba(0,0,0,.12);}
+body{font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;}
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;background:#f0f0f0;min-height:100vh;
+body{font-family:inherit;background:#b0b0a8;min-height:100vh;
   display:flex;align-items:flex-start;justify-content:center;padding:16px}
 
 /* ── BOARD ── */
 .board{
-  background:var(--apple-bg);
-  box-shadow:none;
+  background:#f8f7f2;
+  border-radius:4px;
+  box-shadow:0 4px 24px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.6);
   width:100%;max-width:1400px;min-height:85vh;
   position:relative;
   padding-bottom:40px;
 }
-
-.board-inner{padding:20px 28px 0}
+/* Corner brackets */
+.board::before,.board::after{content:'';position:absolute;width:22px;height:22px;border-color:#999;border-style:solid}
+.board::before{top:10px;left:10px;border-width:2px 0 0 2px}
+.board::after{top:10px;right:10px;border-width:2px 2px 0 0}
+.board-inner{padding:18px 24px 0}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--apple-border)}
-.board-title{font-size:28px;font-weight:700;color:var(--apple-text);letter-spacing:-.03em}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.board-title{font-size:30px;font-weight:700;color:#1a1a1a}
 .topbar-right{display:flex;align-items:center;gap:10px}
-.sync-status{font-size:13px;color:var(--apple-tertiary);font-weight:400}
+.sync-status{font-size:15px;color:#aaa}
 .sync-status.ok .sync-text{color:#2a7a3a}
 .sync-status.err .sync-text{color:#c0392b}
-.btn{font-family:inherit;font-size:13px;padding:0 18px;height:36px;line-height:36px;border:none;
-  border-radius:20px;background:rgba(0,0,0,.06);cursor:pointer;color:var(--apple-text);
-  font-weight:500;letter-spacing:-.01em;transition:background .15s;display:inline-flex;align-items:center;white-space:nowrap}
-.btn:hover{background:rgba(0,0,0,.1)}
-.btn-primary{background:var(--apple-blue);color:#fff}
-.btn-primary:hover{background:var(--apple-blue-hover)}
+.btn{font-family:inherit;font-size:17px;padding:4px 14px;border:1.5px solid #888;
+  border-radius:4px;background:transparent;cursor:pointer;color:#555}
+.btn:hover{background:rgba(0,0,0,.05)}
+.btn-primary{border-color:#1a1a8a;color:#1a1a8a}
+.btn-primary:hover{background:rgba(26,26,138,.07)}
 
 /* ── CALENDAR STRIP ── */
 .cal-strip{
-  padding:5px 0 8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
+  padding:5px 0 8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border-bottom:0.5px solid rgba(0,0,0,.1);margin-bottom:14px;
 }
-.cal-strip-date{font-size:14px;font-weight:600;color:var(--apple-secondary);flex-shrink:0;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+.cal-strip-date{font-size:17px;font-weight:700;color:#888;flex-shrink:0}
 .cal-strip-events{display:flex;gap:10px;flex-wrap:wrap;flex:1}
-.cal-ev{font-size:14px;white-space:nowrap;font-weight:500}
+.cal-ev{font-size:16px;white-space:nowrap}
 .cal-ev a{text-decoration:none;color:inherit}
 .cal-ev a:hover{text-decoration:underline}
 .cal-ev.past{color:#bbb}
@@ -69,63 +62,46 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .cal-strip-link{font-size:14px;color:#aaa;text-decoration:none;flex-shrink:0}
 
 /* ── SECTION LABEL ── */
-.section-label{font-size:13px;font-weight:600;color:var(--apple-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.section-label{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:8px}
 
 /* ── OBJECTS GRID ── */
 .objects-grid{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(5,1fr);
   gap:0;
-  padding:0 6px;
-  align-items:start;
+  border-top:0.5px solid rgba(0,0,0,.1);
+  border-left:0.5px solid rgba(0,0,0,.1);
 }
-.obj-card{
-  padding:14px 16px 14px;
-  display:flex;flex-direction:column;gap:4px;
-  min-height:180px;
-  background:var(--apple-card);
-  border-radius:var(--apple-radius);
-  box-shadow:var(--apple-shadow-md);
-  margin:6px;
-  transition:box-shadow .2s;
-}
-.obj-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.13),0 2px 6px rgba(0,0,0,.07);}
-.obj-card.closed{
-  padding:10px 16px;
-  cursor:pointer;
-  opacity:.65;
-  min-height:unset;
-}
+.obj-card.dragging{opacity:.4;}
+.obj-card.drag-over{box-shadow:0 0 0 2.5px #0071e3;}
+.obj-card.closed{padding:10px 16px;cursor:pointer;opacity:.65;min-height:unset;}
 .obj-card.closed:hover{opacity:.85;}
-.obj-card-closed-row{
-  display:flex;align-items:center;gap:10px;
-}
-.obj-card-closed-label{
-  font-size:11px;font-weight:600;color:var(--apple-tertiary);
-  text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;
-}
-.obj-card-closed-name{
-  font-size:14px;font-weight:600;color:var(--apple-text);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;
-}
-.obj-card-closed-dates{
-  font-size:12px;color:var(--apple-tertiary);flex-shrink:0;
+.obj-card{
+  border-right:0.5px solid rgba(0,0,0,.1);
+  border-bottom:0.5px solid rgba(0,0,0,.1);
+  padding:10px 12px;
+  min-height:120px;
+  display:flex;flex-direction:column;gap:2px;
 }
 .obj-card.completed{opacity:.55}
 .obj-card-num{font-size:12px;color:#ccc;margin-bottom:1px}
 .obj-card-name{
-  font-size:16px;font-weight:600;color:var(--apple-text);
-  line-height:1.3;cursor:default;letter-spacing:-.02em;
+  font-size:19px;font-weight:700;color:#1a1a8a;
+  line-height:1.2;cursor:default;
 }
-.obj-card-name.has-notes{}
-.obj-card-addr{font-size:13px;color:var(--apple-secondary);text-decoration:none;line-height:1.3;display:block}
+.obj-card-name.has-notes{
+  text-decoration:underline;text-decoration-style:wavy;
+  text-decoration-color:#1a1a8a;text-underline-offset:3px;
+  text-decoration-thickness:1.5px;
+}
+.obj-card-addr{font-size:13px;color:#888;text-decoration:none;line-height:1.2;display:block}
 .obj-card-addr:hover{text-decoration:underline}
-.obj-card-meta{font-size:12px;color:var(--apple-secondary);line-height:1.4}
-.obj-card-dates{font-size:12px;color:var(--apple-secondary);line-height:1.4;margin-top:4px}
+.obj-card-meta{font-size:13px;color:#999;line-height:1.3}
+.obj-card-dates{font-size:13px;color:#666;line-height:1.3;margin-top:3px}
 .obj-card-dates span{color:#aaa}
 .obj-badge{
-  display:inline-block;font-size:11px;background:rgba(0,113,227,.1);
-  border-radius:4px;padding:1px 6px;color:var(--apple-blue);margin-right:3px;font-weight:500;
+  display:inline-block;font-size:11px;background:rgba(0,0,0,.07);
+  border-radius:2px;padding:0 4px;color:#777;margin-right:2px;
 }
 .obj-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#c0392b;margin-left:4px;vertical-align:middle}
 .obj-m{display:inline-block;width:16px;height:16px;border:1.5px solid #888;
@@ -134,62 +110,64 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .obj-star{color:#e0a020;margin-right:2px}
 /* Notes under obj */
 .obj-notes-list{margin-top:5px;display:flex;flex-direction:column;gap:1px}
-.obj-note-row{display:flex;align-items:flex-start;gap:4px;flex-wrap:nowrap}
-.obj-note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;flex:1;min-width:0;word-break:break-word}
+.obj-note-row{display:flex;align-items:baseline;gap:3px;flex-wrap:wrap}
+.obj-note-text{font-size:14px;color:#444;cursor:pointer;line-height:1.3}
 .obj-note-text:hover{color:#1a1a8a}
 .obj-note-text.overdue{color:#c0392b}
-.obj-note-time{font-size:13px;color:var(--apple-tertiary)}
+.obj-note-time{font-size:11px;color:#bbb}
 .obj-note-time.has-rem{color:#2a7a3a}
-.obj-note-del{font-size:13px;border:none;background:transparent;color:#ccc;cursor:pointer;padding:0 2px;flex-shrink:0}
+.obj-note-del{font-size:11px;border:none;background:transparent;color:#ddd;
+  cursor:pointer;padding:0 2px;font-family:inherit}
 .obj-note-del:hover{color:#c0392b}
 /* Add note input */
 .obj-add-note{margin-top:4px;display:flex;align-items:center;gap:4px}
 .obj-add-note input{
-  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
+  font-family:inherit;font-size:14px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:0;padding:0 2px;color:#1a1a1a;
 }
 .obj-add-note input::placeholder{color:#ccc}
-.obj-add-note button{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;border:none;
+.obj-add-note button{font-family:inherit;font-size:14px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 2px;flex-shrink:0}
 .obj-add-note button:hover{color:#1a1a8a}
 
 /* ── NOTES ZONE (bottom) ── */
 .notes-zone{
   margin-top:20px;padding-top:12px;
+  border-top:0.5px solid rgba(0,0,0,.1);
 }
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0}
-.note-text{font-size:15px;color:var(--apple-text);cursor:pointer;line-height:1.4;font-weight:400;word-break:break-word}
-.note-text.linked{color:var(--apple-secondary)}
+.note-text{font-size:20px;color:#1a1a1a;cursor:pointer;line-height:1.3}
 .note-text:hover{text-decoration:underline}
 .note-text.overdue{color:#c0392b}
-.note-obj-link{font-size:15px;color:var(--apple-secondary);text-decoration:none;cursor:pointer}
+.note-obj-link{font-size:18px;color:#1a1a8a;text-decoration:none;flex-shrink:0}
 .note-obj-link:hover{text-decoration:underline}
-.note-time{font-size:13px;color:var(--apple-tertiary)}
-.note-time.has-rem{color:#34a853}
-.note-del{font-size:13px;padding:0 2px;border:none;background:transparent;color:#ccc;cursor:pointer;flex-shrink:0;line-height:1}
-.note-del:hover{color:#c0392b}
+.note-time{font-size:14px;color:#bbb;flex-shrink:0}
+.note-time.has-rem{color:#2a7a3a}
+.note-del{font-size:12px;padding:0 4px;border:1px solid #eee;border-radius:2px;
+  background:transparent;color:#ddd;cursor:pointer;font-family:inherit;flex-shrink:0}
+.note-del:hover{color:#c0392b;border-color:#c0392b}
 /* Add note input (bottom zone) */
 .notes-add{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .notes-add input{
-  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:20px;border:none;
+  font-family:inherit;font-size:20px;border:none;
   border-bottom:1.5px solid #ddd;background:transparent;outline:none;
   flex:1;min-width:200px;max-width:480px;padding:1px 2px;color:#1a1a1a;
 }
 .notes-add input::placeholder{color:#ccc}
-.notes-add button{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:20px;border:none;
+.notes-add button{font-family:inherit;font-size:20px;border:none;
   background:transparent;color:#bbb;cursor:pointer;padding:0 4px}
 .notes-add button:hover{color:#1a1a8a}
-.dt-btn{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:16px;color:#ccc;cursor:pointer;
+.dt-btn{font-family:inherit;font-size:16px;color:#ccc;cursor:pointer;
   border:none;background:transparent;text-decoration:underline;text-underline-offset:2px}
 .dt-btn:hover{color:#888}
 .dt-row{display:none;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
 .dt-row.vis{display:flex}
-.dt-row input[type=date]{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;border:none;
+.dt-row input[type=date]{font-family:inherit;font-size:17px;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;color:#888;
   -webkit-appearance:none;appearance:none}
-.hour-sel{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:16px;color:#888;border:none;
+.hour-sel{font-family:inherit;font-size:16px;color:#888;border:none;
   border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;
   -webkit-appearance:none;appearance:none}
 .dt-label{font-size:15px;color:#bbb}
@@ -198,23 +176,23 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);
   z-index:100;align-items:center;justify-content:center}
 .overlay.open{display:flex}
-.modal{background:#fff;border-radius:20px;padding:28px 32px;
+.modal{background:#f8f7f2;border-radius:8px;padding:24px 28px;
   width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;
-  box-shadow:0 20px 60px rgba(0,0,0,.20),0 4px 12px rgba(0,0,0,.08)}
-.modal-title{font-size:20px;font-weight:700;color:var(--apple-text);margin-bottom:20px;letter-spacing:-.03em}
+  box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px}
 .form-row{margin-bottom:12px;display:flex;flex-direction:column;gap:3px}
 .form-row label{font-size:14px;color:#aaa}
 .form-row input,.form-row select{
-  font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;border:none;
+  font-family:inherit;font-size:19px;border:none;
   border-bottom:1.5px solid #e0e0e0;background:transparent;
   color:#1a1a1a;padding:3px 2px;outline:none;
   -webkit-appearance:none;appearance:none;
 }
 .form-row input:focus,.form-row select:focus{border-bottom-color:#1a1a8a}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-.btn-cancel{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;padding:4px 14px;
+.btn-cancel{font-family:inherit;font-size:17px;padding:4px 14px;
   border:1.5px solid #ccc;border-radius:4px;background:transparent;cursor:pointer;color:#999}
-.btn-save{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:17px;padding:4px 18px;
+.btn-save{font-family:inherit;font-size:17px;padding:4px 18px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:#1a1a8a;cursor:pointer;color:#fff}
 .fsec{font-size:14px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;
   margin:14px 0 6px;border-bottom:0.5px solid #e8e8e0;padding-bottom:4px}
@@ -228,104 +206,26 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 .hist-body{flex:1;min-width:0}
 .hist-name{font-size:16px;font-weight:600;color:#1a1a1a}
 .hist-meta{font-size:12px;color:#aaa;margin-top:1px}
-.hist-restore{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:14px;padding:2px 8px;
+.hist-restore{font-family:inherit;font-size:14px;padding:2px 8px;
   border:1.5px solid #1a1a8a;border-radius:4px;background:transparent;
   color:#1a1a8a;cursor:pointer;flex-shrink:0}
 .hist-restore:hover{background:rgba(26,26,138,.06)}
 
 /* ── NOTE EDIT MODAL ── */
-.note-edit-date-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.note-edit-date-row input[type=date]{
-  min-height:36px;padding:4px 6px;border-radius:6px;
-  border:1.5px solid #e0e0e0!important;
-  font-size:16px!important;
-  background:#fff;
-  width:160px;
-  -webkit-appearance:none;appearance:none;
-  color:var(--apple-text);
-  cursor:pointer;
-}
-.note-edit-date-row select{
-  min-height:36px;padding:4px 6px;border-radius:6px;
-  border:1.5px solid #e0e0e0!important;
-  font-size:16px!important;
-  background:#fff;
-  -webkit-appearance:none;appearance:none;
-  color:var(--apple-text);
-  cursor:pointer;
-}
+.note-edit-date-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* ── DRAWING ── */
-
-
-
-
-.mobile-add-zone{
-  display:none;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-  padding:8px 0 12px;
-  border-bottom:1px solid var(--apple-border);
-  margin-bottom:10px;
+.board-drawing{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  opacity:.25;
 }
-@media(max-width:768px){
-  .mobile-add-zone{display:flex}
-  .notes-add{display:none}  /* hide desktop add on mobile */
-}
-
-/* ── OVERDUE ZONE ── */
-.overdue-zone{
-  margin-bottom:16px;
-  background:rgba(255,59,48,.05);
-  border:1px solid rgba(255,59,48,.15);
-  border-radius:var(--apple-radius-sm);
-  padding:10px 14px;
-}
-.overdue-zone-title{
-  font-size:11px;font-weight:600;color:rgba(255,59,48,.7);
-  text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;
-  display:flex;align-items:center;gap:5px;
-}
-.overdue-item{
-  display:flex;align-items:baseline;gap:6px;padding:2px 0;flex-wrap:wrap;
-  animation:pulse-red 2s ease-in-out infinite;
-}
-@keyframes pulse-red{
-  0%,100%{opacity:1} 50%{opacity:.7}
-}
-.overdue-item-text{
-  font-size:15px;font-weight:500;color:rgb(255,59,48);cursor:pointer;
-}
-.overdue-item-obj{
-  font-size:13px;color:rgba(255,59,48,.7);
-}
-.overdue-item-time{font-size:12px;color:rgba(255,59,48,.5);}
 
 /* ── MOBILE ── */
-@media(max-width:768px){
+@media(max-width:900px){
   body{padding:6px;min-width:unset}
-  .board-inner{padding:10px 10px 0}
-  /* Show objects in single column */
-  .objects-grid{display:grid!important;grid-template-columns:1fr!important}
-  .section-label{display:block!important}
-  .overdue-zone{display:block}
-  .obj-card{margin:4px 0}
-  /* Notes in single column */
-  .notes-cols{grid-template-columns:1fr}
-  /* Compact fonts on mobile */
-  .obj-card-name{font-size:15px!important}
-  .obj-note-text{font-size:14px!important}
-  .obj-card-addr{font-size:12px!important}
-  .obj-card-dates{font-size:12px!important}
-  .obj-card-meta{font-size:12px!important}
-  /* Smaller topbar */
-  .board-title{font-size:20px!important}
-  .btn{font-size:12px!important;padding:0 12px!important;height:30px!important;line-height:30px!important}
-}
-@media(min-width:769px) and (max-width:1024px){
-  body{padding:8px;}
+  .board-inner{padding:12px 12px 0}
   .objects-grid{grid-template-columns:repeat(2,1fr)}
+  .notes-cols{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -349,9 +249,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   <div class="cal-strip-events" id="calStripEvents">
     <span class="cal-ev" style="color:#ccc">завантаження...</span>
   </div>
+  <a class="cal-strip-link" href="https://calendar.google.com/calendar/r/day" target="_blank">📅</a>
 </div>
-
-
 
 <!-- OBJECTS -->
 <div class="section-label">Об'єкти в роботі</div>
@@ -359,25 +258,6 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 <!-- NOTES ZONE -->
 <div class="notes-zone">
-  <!-- Mobile quick add — shown only on mobile, above notes -->
-  <div id="mobileAddZone" class="mobile-add-zone">
-    <input id="mobileNoteInput" placeholder="нова нотатка..."
-      onkeydown="if(event.key==='Enter')addMobileNote()"
-      style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid #ddd;
-        background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--apple-text)">
-    <select id="mobileObjSelect"
-      style="font-family:inherit;font-size:13px;color:var(--apple-secondary);border:none;
-        border-bottom:1px solid #ddd;background:transparent;outline:none;
-        cursor:pointer;-webkit-appearance:none;appearance:none;max-width:140px">
-      <option value="">— без об’єкту —</option>
-    </select>
-    <button onclick="addMobileNote()"
-      style="font-family:inherit;font-size:14px;border:none;background:transparent;
-        color:var(--apple-secondary);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
-    <button id="micBtnMob" onclick="toggleMic('mobileNoteInput','micBtnMob')" title="Голосовий ввід"
-      style="font-size:18px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--apple-tertiary);flex-shrink:0;transition:color .2s">🎤</button>
-  </div>
   <div class="notes-cols">
     <div id="notesLeft"></div>
     <div id="notesRight"></div>
@@ -386,9 +266,6 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <input id="noteAddInput" placeholder="нова нотатка..."
       onkeydown="if(event.key==='Enter')addGlobalNote()">
     <button onclick="addGlobalNote()">↵</button>
-    <button id="micBtn" onclick="toggleMic('noteAddInput','micBtn')" title="Голосовий ввід"
-      style="font-size:16px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--apple-tertiary);transition:color .2s">🎤</button>
     <button class="dt-btn" id="noteDtBtn" onclick="toggleNoteDt()">+ нагадати</button>
   </div>
   <div class="dt-row" id="noteDtRow" style="padding-top:4px">
@@ -410,7 +287,32 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 </div><!-- /board-inner -->
 
-
+<!-- DRAWING -->
+<svg class="board-drawing" viewBox="0 0 220 90" width="220" height="90" xmlns="http://www.w3.org/2000/svg">
+  <!-- floor -->
+  <line x1="20" y1="80" x2="200" y2="80" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- dad -->
+  <circle cx="60" cy="30" r="9" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M60 39 Q60 60 60 65 M60 65 L52 80 M60 65 L68 80 M50 50 L70 50" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- mom (long hair) -->
+  <circle cx="100" cy="30" r="9" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M91 26 Q89 15 100 21 Q111 15 109 26" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M91 26 Q87 42 89 58" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M109 26 Q113 42 111 58" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M100 39 Q100 60 100 65 M100 65 L92 80 M100 65 L108 80 M90 50 L110 50" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- girl 1 (braid) -->
+  <circle cx="138" cy="36" r="7" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M131 33 Q131 24 138 28 Q145 24 145 33" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M131 33 Q129 46 131 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M145 33 Q147 46 145 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M138 43 Q138 56 138 60 M138 60 L132 74 M138 60 L144 74 M130 52 L146 52" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <!-- girl 2 (braid) -->
+  <circle cx="170" cy="38" r="7" stroke="#555" stroke-width="1.5" fill="none"/>
+  <path d="M163 35 Q163 26 170 30 Q177 26 177 35" stroke="#555" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M163 35 Q161 48 163 56" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M177 35 Q179 48 177 56" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M170 45 Q170 58 170 62 M170 62 L164 76 M170 62 L176 76 M162 54 L178 54" stroke="#555" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+</svg>
 
 <!-- ── MODALS ── -->
 
@@ -425,7 +327,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Пакет</label>
       <select id="f-pack">
         <option value="">—</option>
-        <option>Старт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
+        <option value=''>—</option><option>Старт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
       </select>
     </div>
     <div class="fsec">Терміни</div>
@@ -436,12 +338,11 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблева угода (URL)</label><input id="f-furniture" placeholder="https://..."></div>
-    <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
-      <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
-        <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content;margin-top:8px">
-        <input type="checkbox" id="f-closed" style="width:16px;height:16px;accent-color:#8e8e93;cursor:pointer"> 🔒 Закрито</label>
-
+    <div class="form-row" style="flex-direction:column;gap:8px;margin-top:6px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
+        <input type="checkbox" id="f-inwork" style="width:16px;height:16px;cursor:pointer"> ☆ В реалізації</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
+        <input type="checkbox" id="f-closed" style="width:16px;height:16px;cursor:pointer"> 🔒 Закрито</label>
     </div>
     <div class="err-msg" id="f-err">Введіть назву</div>
     <div class="modal-footer">
@@ -453,17 +354,19 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 
 <!-- NOTE EDIT -->
 <div class="overlay" id="noteModal">
-  <div class="modal" style="width:420px;max-width:calc(100vw - 32px)">
+  <div class="modal" style="width:420px">
     <div class="modal-title">Замітка</div>
     <div class="form-row"><label>Текст</label>
-      <textarea id="nm-text" rows="3" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;
+      <textarea id="nm-text" rows="3" style="font-family:inherit;font-size:19px;
         border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
         resize:vertical;background:transparent;outline:none"></textarea>
     </div>
     <div class="form-row"><label>Нагадування</label>
       <div class="note-edit-date-row">
-<input id="nm-date" type="date">
-        <select id="nm-hour">
+        <input id="nm-date" type="date" style="font-size:18px;font-family:inherit;
+          border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
+          outline:none;padding:2px;-webkit-appearance:none;appearance:none">
+        <select class="hour-sel" id="nm-hour" style="font-size:18px">
           <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
           <option value="9" selected>9:00</option><option value="10">10:00</option>
           <option value="11">11:00</option><option value="12">12:00</option>
@@ -477,16 +380,9 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     </div>
     <div class="form-row" id="nm-obj-row" style="display:none">
       <label>Прив'язати до об'єкту</label>
-      <select id="nm-obj-select" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:18px;
+      <select id="nm-obj-select" style="font-family:inherit;font-size:18px;
         border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
         outline:none;-webkit-appearance:none;appearance:none"></select>
-    </div>
-    <div style="margin-top:4px">
-      <button onclick="document.getElementById('nm-date').value='';document.getElementById('nm-hour').value='9'"
-        style="font-family:inherit;font-size:13px;border:none;background:transparent;
-          color:var(--apple-tertiary);cursor:pointer;text-decoration:underline;padding:0">
-        × прибрати нагадування
-      </button>
     </div>
     <div class="err-msg" id="nm-err">Введіть текст</div>
     <div class="modal-footer">
@@ -524,14 +420,10 @@ function setSyncStatus(state,text){
 }
 function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 function parseObj(o){
-  const parsed={...o,
+  return{...o,
     inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
     notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
   };
-  if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
-  parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
-  if(!parsed.furniture) parsed.furniture='';
-  return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
 function isNoteActive(n){return!!(n.time&&new Date()>=new Date(n.time));}
@@ -568,22 +460,11 @@ async function apiGet(){
     objects=ob;stickyNotes=st;
     setSyncStatus('ok','збережено ✓');
   }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
-  finally{
-    // Save focused input value before render
-    const ae=document.activeElement;
-    const savedVal=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')?ae.value:'';
-    const savedId=ae?ae.id:'';
-    render();renderNotes();renderOverdueZone();
-    // Restore focused input
-    if(savedId&&savedVal){
-      const el=document.getElementById(savedId);
-      if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){el.value=savedVal;el.focus();}
-    }
-  }
+  finally{const ae=document.activeElement;const sv=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')?ae.value:'';const sid2=ae?ae.id:'';render();renderNotes();renderOverdueZone();if(sid2&&sv){const el2=document.getElementById(sid2);if(el2&&(el2.tagName==='INPUT'||el2.tagName==='TEXTAREA')){el2.value=sv;}}}
 }
 
 async function apiSave(obj){
-  setSyncStatus('ok','збережено ✓'); // optimistic — show immediately
+  setSyncStatus('ok','збережено ✓'); // optimistic
   let full;
   if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
     full={id:obj.id||'sticky_'+Date.now(),name:obj.name||'',addr:String(obj.col||1),
@@ -593,10 +474,9 @@ async function apiSave(obj){
   }else{
     full={id:obj.id||'',name:obj.name||'',addr:obj.addr||'',stage:obj.stage||'',
       status:obj.status||'active',pack:obj.pack||'',area:obj.area||'',
-      inwork:!!obj.inwork,completed:false,masters:false,closed:!!obj.closed||false,
-      mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
+      inwork:!!obj.inwork,completed:!!obj.completed,masters:!!obj.masters,
+      mastersName:obj.mastersName||'',linkProject:'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
-      furniture:obj.furniture||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -616,47 +496,15 @@ async function apiDelete(id){
 }
 
 // ── SORT ──
-// Manual order stored in localStorage
-function loadCardOrder(){
-  try{ return JSON.parse(localStorage.getItem('crm_card_order')||'[]'); }catch{return[];}
-}
-function saveCardOrder(){
-  const order=objects.map(o=>String(o.id));
-  localStorage.setItem('crm_card_order', JSON.stringify(order));
-}
-
+function loadCardOrder(){try{return JSON.parse(localStorage.getItem('crm_card_order')||'[]');}catch{return[];}}
+function saveCardOrder(){localStorage.setItem('crm_card_order',JSON.stringify(objects.map(o=>String(o.id))));}
 function sortObjects(){
   const order=loadCardOrder();
   if(order.length){
-    // Apply manual order where possible
-    const orderMap={};
-    order.forEach((id,i)=>{ orderMap[id]=i; });
-    objects.sort((a,b)=>{
-      const ia=orderMap[String(a.id)];
-      const ib=orderMap[String(b.id)];
-      // Both in manual order
-      if(ia!==undefined&&ib!==undefined) return ia-ib;
-      // New items (not in order) go by date
-      if(ia===undefined&&ib!==undefined) return 1;
-      if(ia!==undefined&&ib===undefined) return -1;
-      // Both new — sort by date
-      const da=a.dateStart?new Date(a.dateStart):null;
-      const db=b.dateStart?new Date(b.dateStart):null;
-      if(da&&db)return da-db;
-      if(da)return -1;if(db)return 1;
-      return 0;
-    });
-  } else {
-    // No manual order yet — default sort
-    objects.sort((a,b)=>{
-      if(!!a.completed!==!!b.completed)return a.completed?1:-1;
-      if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;
-      const da=a.dateStart?new Date(a.dateStart):null;
-      const db=b.dateStart?new Date(b.dateStart):null;
-      if(da&&db)return da-db;
-      if(da)return -1;if(db)return 1;
-      return 0;
-    });
+    const om={};order.forEach((id,i)=>om[id]=i);
+    objects.sort((a,b)=>{const ia=om[String(a.id)],ib=om[String(b.id)];if(ia!==undefined&&ib!==undefined)return ia-ib;if(ia===undefined)return 1;if(ib===undefined)return -1;return 0;});
+  }else{
+    objects.sort((a,b)=>{if(!!a.completed!==!!b.completed)return a.completed?1:-1;if(!!a.inwork!==!!b.inwork)return a.inwork?-1:1;const da=a.dateStart?new Date(a.dateStart):null,db=b.dateStart?new Date(b.dateStart):null;if(da&&db)return da-db;if(da)return -1;if(db)return 1;return 0;});
   }
 }
 
@@ -681,113 +529,34 @@ function _renderObjects(){
   });
 }
 
+function _closedCompact(card,o,i){card.innerHTML='';card.className='obj-card closed';const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px';const lbl=document.createElement('span');lbl.style.cssText='font-size:10px;font-weight:600;color:#aeaeb2;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0';lbl.textContent='Закрито';const nm=document.createElement('span');nm.style.cssText='font-size:14px;font-weight:600;color:#6e6e73;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=(o.inwork?'★ ':'')+o.name;const editB=document.createElement('button');editB.textContent='✏';editB.style.cssText='border:none;background:transparent;color:#aeaeb2;cursor:pointer;font-size:12px;flex-shrink:0';editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};row.appendChild(lbl);row.appendChild(nm);row.appendChild(editB);card.appendChild(row);card.onclick=e=>{if(e.target.closest('button'))return;card.dataset.expanded='1';_closedExpanded(card,o,i);};}
+function _closedExpanded(card,o,i){card.innerHTML='';card.className='obj-card';card.style.opacity='.55';const g='color:#6e6e73';const nr=document.createElement('div');nr.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:4px';const badge=document.createElement('span');badge.style.cssText='font-size:10px;font-weight:600;color:#aeaeb2;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0';badge.textContent='Закрито';const nm=document.createElement('div');nm.style.cssText='flex:1;font-size:15px;font-weight:600;'+g+';cursor:pointer;text-decoration:underline;text-decoration-color:rgba(0,0,0,.2);text-underline-offset:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=(o.inwork?'★ ':'')+o.name;nm.onclick=()=>{card.style.opacity='';card.dataset.expanded='0';_closedCompact(card,o,i);};const editB=document.createElement('button');editB.textContent='✏';editB.style.cssText='border:none;background:transparent;color:#aeaeb2;cursor:pointer;font-size:12px;flex-shrink:0';editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};nr.appendChild(badge);nr.appendChild(nm);nr.appendChild(editB);card.appendChild(nr);if(o.addr){const a=document.createElement('div');a.style.cssText='font-size:13px;'+g;a.textContent=o.addr;card.appendChild(a);}const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);if(ds||de){const dt=document.createElement('div');dt.style.cssText='font-size:12px;'+g;dt.textContent=(ds?'→ '+ds:'')+(ds&&de?' → ':'')+( de||'');card.appendChild(dt);}if(o.notes&&o.notes.length){const nl=document.createElement('div');nl.style.cssText='margin-top:4px';o.notes.forEach(n=>{const r=document.createElement('div');r.style.cssText='font-size:13px;'+g;r.textContent='– '+n.text;nl.appendChild(r);});card.appendChild(nl);}}
+
 function buildCard(o,i){
   const card=document.createElement('div');
   const isClosed=!!o.closed;
-  card.className='obj-card'+(o.completed?' completed':'')+(isClosed?' closed':'');
-  card.id='card-'+i;
-  card.dataset.objid=o.id;
+  card.className='obj-card'+(o.completed?' completed':'');
+  card.id='card-'+i;card.dataset.objid=o.id;
   card.draggable=true;
-
-  card.addEventListener('dragstart',e=>{
-    e.dataTransfer.effectAllowed='move';
-    e.dataTransfer.setData('text/plain',String(o.id));
-    setTimeout(()=>card.classList.add('dragging'),0);
-  });
-  card.addEventListener('dragend',()=>{
-    card.classList.remove('dragging');
-    document.querySelectorAll('.obj-card').forEach(c=>c.classList.remove('drag-over'));
-  });
-  card.addEventListener('dragover',e=>{
-    e.preventDefault();
-    e.dataTransfer.dropEffect='move';
-    document.querySelectorAll('.obj-card').forEach(c=>c.classList.remove('drag-over'));
-    card.classList.add('drag-over');
-  });
+  card.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(o.id));setTimeout(()=>card.classList.add('dragging'),0);});
+  card.addEventListener('dragend',()=>{card.classList.remove('dragging');document.querySelectorAll('.obj-card').forEach(x=>x.classList.remove('drag-over'));});
+  card.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.obj-card').forEach(x=>x.classList.remove('drag-over'));card.classList.add('drag-over');});
   card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
-  card.addEventListener('drop',e=>{
-    e.preventDefault();
-    card.classList.remove('drag-over');
-    const fromId=e.dataTransfer.getData('text/plain');
-    const toId=String(o.id);
-    if(fromId===toId)return;
-    // Reorder objects array
-    const fromIdx=objects.findIndex(x=>String(x.id)===fromId);
-    const toIdx=objects.findIndex(x=>String(x.id)===toId);
-    if(fromIdx<0||toIdx<0)return;
-    const [moved]=objects.splice(fromIdx,1);
-    objects.splice(toIdx,0,moved);
-    saveCardOrder();
-    render();
-  });
+  card.addEventListener('drop',e=>{e.preventDefault();card.classList.remove('drag-over');const fid=e.dataTransfer.getData('text/plain');if(fid===String(o.id))return;const fi=objects.findIndex(x=>String(x.id)===fid),ti=objects.findIndex(x=>String(x.id)===String(o.id));if(fi<0||ti<0)return;const[mv]=objects.splice(fi,1);objects.splice(ti,0,mv);saveCardOrder();render();});
+  if(isClosed){_closedCompact(card,o,i);return card;}
 
   const hasNotes=(o.notes||[]).length>0;
   const hasRem=hasActiveReminder(o);
 
-  // CLOSED STATE — compact row
-  if(isClosed){
-    const row=document.createElement('div');
-    row.className='obj-card-closed-row';
-    const lbl=document.createElement('span');lbl.className='obj-card-closed-label';lbl.textContent='Закрито';
-    const nm=document.createElement('span');nm.className='obj-card-closed-name';nm.textContent=(o.inwork?'★ ':'')+o.name;
-    const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
-    const dt=document.createElement('span');dt.className='obj-card-closed-dates';
-    dt.textContent=(ds&&de)?ds+' → '+de:(ds||de||'');
-    row.appendChild(lbl);row.appendChild(nm);if(ds||de)row.appendChild(dt);
-    // Edit btn
-    const editB=document.createElement('button');editB.textContent='✏';
-    editB.style.cssText='border:none;background:transparent;color:var(--apple-tertiary);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px';
-    editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};
-    row.appendChild(editB);
-    card.appendChild(row);
-    // Click to expand — open edit modal
-    card.onclick=e=>{
-      if(e.target.closest('button')) return; // ignore edit button clicks
-      const ri=objects.findIndex(x=>String(x.id)===String(o.id));
-      if(ri<0)return;
-      objects[ri].closed=false;
-      apiSave(objects[ri]).catch(err=>console.error(err));
-      render();
-    };
-    return card;
-  }
-
-  // Name row with Drive+Bitrix icons
-  const nameRow=document.createElement('div');
-  nameRow.style.cssText='display:flex;align-items:center;gap:5px;flex-wrap:nowrap';
+  // Name
   const name=document.createElement('div');
   name.className='obj-card-name'+(hasNotes?' has-notes':'');
-  name.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   let nameText='';
-  if(o.inwork) nameText+='★ ';
+  if(o.inwork) nameText+='☆ ';
   nameText+=o.name||'—';
   name.textContent=nameText;
   if(o.completed) name.style.textDecoration='line-through';
-  nameRow.appendChild(name);
-  if(o.linkFolder){
-    const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
-    gd.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
-    gd.onclick=e=>e.stopPropagation();
-    gd.style.cssText='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
-    gd.innerHTML='<svg viewBox="0 0 87.3 78" width="12" height="12"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>Диск';
-    nameRow.appendChild(gd);
-  }
-  if(o.bitrix){
-    const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
-    bx.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
-    bx.onclick=e=>e.stopPropagation();
-    bx.style.cssText='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
-    bx.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12"><rect x="2" y="2" width="20" height="20" rx="4" fill="#FF5722"/><path d="M7 7h4.5a2.5 2.5 0 0 1 0 5H7zm0 5h5a2.5 2.5 0 0 1 0 5H7z" fill="white"/></svg>Bitrix';
-    nameRow.appendChild(bx);
-  }
-  if(o.furniture){
-    const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
-    fw.style.cssText='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
-    fw.onclick=e=>e.stopPropagation();
-    fw.innerHTML='🪑 Меблі';
-    nameRow.appendChild(fw);
-  }
-  card.appendChild(nameRow);
+  card.appendChild(name);
 
   // Address
   if(o.addr){
@@ -805,32 +574,29 @@ function buildCard(o,i){
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
-
+  if(hasRem) meta.innerHTML+='<span class="obj-dot"></span>';
   if(meta.innerHTML) card.appendChild(meta);
-
 
   // Dates — always shown
   const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
   if(ds||de){
     const dates=document.createElement('div');
     dates.className='obj-card-dates';
-    dates.innerHTML=(ds?'<span style="color:#888;font-size:11px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
+    dates.innerHTML=(ds?'<span>▶</span> '+ds:'')+(ds&&de?' <span>→</span> ':'')+(de?de:'');
     card.appendChild(dates);
   }
 
   // Notes (always expanded)
   if(hasNotes){
     const nl=document.createElement('div');nl.className='obj-notes-list';
-    // Map original indices before sort
-    const withIdx=o.notes.map((n,origNi)=>({n,origNi}));
-    withIdx.sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
-    withIdx.forEach(({n,origNi})=>{
+    const sorted=[...o.notes].sort((a,b)=>isNoteActive(b)-isNoteActive(a));
+    sorted.forEach((n,ni)=>{
       const active=isNoteActive(n);
       const row=document.createElement('div');row.className='obj-note-row';
       const txt=document.createElement('span');
       txt.className='obj-note-text'+(active?' overdue':'');
-      txt.textContent='\u2013 '+n.text;
-      txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni:origNi});
+      txt.textContent='— '+n.text;
+      txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni});
       row.appendChild(txt);
       if(n.time){
         const hasFuture=!active&&!!n.time;
@@ -840,7 +606,7 @@ function buildCard(o,i){
         row.appendChild(t);
       }
       const del=document.createElement('button');del.className='obj-note-del';del.textContent='✕';
-      del.onclick=()=>deleteObjNote(o.id,origNi);
+      del.onclick=()=>deleteObjNote(o.id,ni);
       row.appendChild(del);
       nl.appendChild(row);
     });
@@ -849,87 +615,25 @@ function buildCard(o,i){
 
   // Add note input
   const addRow=document.createElement('div');addRow.className='obj-add-note';
-  addRow.style.flexWrap='wrap';
   const inp=document.createElement('input');
   inp.placeholder='+ замітка...';
-  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addObjNoteWithTime(o.id,addRow);}};
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addObjNote(o.id,inp);}};
   const btn=document.createElement('button');btn.textContent='↵';
-  btn.onclick=()=>addObjNoteWithTime(o.id,addRow);
-  // Reminder date+time (hidden by default)
-  const dtToggle=document.createElement('button');dtToggle.textContent='+ нагадати';
-  dtToggle.style.cssText='font-family:inherit;font-size:11px;color:var(--apple-tertiary);border:none;background:transparent;cursor:pointer;padding:0 2px;text-decoration:underline;flex-shrink:0';
-  const dtWrap=document.createElement('div');
-  dtWrap.style.cssText='display:none;align-items:center;gap:6px;width:100%;padding-top:2px;flex-wrap:wrap';
-  const dtDate=document.createElement('input');dtDate.type='date';
-  dtDate.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;color:var(--apple-text);-webkit-appearance:none;appearance:none;max-width:140px';
-  const dtHour=document.createElement('select');
-  dtHour.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;color:var(--apple-text);-webkit-appearance:none;appearance:none';
-  dtHour.innerHTML='<option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option><option value="9" selected>9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option>';
-  dtWrap.appendChild(dtDate);dtWrap.appendChild(dtHour);
-  dtToggle.onclick=()=>{
-    const vis=dtWrap.style.display==='flex';
-    dtWrap.style.display=vis?'none':'flex';
-    dtToggle.textContent=vis?'+ нагадати':'− прибрати';
-  };
+  btn.onclick=()=>addObjNote(o.id,inp);
   // Edit button
   const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
   editBtn.onclick=()=>openEditModal(o.id);
   const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
   delBtn.style.color='#e07070';
   delBtn.onclick=()=>deleteCard(o.id);
-  addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(dtToggle);addRow.appendChild(editBtn);addRow.appendChild(delBtn);addRow.appendChild(dtWrap);
-  addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
-  // Prevent drag when interacting with inputs
-  addRow.addEventListener('mousedown',e=>e.stopPropagation());
-  addRow.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+  addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(editBtn);addRow.appendChild(delBtn);
   card.appendChild(addRow);
 
   return card;
 }
 
 // ── RENDER NOTES (bottom zone) ──
-function renderOverdueZone(){
-  const zone=document.getElementById('overdueZone');
-  if(!zone)return;
-  const now=new Date();
-  const items=[];
-  stickyNotes.forEach((sn,idx)=>{
-    const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
-    if(note&&note.time&&now>=new Date(note.time))
-      items.push({text:sn.name,objName:null,time:fmtDT(note.time),onClick:()=>openNoteModal({type:'sticky',idx})});
-  });
-  objects.forEach(o=>{
-    (o.notes||[]).forEach((n,ni)=>{
-      if(isNoteActive(n))
-        items.push({text:n.text,objName:o.name,time:fmtDT(n.time),onClick:()=>openNoteModal({type:'obj',objId:o.id,ni})});
-    });
-  });
-  if(!items.length){zone.style.display='none';return;}
-  zone.style.display='block';
-  zone.innerHTML='<div class="overdue-zone"><div class="overdue-zone-title">🔥 Протерміновано</div>'
-    +items.map(it=>'<div class="overdue-item"><span class="overdue-item-text">'+it.text+'</span>'
-      +(it.objName?'<span class="overdue-item-obj">('+it.objName+')</span>':'')
-      +'<span class="overdue-item-time">'+it.time+'</span></div>').join('')+'</div>';
-  zone.querySelectorAll('.overdue-item-text').forEach((el,i)=>{
-    el.onclick=items[i].onClick;
-  });
-}
-
 function renderNotes(){
-  // Populate obj selectors — both desktop and mobile
-  ['noteObjSelect','mobileObjSelect'].forEach(function(selId){
-    const sel=document.getElementById(selId);
-    if(!sel)return;
-    const cur=sel.value;
-    sel.innerHTML='<option value="">— без об’єкту —</option>';
-    [...objects].sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
-      const opt=document.createElement('option');
-      opt.value=o.id;
-      opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');
-      sel.appendChild(opt);
-    });
-    sel.value=cur;
-  });
   const leftEl=document.getElementById('notesLeft');
   const rightEl=document.getElementById('notesRight');
   if(!leftEl||!rightEl)return;
@@ -947,18 +651,19 @@ function renderNotes(){
       overdue,hasFut,timeRaw:note&&note.time?new Date(note.time):null,time:note&&note.time?fmtDT(note.time):''});
   });
 
-  // Object notes are shown under each card — NOT duplicated here
+  // Object notes
+  objects.forEach(o=>{
+    (o.notes||[]).forEach((n,ni)=>{
+      const overdue=!!isNoteActive(n);
+      const hasFut=!!(n.time&&now<new Date(n.time));
+      all.push({type:'objnote',idx:null,text:n.text||'',objName:o.name||'',objAddr:o.addr||'',objId:o.id,ni,
+        overdue,hasFut,timeRaw:n.time?new Date(n.time):null,time:n.time?fmtDT(n.time):''});
+    });
+  });
 
-  // Sort: 1=red(overdue), 2=black(future/no-obj), 3=grey(linked obj no reminder)
-  const noteRank=item=>{
-    if(item.overdue) return 1;
-    if(!item.objName) return 2;  // free note, black
-    if(item.hasFut) return 2;    // linked but has future reminder, black
-    return 3;                     // linked obj, no reminder — grey
-  };
+  // Sort: overdue first, then by date, no-date last
   all.sort((a,b)=>{
-    const ra=noteRank(a),rb=noteRank(b);
-    if(ra!==rb)return ra-rb;
+    if(a.overdue!==b.overdue)return b.overdue-a.overdue;
     if(a.timeRaw&&b.timeRaw)return a.timeRaw-b.timeRaw;
     if(a.timeRaw)return -1;if(b.timeRaw)return 1;
     return 0;
@@ -969,20 +674,18 @@ function renderNotes(){
     const el=i<half?leftEl:rightEl;
     const row=document.createElement('div');row.className='note-item';
     const txt=document.createElement('span');
-    txt.className='note-text'+(item.overdue?' overdue':'')+(item.objName&&!item.overdue?' linked':'');
-    txt.textContent='\u2013 '+item.text;
+    txt.className='note-text'+(item.overdue?' overdue':'');
+    txt.textContent='— '+item.text;
     txt.onclick=()=>{
       if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
       else openNoteModal({type:'obj',objId:item.objId,ni:item.ni});
     };
     row.appendChild(txt);
     if(item.objName){
-      const a=document.createElement('span');a.className='note-obj-link';
-      a.style.cursor='pointer';a.title='Змінити об’єкт';
+      const a=document.createElement('a');a.className='note-obj-link';
+      if(item.objAddr){a.href=mapsUrl(item.objAddr);a.target='_blank';}
+      else{a.style.pointerEvents='none';}
       a.textContent='('+item.objName+')';
-      a.onclick=()=>{
-        if(item.type==='sticky') openNoteModal({type:'sticky',idx:item.idx});
-      };
       row.appendChild(a);
     }
     if(item.time){
@@ -1001,27 +704,6 @@ function renderNotes(){
 }
 
 // ── OBJ NOTE ACTIONS ──
-async function addObjNoteWithTime(objId,addRow){
-  const inp=addRow.querySelector('input[placeholder]');
-  const text=inp?inp.value.trim():'';if(!text)return;
-  const dtDate=addRow.querySelector('input[type=date]');
-  const dtHour=addRow.querySelector('select');
-  const date=dtDate?dtDate.value:'';
-  const hour=dtHour?dtHour.value:'9';
-  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  const ri=objects.findIndex(o=>String(o.id)===String(objId));
-  if(ri<0)return;
-  if(!objects[ri].notes)objects[ri].notes=[];
-  objects[ri].notes.push({text,time});
-  inp.value='';if(dtDate)dtDate.value='';
-  const dtWrap=addRow.querySelector('div');
-  if(dtWrap){dtWrap.style.display='none';}
-  const dtBtn=addRow.querySelector('button');if(dtBtn)dtBtn.textContent='+ нагадати';
-  // Optimistic: render immediately, save in background
-  render();renderNotes();renderOverdueZone();
-  apiSave(objects[ri]).catch(e=>console.error(e));
-}
-
 async function addObjNote(objId,inp){
   const text=inp.value.trim();if(!text)return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
@@ -1030,7 +712,7 @@ async function addObjNote(objId,inp){
   objects[ri].notes.push({text,time:''});
   inp.value='';
   try{await apiSave(objects[ri]);}catch(e){console.error(e);}
-  render();renderNotes();renderOverdueZone();
+  render();renderNotes();
 }
 
 async function deleteObjNote(objId,ni){
@@ -1038,82 +720,17 @@ async function deleteObjNote(objId,ni){
   if(ri<0)return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
-  render();renderNotes();renderOverdueZone();
-  apiSave(objects[ri]).catch(e=>console.error(e));
+  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  render();renderNotes();
 }
 
 // ── STICKY NOTE ACTIONS ──
-function toggleQuickDt(){
-  const row=document.getElementById('quickDtRow');
-  const btn=document.getElementById('quickDtBtn');
-  if(!row)return;
-  if(row.style.display==='flex'){row.style.display='none';btn.textContent='+ нагадати';}
-  else{row.style.display='flex';btn.textContent='− прибрати';}
-}
-
-async function addQuickNote(){
-  const inp=document.getElementById('quickNoteInput');
-  const text=inp?inp.value.trim():'';if(!text)return;
-  const date=document.getElementById('quickDtDate')?.value||'';
-  const hour=document.getElementById('quickDtHour')?.value||'9';
-  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
-    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
-    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
-    notes:time?[{text,time}]:[]};
-  stickyNotes.push(sn);
-  inp.value='';
-  if(document.getElementById('quickDtDate')) document.getElementById('quickDtDate').value='';
-  document.getElementById('quickDtRow').style.display='none';
-  document.getElementById('quickDtBtn').textContent='+ нагадати';
-  try{await apiSave(sn);}catch(e){console.error(e);}
-  renderNotes();
-}
-
-async function addMobileNote(){
-  const inp=document.getElementById('mobileNoteInput');
-  const text=inp?inp.value.trim():'';if(!text)return;
-  const selObjId=document.getElementById('mobileObjSelect')?.value||'';
-  if(selObjId){
-    const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
-    if(ri>=0){
-      if(!objects[ri].notes)objects[ri].notes=[];
-      objects[ri].notes.push({text,time:''});
-      inp.value='';
-      document.getElementById('mobileObjSelect').value='';
-      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
-      render();renderNotes();renderOverdueZone();return;
-    }
-  }
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
-    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
-    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]};
-  stickyNotes.push(sn);
-  inp.value='';
-  renderNotes();renderOverdueZone();
-  apiSave(sn).catch(e=>console.error(e));
-}
-
 async function addGlobalNote(){
   const inp=document.getElementById('noteAddInput');
   const text=inp?inp.value.trim():'';if(!text)return;
   const date=document.getElementById('noteDtDate')?.value||'';
   const hour=document.getElementById('noteDtHour')?.value||'9';
   const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  const selObjId=document.getElementById('noteObjSelect')?.value||'';
-  if(selObjId){
-    // Add directly to object
-    const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
-    if(ri>=0){
-      if(!objects[ri].notes)objects[ri].notes=[];
-      objects[ri].notes.push({text,time});
-      inp.value='';
-      document.getElementById('noteObjSelect').value='';
-      if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
-      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
-      render();renderNotes();renderOverdueZone();return;
-    }
-  }
   const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
@@ -1123,17 +740,16 @@ async function addGlobalNote(){
   if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
   document.getElementById('noteDtRow')?.classList.remove('vis');
   document.getElementById('noteDtBtn').textContent='+ нагадати';
-  // Optimistic: show immediately
-  renderNotes();renderOverdueZone();
-  apiSave(sn).catch(e=>console.error(e));
+  try{await apiSave(sn);}catch(e){console.error(e);}
+  renderNotes();
 }
 
 async function deleteStickyNote(idx){
   const sn=stickyNotes[idx];
   addHistory({type:'sticky',label:sn.name,data:{...sn}});
   const id=sn.id;stickyNotes.splice(idx,1);
-  renderNotes();renderOverdueZone();
-  apiDelete(id).catch(e=>console.error(e));
+  try{await apiDelete(id);}catch(e){console.error(e);}
+  renderNotes();
 }
 
 function toggleNoteDt(){
@@ -1187,7 +803,6 @@ async function saveNoteModal(){
   const date=document.getElementById('nm-date').value;
   const hour=document.getElementById('nm-hour')?.value||'9';
   const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  // time='' means clear reminder
 
   if(noteCtx.type==='sticky'){
     const selObjId=document.getElementById('nm-obj-select')?.value||'';
@@ -1206,15 +821,17 @@ async function saveNoteModal(){
     }
     const sn=stickyNotes[noteCtx.idx];
     sn.name=text;sn.notes=time?[{text,time}]:[];
-    closeNoteModal();renderNotes();
-    apiSave(sn).catch(e=>console.error(e));
+    closeNoteModal();
+    try{await apiSave(sn);}catch(e){console.error(e);}
+    renderNotes();
   }else{
     const ri=objects.findIndex(o=>String(o.id)===String(noteCtx.objId));
     if(ri<0)return;
     objects[ri].notes[noteCtx.ni].text=text;
     objects[ri].notes[noteCtx.ni].time=time;
-    closeNoteModal();render();renderNotes();
-    apiSave(objects[ri]).catch(e=>console.error(e));
+    closeNoteModal();
+    try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+    render();renderNotes();
   }
 }
 
@@ -1222,10 +839,10 @@ async function saveNoteModal(){
 function openAddModal(){
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
+  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name','f-bitrix','f-furniture'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
+  ['f-inwork','f-closed'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.checked=false;
   });
   document.getElementById('f-pack').value='';
@@ -1235,41 +852,24 @@ function openAddModal(){
 }
 
 function openEditModal(objId){
-  const i=objects.findIndex(o=>String(o.id)===String(objId));
-  if(i<0)return;
-  editIdx=i;
-  window._editObjId=String(objId); // store id separately
-  const o=objects[i];
-  // Helper: normalize any date value to YYYY-MM-DD for input[type=date]
-  const toInputDate=v=>{
-    if(!v)return'';
-    // Already YYYY-MM-DD
-    if(/^\d{4}-\d{2}-\d{2}/.test(String(v)))return String(v).slice(0,10);
-    // Try parsing as Date
-    const d=new Date(v);
-    if(!isNaN(d)){
-      const pad=n=>String(n).padStart(2,'0');
-      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-    }
-    return'';
-  };
+  const ii=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ii<0)return;
+  const i=ii;
+  editIdx=i;window._editObjId=String(objId);const o=objects[i];if(!o)return;
   document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
   document.getElementById('f-addr').value=o.addr||'';
   document.getElementById('f-area').value=o.area||'';
   document.getElementById('f-pack').value=o.pack||'';
-  document.getElementById('f-start').value=toInputDate(o.dateStart);
-  document.getElementById('f-end').value=toInputDate(o.dateEnd);
-  console.log('[DATE DEBUG] dateStart raw:', JSON.stringify(o.dateStart), 'type:', typeof o.dateStart);
-  console.log('[DATE DEBUG] dateEnd raw:', JSON.stringify(o.dateEnd), 'type:', typeof o.dateEnd);
-  console.log('[DATE DEBUG] toInputDate result:', toInputDate(o.dateStart), toInputDate(o.dateEnd));
-  console.log('[DATE DEBUG] f-start value after set:', document.getElementById('f-start').value);
-  document.getElementById('f-masters-name').value=o.mastersName||o.prorab||'';
+  document.getElementById('f-masters-name').value=o.mastersName||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
-  if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
-  if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
+  const _td=v=>{if(!v)return'';if(/^\d{4}-\d{2}-\d{2}/.test(String(v)))return String(v).slice(0,10);const d=new Date(v);if(!isNaN(d)){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}return'';};
+  document.getElementById('f-start').value=_td(o.dateStart);
+  document.getElementById('f-end').value=_td(o.dateEnd);
+  if(document.getElementById('f-bitrix'))document.getElementById('f-bitrix').value=o.bitrix||'';
+  if(document.getElementById('f-furniture'))document.getElementById('f-furniture').value=o.furniture||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
-  if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
+  if(document.getElementById('f-closed'))document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
 }
@@ -1277,10 +877,9 @@ function openEditModal(objId){
 function closeAddModal(){document.getElementById('addModal').classList.remove('open');}
 
 async function saveCard(){
-  try{
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-err').style.display='block';return;}
-  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Зберігаємо...';
+  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Збереження...';
   const obj={
     name,
     addr:document.getElementById('f-addr').value.trim(),
@@ -1292,46 +891,24 @@ async function saveCard(){
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
-    inwork:document.getElementById('f-inwork').checked,
     closed:document.getElementById('f-closed')?.checked||false,
-    masters:false,
-    completed:false,
+    inwork:document.getElementById('f-inwork').checked,
+    masters:false,completed:false,
     status:'active',stage:'',linkProject:'',
     notes:editIdx!==null?(objects[editIdx].notes||[]):[]
   };
-  if(editIdx!==null){
-    // Find by id (not index) because sortObjects() may have reordered array
-    const savedId=window._editObjId||( objects[editIdx]?objects[editIdx].id:null);
-    if(savedId) obj.id=savedId;
-    apiSave(obj).catch(e=>console.error(e));
-    const realIdx=objects.findIndex(o=>String(o.id)===String(obj.id));
-    if(realIdx>=0) objects[realIdx]=obj;
-    else objects.push(obj);
-    window._editObjId=null;
-  } else {
-    apiSave(obj).catch(e=>console.error(e));
-    objects.push(obj);
-  }
+  if(editIdx!==null){const sid=window._editObjId||(objects[editIdx]?objects[editIdx].id:null);if(sid)obj.id=sid;apiSave(obj).catch(e=>console.error(e));const ri=objects.findIndex(o=>String(o.id)===String(obj.id));if(ri>=0)objects[ri]=obj;else objects.push(obj);window._editObjId=null;}else{apiSave(obj).catch(e=>console.error(e));objects.push(obj);}
   btn.disabled=false;btn.textContent='Зберегти';
-  closeAddModal();
-  // Optimistic: update local state and render immediately
-  render();renderNotes();renderOverdueZone();
-  }catch(err){
-    console.error('saveCard error:',err);
-    const btn2=document.getElementById('btnSave');
-    if(btn2){btn2.disabled=false;btn2.textContent='Зберегти';}
-    alert('Помилка збереження: '+err.message);
-  }
+  closeAddModal();render();renderNotes();
 }
 
 // ── DELETE CARD ──
 async function deleteCard(objId){
-  const i=objects.findIndex(o=>String(o.id)===String(objId));
-  if(i<0)return;
+  const i=objects.findIndex(o=>String(o.id)===String(objId));if(i<0)return;
   const o=objects[i];
   if(!confirm('Видалити "'+o.name+'"?'))return;
   addHistory({type:'obj',label:o.name,data:{...o,notes:[...(o.notes||[])]}});
-  const id=o.id;objects.splice(i,1);render();renderNotes();renderOverdueZone();
+  const id=o.id;objects.splice(i,1);render();renderNotes();
   try{await apiDelete(id);}catch(e){console.error(e);}
 }
 
@@ -1343,36 +920,30 @@ async function loadCalendar(){
   const now=new Date();
   const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-  dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+  dateEl.textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
-    const todayEvs=Array.isArray(data)?data:[];
-
-    if(!todayEvs.length){
-      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
-    } else {
-      evEl.innerHTML='';
-      todayEvs.forEach(ev=>{
-        const start=new Date(ev.start);const end=new Date(ev.end||ev.start);
-        const diff=start-now;
-        let cls='future';
-        if(!ev.allDay){
-          if(end<now)cls='past';
-          else if(diff<=0||diff<=3600000)cls='now';
-        }
-        const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-        const span=document.createElement('span');span.className='cal-ev '+cls;
-        const a=document.createElement('a');
-        a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
-        a.textContent='– '+ev.title+' '+timeStr;
-        span.appendChild(a);evEl.appendChild(span);
-      });
+    if(!Array.isArray(data)||!data.length){
+      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';return;
     }
-
-  }catch(e){
-    evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';
-  }
+    evEl.innerHTML='';
+    data.forEach(ev=>{
+      const start=new Date(ev.start);const end=new Date(ev.end||ev.start);
+      const diff=start-now;
+      let cls='future';
+      if(!ev.allDay){
+        if(end<now)cls='past';
+        else if(diff<=0||diff<=3600000)cls='now';
+      }
+      const timeStr=ev.allDay?'весь день':start.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+      const span=document.createElement('span');span.className='cal-ev '+cls;
+      const a=document.createElement('a');
+      a.href=ev.link||'https://calendar.google.com/calendar/r/day';a.target='_blank';
+      a.textContent='— '+ev.title+' '+timeStr;
+      span.appendChild(a);evEl.appendChild(span);
+    });
+  }catch(e){evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';}
 }
 
 // ── HISTORY ──
@@ -1427,80 +998,15 @@ document.getElementById('historyModal').addEventListener('click',function(e){if(
 document.querySelector('#addModal .modal').addEventListener('click',e=>e.stopPropagation());
 document.querySelector('#noteModal .modal').addEventListener('click',e=>e.stopPropagation());
 
-// ── SPEECH RECOGNITION ──────────────────────────────────
-let _recognition=null;
-let _micActive=false;
-let _micInputId=null;
-let _micBtnId=null;
-
-function toggleMic(inputId, btnId){
-  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SpeechRecognition){
-    alert('Голосовий ввід не підтримується у вашому браузері. Спробуйте Safari або Chrome.');
-    return;
-  }
-  if(_micActive){
-    stopMic();return;
-  }
-  _micInputId=inputId;
-  _micBtnId=btnId;
-  _recognition=new SpeechRecognition();
-  _recognition.lang='uk-UA';
-  _recognition.continuous=false;
-  _recognition.interimResults=true;
-  const btn=document.getElementById(btnId);
-  const inp=document.getElementById(inputId);
-  _micActive=true;
-  if(btn){btn.textContent='🔴';btn.style.color='#ff3b30';}
-  _recognition.onresult=e=>{
-    let interim='',final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
-    }
-    if(inp) inp.value=(final||interim).trim();
-  };
-  _recognition.onend=()=>{
-    _micActive=false;
-    if(btn){btn.textContent='🎤';btn.style.color='';}
-    // Auto-save if text present
-    const inp=document.getElementById(_micInputId);
-    if(inp&&inp.value.trim()){
-      if(_micInputId==='noteAddInput') addGlobalNote();
-      else if(_micInputId==='mobileNoteInput') addMobileNote();
-    }
-  };
-  _recognition.onerror=e=>{
-    _micActive=false;
-    if(btn){btn.textContent='🎤';btn.style.color='';}
-    if(e.error!=='no-speech') console.error('Speech error:',e.error);
-  };
-  _recognition.start();
-}
-
-function stopMic(){
-  if(_recognition){ try{_recognition.stop();}catch(e){} }
-  _micActive=false;
-  const btn=document.getElementById(_micBtnId);
-  if(btn){btn.textContent='🎤';btn.style.color='';}
-}
-
 loadHistory();
 render();
 renderNotes();
-renderOverdueZone();
 apiGet();
 loadCalendar();
-// Guarantee render after DOM is fully ready
-setTimeout(()=>{render();renderNotes();},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
-setInterval(()=>{
-  const ae=document.activeElement;
-  const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
-  if(!typing){render();renderNotes();}
-},30000);
+setInterval(()=>{const ae=document.activeElement;if(!ae||( ae.tagName!=='INPUT'&&ae.tagName!=='TEXTAREA')){render();renderNotes();}},30000);
 </script>
 </body>
 </html>
