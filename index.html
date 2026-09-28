@@ -348,14 +348,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
-    <button class="btn" onclick="debugProgress()" title="Перевірити з'єднання з таблицями прогресу">🔍 Прогрес</button>
     <button class="btn" onclick="openHistory()">📋 Історія</button>
     <button class="btn btn-primary" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
-
-<!-- PROGRESS DEBUG PANEL -->
-<div id="progressDebug" style="display:none;background:#fffbe6;border:1px solid #f0c040;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-all"></div>
 
 <!-- CALENDAR STRIP -->
 <div class="cal-strip" id="calStrip">
@@ -1482,48 +1478,6 @@ async function restoreHistory(idx){
 }
 
 // ── PROGRESS DEBUG ──
-async function debugProgress(){
-  const panel=document.getElementById('progressDebug');
-  panel.style.display='block';
-  panel.textContent='🔍 Діагностика прогресу...\n\n';
-
-  const withProgress=objects.filter(o=>o.progressUrl&&o.progressCell);
-  if(!withProgress.length){
-    panel.textContent+='❌ Немає об\'єктів із заповненими полями "Прогрес — таблиця" та "Прогрес — клітинка".\n';
-    panel.textContent+='Відкрий картку ✏️, заповни ці два поля та збережи.\n';
-    panel.textContent+='\nУсі об\'єкти:\n';
-    objects.forEach(o=>{
-      panel.textContent+='  • '+o.name+': progressUrl="'+o.progressUrl+'", progressCell="'+o.progressCell+'"\n';
-    });
-    return;
-  }
-
-  for(const o of withProgress){
-    panel.textContent+='📋 Об\'єкт: '+o.name+'\n';
-    panel.textContent+='   URL: '+o.progressUrl+'\n';
-    panel.textContent+='   Cell: '+o.progressCell+'\n';
-    const url=API_URL+'?action=getProgress'
-      +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
-      +'&cell='+encodeURIComponent(o.progressCell);
-    panel.textContent+='   Запит: '+url+'\n';
-    try{
-      const res=await fetch(url);
-      const text=await res.text();
-      panel.textContent+='   HTTP статус: '+res.status+'\n';
-      panel.textContent+='   Відповідь: '+text+'\n';
-      try{
-        const data=JSON.parse(text);
-        if(data.error) panel.textContent+='   ⚠️ Помилка сервера: '+data.error+'\n';
-        else panel.textContent+='   ✅ Значення: '+data.value+'\n';
-      }catch(pe){panel.textContent+='   ⚠️ JSON parse error: '+pe+'\n';}
-    }catch(e){
-      panel.textContent+='   ❌ Fetch error: '+e+'\n';
-    }
-    panel.textContent+='\n';
-  }
-  panel.textContent+='— готово —';
-}
-
 // ── PROGRESS LOADING ──
 // _progressLoading: set to prevent parallel fetches
 let _progressLoading=false;
@@ -1542,9 +1496,12 @@ async function loadProgress(){
         const data=await res.json();
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
-        // Round to whole number and show as %
+        // Convert to %. If value is fraction (0..1) → multiply by 100
         const num=parseFloat(String(raw).replace(',','.'));
-        const val=isNaN(num)?String(raw).trim():Math.round(num)+'%';
+        let val;
+        if(isNaN(num)){val=String(raw).trim();}
+        else if(num>=0&&num<=1){val=Math.round(num*100)+'%';}
+        else{val=Math.round(num)+'%';}
         // Cache in object so next render shows it immediately
         o._progressValue=val;
         // Update DOM if element exists
