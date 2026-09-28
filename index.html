@@ -846,7 +846,8 @@ function buildCard(o,i){
     const pct=document.createElement('span');
     pct.className='obj-progress-pct';
     pct.id='progress-wrap-'+o.id;
-    pct.textContent='0%';
+    // Show cached value immediately if available, else 0%
+    pct.textContent=o._progressValue!=null?String(o._progressValue):'0%';
     // If time-pct already added margin-left:auto, no need to add again
     if(!meta.querySelector('.obj-progress-time')) pct.style.marginLeft='auto';
     else pct.style.marginLeft='6px';
@@ -1471,29 +1472,36 @@ async function restoreHistory(idx){
 }
 
 // ── PROGRESS LOADING ──
+// _progressLoading: set to prevent parallel fetches
+let _progressLoading=false;
 async function loadProgress(){
+  if(_progressLoading)return;
   const withProgress=objects.filter(o=>o.progressUrl&&o.progressCell);
-  console.log('[progress] objects with progress fields:',withProgress.length, withProgress.map(o=>({name:o.name,url:o.progressUrl,cell:o.progressCell})));
   if(!withProgress.length)return;
-  await Promise.all(withProgress.map(async o=>{
-    const wrap=document.getElementById('progress-wrap-'+o.id);
-    if(!wrap){console.log('[progress] wrap not found for',o.name);return;}
-    try{
-      const url=API_URL+'?action=getProgress'
-        +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
-        +'&cell='+encodeURIComponent(o.progressCell);
-      console.log('[progress] fetching for',o.name,url);
-      const res=await fetch(url);
-      const data=await res.json();
-      console.log('[progress] response for',o.name,data);
-      const raw=data.value;
-      if(raw===null||raw===undefined||raw===''){return;}
-      wrap.textContent=String(raw).trim();
-    }catch(e){
-      console.error('[progress] error for',o.name,e);
-      wrap.innerHTML='';
-    }
-  }));
+  _progressLoading=true;
+  try{
+    await Promise.all(withProgress.map(async o=>{
+      try{
+        const url=API_URL+'?action=getProgress'
+          +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
+          +'&cell='+encodeURIComponent(o.progressCell);
+        const res=await fetch(url);
+        const data=await res.json();
+        const raw=data.value;
+        if(raw===null||raw===undefined||raw===''){return;}
+        const val=String(raw).trim();
+        // Cache in object so next render shows it immediately
+        o._progressValue=val;
+        // Update DOM if element exists
+        const wrap=document.getElementById('progress-wrap-'+o.id);
+        if(wrap) wrap.textContent=val;
+      }catch(e){
+        console.error('[progress] error for',o.name,e);
+      }
+    }));
+  }finally{
+    _progressLoading=false;
+  }
 }
 
 // ── STARTUP ──
@@ -1575,8 +1583,10 @@ window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}
 setInterval(()=>{
   const ae=document.activeElement;
   const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
-  if(!typing){render();renderNotes();}
+  if(!typing){renderNotes();renderOverdueZone();}
 },30000);
+// Refresh progress from server every 5 minutes
+setInterval(()=>{ _progressLoading=false; loadProgress(); },300000);
 </script>
 </body>
 </html>
