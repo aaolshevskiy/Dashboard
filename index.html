@@ -448,7 +448,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблі (URL)</label><input id="f-furniture" placeholder="https://..."></div>
     <div class="form-row"><label>Rozliczenie (URL)</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-    <div class="form-row"><label>Специфікація (URL)</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
+    <div class="form-row"><label>Zakup (URL)</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
     <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
     <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
@@ -832,9 +832,9 @@ function buildCard(o,i){
       linksRow.appendChild(mn);
     }
     if(o.ratyfikacjaUrl){
-      const rt=document.createElement('a');rt.href=o.ratyfikacjaUrl;rt.target='_blank';rt.title='Специфікація';
+      const rt=document.createElement('a');rt.href=o.ratyfikacjaUrl;rt.target='_blank';rt.title='Zakup';
       rt.style.cssText=linkStyle;rt.onclick=e=>e.stopPropagation();
-      rt.innerHTML='🛒 Специфікація';
+      rt.innerHTML='🛒 Zakup';
       linksRow.appendChild(rt);
     }
     card.appendChild(linksRow);
