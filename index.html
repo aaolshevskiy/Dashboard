@@ -260,6 +260,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   font-size:13px;font-weight:600;color:var(--apple-blue);
   flex-shrink:0;white-space:nowrap;
 }
+.obj-progress-time{
+  font-size:13px;font-weight:600;color:#b8860b;
+  flex-shrink:0;white-space:nowrap;
+}
 
 /* ── DRAWING ── */
 
@@ -439,7 +443,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
     <div class="fsec">Додатково</div>
     <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
-    <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row"><label>Oferta (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблева угода (URL)</label><input id="f-furniture" placeholder="https://..."></div>
     <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
@@ -534,7 +538,9 @@ function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 function parseObj(o){
   const parsed={...o,
     inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
-    notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})()
+    notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})(),
+    progressUrl:o.progressUrl||'',
+    progressCell:o.progressCell||''
   };
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
@@ -675,6 +681,8 @@ function sortObjects(){
 // ── RENDER OBJECTS ──
 function render(){
   try{_renderObjects();}catch(e){console.error('render error:',e);}
+  // Load progress after DOM is ready (non-blocking)
+  setTimeout(loadProgress,0);
 }
 function _renderObjects(){
   const grid=document.getElementById('objectsGrid');
@@ -818,12 +826,30 @@ function buildCard(o,i){
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
+  // Time progress (yellow): % of days elapsed between dateStart and dateEnd
+  if(o.dateStart&&o.dateEnd){
+    const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),now2=new Date();
+    const total=de2-ds2;
+    if(total>0){
+      const elapsed=Math.min(Math.max(now2-ds2,0),total);
+      const timePct=Math.round(elapsed/total*100);
+      const tspan=document.createElement('span');
+      tspan.className='obj-progress-time';
+      tspan.id='time-pct-'+o.id;
+      tspan.textContent=timePct+'%';
+      tspan.style.marginLeft='auto';
+      tspan.title='Час проекту: '+timePct+'% пройшло';
+      meta.appendChild(tspan);
+    }
+  }
   if(o.progressUrl&&o.progressCell){
     const pct=document.createElement('span');
     pct.className='obj-progress-pct';
     pct.id='progress-wrap-'+o.id;
     pct.textContent='0%';
-    pct.style.marginLeft='auto';
+    // If time-pct already added margin-left:auto, no need to add again
+    if(!meta.querySelector('.obj-progress-time')) pct.style.marginLeft='auto';
+    else pct.style.marginLeft='6px';
     meta.appendChild(pct);
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
@@ -1539,10 +1565,10 @@ loadHistory();
 render();
 renderNotes();
 renderOverdueZone();
-apiGet().then(()=>loadProgress());
+apiGet();
 loadCalendar();
 // Guarantee render after DOM is fully ready
-setTimeout(()=>{render();renderNotes();setTimeout(loadProgress,200);},500);
+setTimeout(()=>{render();renderNotes();},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
