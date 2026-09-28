@@ -776,14 +776,6 @@ function buildCard(o,i){
   name.textContent=nameText;
   if(o.completed) name.style.textDecoration='line-through';
   nameRow.appendChild(name);
-  // Progress % — shown right after name if fields filled
-  if(o.progressUrl&&o.progressCell){
-    const pct=document.createElement('span');
-    pct.className='obj-progress-pct';
-    pct.id='progress-wrap-'+o.id;
-    pct.textContent='0%';
-    nameRow.appendChild(pct);
-  }
   if(o.linkFolder){
     const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
     gd.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
@@ -821,12 +813,20 @@ function buildCard(o,i){
   // Meta
   const meta=document.createElement('div');
   meta.className='obj-card-meta';
+  meta.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:4px';
   if(o.pack) meta.innerHTML+='<span class="obj-badge">'+o.pack+'</span>';
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
-
-  if(meta.innerHTML) card.appendChild(meta);
+  if(o.progressUrl&&o.progressCell){
+    const pct=document.createElement('span');
+    pct.className='obj-progress-pct';
+    pct.id='progress-wrap-'+o.id;
+    pct.textContent='0%';
+    pct.style.marginLeft='auto';
+    meta.appendChild(pct);
+  }
+  if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
 
   // Dates — always shown
