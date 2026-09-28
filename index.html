@@ -448,6 +448,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблі (URL)</label><input id="f-furniture" placeholder="https://..."></div>
     <div class="form-row"><label>Rozliczenie (URL)</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+    <div class="form-row"><label>Ratyfikacja (URL)</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
     <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
     <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
@@ -548,6 +549,7 @@ function parseObj(o){
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
+  if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
   if(!parsed.progressUrl) parsed.progressUrl='';
   if(!parsed.progressCell) parsed.progressCell='';
@@ -619,6 +621,7 @@ async function apiSave(obj){
       furniture:obj.furniture||'',
       ofertaUrl:obj.ofertaUrl||'',
       moneyUrl:obj.moneyUrl||'',
+      ratyfikacjaUrl:obj.ratyfikacjaUrl||'',
       progressUrl:obj.progressUrl||'',
       progressCell:obj.progressCell||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
@@ -827,6 +830,12 @@ function buildCard(o,i){
       mn.style.cssText=linkStyle;mn.onclick=e=>e.stopPropagation();
       mn.innerHTML='💰 Rozliczenie';
       linksRow.appendChild(mn);
+    }
+    if(o.ratyfikacjaUrl){
+      const rt=document.createElement('a');rt.href=o.ratyfikacjaUrl;rt.target='_blank';rt.title='Ratyfikacja';
+      rt.style.cssText=linkStyle;rt.onclick=e=>e.stopPropagation();
+      rt.innerHTML='🛒 Ratyfikacja';
+      linksRow.appendChild(rt);
     }
     card.appendChild(linksRow);
   }
@@ -1338,6 +1347,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
+  if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
   if(document.getElementById('f-progress-url')) document.getElementById('f-progress-url').value=o.progressUrl||'';
   if(document.getElementById('f-progress-cell')) document.getElementById('f-progress-cell').value=o.progressCell||'';
@@ -1366,6 +1376,7 @@ async function saveCard(){
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
+    ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
     moneyUrl:document.getElementById('f-money-url')?.value.trim()||'',
     progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
