@@ -255,6 +255,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
   cursor:pointer;
 }
 
+/* ── PROGRESS ── */
+.obj-progress-wrap{margin-top:4px;}
+.obj-progress-loading{font-size:11px;color:var(--apple-tertiary);}
+
 /* ── DRAWING ── */
 
 
@@ -436,6 +440,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Папка Фінал (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблева угода (URL)</label><input id="f-furniture" placeholder="https://..."></div>
+    <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+    <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
         <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
@@ -531,6 +537,8 @@ function parseObj(o){
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
+  if(!parsed.progressUrl) parsed.progressUrl='';
+  if(!parsed.progressCell) parsed.progressCell='';
   return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
@@ -597,6 +605,8 @@ async function apiSave(obj){
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       furniture:obj.furniture||'',
+      progressUrl:obj.progressUrl||'',
+      progressCell:obj.progressCell||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -816,6 +826,15 @@ function buildCard(o,i){
     dates.className='obj-card-dates';
     dates.innerHTML=(ds?'<span style="color:#888;font-size:11px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
     card.appendChild(dates);
+  }
+
+  // Progress bar placeholder (filled async)
+  if(o.progressUrl&&o.progressCell){
+    const pw=document.createElement('div');pw.className='obj-progress-wrap';
+    pw.id='progress-wrap-'+o.id;
+    const loading=document.createElement('span');loading.className='obj-progress-loading';loading.textContent='прогрес...';
+    pw.appendChild(loading);
+    card.appendChild(pw);
   }
 
   // Notes (always expanded)
@@ -1268,6 +1287,8 @@ function openEditModal(objId){
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
+  if(document.getElementById('f-progress-url')) document.getElementById('f-progress-url').value=o.progressUrl||'';
+  if(document.getElementById('f-progress-cell')) document.getElementById('f-progress-cell').value=o.progressCell||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
   if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
@@ -1292,6 +1313,8 @@ async function saveCard(){
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
+    progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
+    progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
     inwork:document.getElementById('f-inwork').checked,
     closed:document.getElementById('f-closed')?.checked||false,
     masters:false,
@@ -1420,6 +1443,29 @@ async function restoreHistory(idx){
   closeHistory();openHistory();
 }
 
+// ── PROGRESS LOADING ──
+async function loadProgress(){
+  const withProgress=objects.filter(o=>o.progressUrl&&o.progressCell);
+  if(!withProgress.length)return;
+  await Promise.all(withProgress.map(async o=>{
+    const wrap=document.getElementById('progress-wrap-'+o.id);
+    if(!wrap)return;
+    try{
+      const url=API_URL+'?action=getProgress'
+        +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
+        +'&cell='+encodeURIComponent(o.progressCell);
+      const res=await fetch(url);
+      const data=await res.json();
+      const raw=data.value;
+      if(raw===null||raw===undefined||raw===''){wrap.remove();return;}
+      const display=String(raw).trim();
+      wrap.innerHTML='<span class="obj-progress-label" style="font-size:13px;color:var(--apple-secondary)">'+display+'</span>';
+    }catch(e){
+      wrap.innerHTML='';
+    }
+  }));
+}
+
 // ── STARTUP ──
 document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
 document.getElementById('noteModal').addEventListener('click',function(e){if(e.target===this)closeNoteModal();});
@@ -1489,10 +1535,10 @@ loadHistory();
 render();
 renderNotes();
 renderOverdueZone();
-apiGet();
+apiGet().then(()=>loadProgress());
 loadCalendar();
 // Guarantee render after DOM is fully ready
-setTimeout(()=>{render();renderNotes();},500);
+setTimeout(()=>{render();renderNotes();setTimeout(loadProgress,200);},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
