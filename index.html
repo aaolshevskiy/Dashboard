@@ -443,7 +443,8 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
     <div class="fsec">Додатково</div>
     <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
-    <div class="form-row"><label>Oferta (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row"><label>Google Диск (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+    <div class="form-row"><label>Оферта (URL)</label><input id="f-oferta-url" placeholder="https://..."></div>
     <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
     <div class="form-row"><label>Меблева угода (URL)</label><input id="f-furniture" placeholder="https://..."></div>
     <div class="form-row"><label>Money (URL)</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
@@ -546,6 +547,7 @@ function parseObj(o){
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
+  if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
   if(!parsed.progressUrl) parsed.progressUrl='';
   if(!parsed.progressCell) parsed.progressCell='';
@@ -615,6 +617,7 @@ async function apiSave(obj){
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       furniture:obj.furniture||'',
+      ofertaUrl:obj.ofertaUrl||'',
       moneyUrl:obj.moneyUrl||'',
       progressUrl:obj.progressUrl||'',
       progressCell:obj.progressCell||'',
@@ -799,6 +802,12 @@ function buildCard(o,i){
       gd.style.cssText=linkStyle;gd.onclick=e=>e.stopPropagation();
       gd.innerHTML='<svg viewBox="0 0 87.3 78" width="12" height="12"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>Диск';
       linksRow.appendChild(gd);
+    }
+    if(o.ofertaUrl){
+      const of=document.createElement('a');of.href=o.ofertaUrl;of.target='_blank';of.title='Оферта';
+      of.style.cssText=linkStyle;of.onclick=e=>e.stopPropagation();
+      of.innerHTML='🧮 Оферта';
+      linksRow.appendChild(of);
     }
     if(o.bitrix){
       const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
@@ -1327,6 +1336,7 @@ function openEditModal(objId){
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
+  if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
   if(document.getElementById('f-progress-url')) document.getElementById('f-progress-url').value=o.progressUrl||'';
   if(document.getElementById('f-progress-cell')) document.getElementById('f-progress-cell').value=o.progressCell||'';
@@ -1354,6 +1364,7 @@ async function saveCard(){
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
+    ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     moneyUrl:document.getElementById('f-money-url')?.value.trim()||'',
     progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
