@@ -256,8 +256,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
 }
 
 /* ── PROGRESS ── */
-.obj-progress-wrap{margin-top:4px;}
-.obj-progress-loading{font-size:11px;color:var(--apple-tertiary);}
+.obj-progress-pct{
+  font-size:13px;font-weight:600;color:var(--apple-blue);
+  flex-shrink:0;white-space:nowrap;
+}
 
 /* ── DRAWING ── */
 
@@ -774,6 +776,14 @@ function buildCard(o,i){
   name.textContent=nameText;
   if(o.completed) name.style.textDecoration='line-through';
   nameRow.appendChild(name);
+  // Progress % — shown right after name if fields filled
+  if(o.progressUrl&&o.progressCell){
+    const pct=document.createElement('span');
+    pct.className='obj-progress-pct';
+    pct.id='progress-wrap-'+o.id;
+    pct.textContent='0%';
+    nameRow.appendChild(pct);
+  }
   if(o.linkFolder){
     const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
     gd.style.cssText='display:inline-flex;flex-shrink:0;opacity:.5';
@@ -826,15 +836,6 @@ function buildCard(o,i){
     dates.className='obj-card-dates';
     dates.innerHTML=(ds?'<span style="color:#888;font-size:11px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
     card.appendChild(dates);
-  }
-
-  // Progress bar placeholder (filled async)
-  if(o.progressUrl&&o.progressCell){
-    const pw=document.createElement('div');pw.className='obj-progress-wrap';
-    pw.id='progress-wrap-'+o.id;
-    const loading=document.createElement('span');loading.className='obj-progress-loading';loading.textContent='прогрес...';
-    pw.appendChild(loading);
-    card.appendChild(pw);
   }
 
   // Notes (always expanded)
@@ -1457,9 +1458,8 @@ async function loadProgress(){
       const res=await fetch(url);
       const data=await res.json();
       const raw=data.value;
-      if(raw===null||raw===undefined||raw===''){wrap.remove();return;}
-      const display=String(raw).trim();
-      wrap.innerHTML='<span class="obj-progress-label" style="font-size:13px;color:var(--apple-secondary)">'+display+'</span>';
+      if(raw===null||raw===undefined||raw===''){return;}
+      wrap.textContent=String(raw).trim();
     }catch(e){
       wrap.innerHTML='';
     }
