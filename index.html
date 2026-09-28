@@ -851,7 +851,7 @@ function buildCard(o,i){
     pct.className='obj-progress-pct';
     pct.id='progress-wrap-'+o.id;
     // Show cached value immediately if available, else 0%
-    pct.textContent=o._progressValue!=null?String(o._progressValue):'0%';
+    pct.textContent=o._progressValue!=null?o._progressValue:'0%';
     // If time-pct already added margin-left:auto, no need to add again
     if(!meta.querySelector('.obj-progress-time')) pct.style.marginLeft='auto';
     else pct.style.marginLeft='6px';
@@ -1402,7 +1402,13 @@ async function loadCalendar(){
   try{
     const res=await fetch(API_URL+'?action=getCalendar');
     const data=await res.json();
-    const todayEvs=Array.isArray(data)?data:[];
+    // Filter only today's events
+    const todayStr=now.toISOString().slice(0,10);
+    const allEvs=Array.isArray(data)?data:[];
+    const todayEvs=allEvs.filter(ev=>{
+      const evDate=ev.dateStr||(ev.start?ev.start.slice(0,10):'');
+      return evDate===todayStr;
+    });
 
     if(!todayEvs.length){
       evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
@@ -1536,7 +1542,9 @@ async function loadProgress(){
         const data=await res.json();
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
-        const val=String(raw).trim();
+        // Round to whole number and show as %
+        const num=parseFloat(String(raw).replace(',','.'));
+        const val=isNaN(num)?String(raw).trim():Math.round(num)+'%';
         // Cache in object so next render shows it immediately
         o._progressValue=val;
         // Update DOM if element exists
