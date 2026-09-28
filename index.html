@@ -1447,20 +1447,24 @@ async function restoreHistory(idx){
 // ── PROGRESS LOADING ──
 async function loadProgress(){
   const withProgress=objects.filter(o=>o.progressUrl&&o.progressCell);
+  console.log('[progress] objects with progress fields:',withProgress.length, withProgress.map(o=>({name:o.name,url:o.progressUrl,cell:o.progressCell})));
   if(!withProgress.length)return;
   await Promise.all(withProgress.map(async o=>{
     const wrap=document.getElementById('progress-wrap-'+o.id);
-    if(!wrap)return;
+    if(!wrap){console.log('[progress] wrap not found for',o.name);return;}
     try{
       const url=API_URL+'?action=getProgress'
         +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
         +'&cell='+encodeURIComponent(o.progressCell);
+      console.log('[progress] fetching for',o.name,url);
       const res=await fetch(url);
       const data=await res.json();
+      console.log('[progress] response for',o.name,data);
       const raw=data.value;
       if(raw===null||raw===undefined||raw===''){return;}
       wrap.textContent=String(raw).trim();
     }catch(e){
+      console.error('[progress] error for',o.name,e);
       wrap.innerHTML='';
     }
   }));
