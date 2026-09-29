@@ -36,58 +36,6 @@
   --shadow-modal:0 24px 80px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.10);
   --topbar-bg:rgba(242,242,247,.82);
 }
-@media(prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#000000;
-    --surface:#1c1c1e;
-    --surface2:#2c2c2e;
-    --surface3:rgba(120,120,128,.16);
-    --border:rgba(255,255,255,.10);
-    --border-strong:rgba(255,255,255,.18);
-    --text:#ffffff;
-    --text2:#ebebf5;
-    --text3:#aeaeb2;
-    --text4:#636366;
-    --blue:#0a84ff;
-    --blue-bg:rgba(10,132,255,.15);
-    --green:#30d158;
-    --green-bg:rgba(48,209,88,.12);
-    --red:#ff453a;
-    --red-bg:rgba(255,69,58,.10);
-    --orange:#ff9f0a;
-    --yellow-text:#ffd60a;
-    --shadow-card:0 1px 0 0 rgba(255,255,255,.05),0 2px 12px rgba(0,0,0,.35);
-    --shadow-hover:0 4px 24px rgba(0,0,0,.45);
-    --shadow-modal:0 24px 80px rgba(0,0,0,.6),0 4px 16px rgba(0,0,0,.3);
-    --topbar-bg:rgba(28,28,30,.82);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#000000;
-  --surface:#1c1c1e;
-  --surface2:#2c2c2e;
-  --surface3:rgba(120,120,128,.16);
-  --border:rgba(255,255,255,.10);
-  --border-strong:rgba(255,255,255,.18);
-  --text:#ffffff;
-  --text2:#ebebf5;
-  --text3:#aeaeb2;
-  --text4:#636366;
-  --blue:#0a84ff;
-  --blue-bg:rgba(10,132,255,.15);
-  --green:#30d158;
-  --green-bg:rgba(48,209,88,.12);
-  --red:#ff453a;
-  --red-bg:rgba(255,69,58,.10);
-  --orange:#ff9f0a;
-  --yellow-text:#ffd60a;
-  --shadow-card:0 1px 0 0 rgba(255,255,255,.05),0 2px 12px rgba(0,0,0,.35);
-  --shadow-hover:0 4px 24px rgba(0,0,0,.45);
-  --shadow-modal:0 24px 80px rgba(0,0,0,.6),0 4px 16px rgba(0,0,0,.3);
-  --topbar-bg:rgba(28,28,30,.82);
-  color-scheme:dark;
-}
 
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -543,7 +491,7 @@ body{
 <div class="cal-strip" id="calStrip">
   <span class="cal-strip-date" id="calStripDate"></span>
   <div class="cal-strip-events" id="calStripEvents">
-    <span class="cal-ev" style="color:#ccc">завантаження...</span>
+    <span class="cal-ev" style="color:var(--text4)">завантаження...</span>
   </div>
 </div>
 
@@ -558,21 +506,21 @@ body{
   <!-- Mobile quick add — shown only on mobile, above notes -->
   <div id="mobileAddZone" class="mobile-add-zone">
     <input id="mobileNoteInput" placeholder="нова нотатка..."
-      onkeydown="if(event.key==='Enter')addMobileNote()"
-      style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid #ddd;
-        background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--apple-text)">
+      onkeydown="if(event.key===’Enter’)addMobileNote()"
+      style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid var(--border);
+        background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--text)">
     <select id="mobileObjSelect"
-      style="font-family:inherit;font-size:13px;color:var(--apple-secondary);border:none;
-        border-bottom:1px solid #ddd;background:transparent;outline:none;
+      style="font-family:inherit;font-size:13px;color:var(--text3);border:none;
+        border-bottom:1px solid var(--border);background:transparent;outline:none;
         cursor:pointer;-webkit-appearance:none;appearance:none;max-width:140px">
       <option value="">— без об’єкту —</option>
     </select>
     <button onclick="addMobileNote()"
       style="font-family:inherit;font-size:14px;border:none;background:transparent;
-        color:var(--apple-secondary);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
-    <button id="micBtnMob" onclick="toggleMic('mobileNoteInput','micBtnMob')" title="Голосовий ввід"
+        color:var(--text3);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
+    <button id="micBtnMob" onclick="toggleMic(‘mobileNoteInput’,’micBtnMob’)" title="Голосовий ввід"
       style="font-size:18px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--apple-tertiary);flex-shrink:0;transition:color .2s">🎤</button>
+        color:var(--text4);flex-shrink:0;transition:color .2s">🎤</button>
   </div>
   <div class="notes-cols">
     <div id="notesLeft"></div>
@@ -584,7 +532,7 @@ body{
     <button onclick="addGlobalNote()">↵</button>
     <button id="micBtn" onclick="toggleMic('noteAddInput','micBtn')" title="Голосовий ввід"
       style="font-size:16px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--apple-tertiary);transition:color .2s">🎤</button>
+        color:var(--text4);transition:color .2s">🎤</button>
     <button class="dt-btn" id="noteDtBtn" onclick="toggleNoteDt()">+ нагадати</button>
   </div>
   <div class="dt-row" id="noteDtRow" style="padding-top:4px">
@@ -614,46 +562,74 @@ body{
 <div class="overlay" id="addModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">Новий об'єкт</div>
+
     <div class="fsec">Основне</div>
-    <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту"></div>
-    <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто"></div>
-    <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0"></div>
-    <div class="form-row"><label>Пакет</label>
-      <select id="f-pack">
-        <option value="">—</option>
-        <option>Старт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
-      </select>
+    <div class="form-group">
+      <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту"></div>
+      <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто"></div>
+      <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Пакет</label>
+        <select id="f-pack">
+          <option value="">—</option>
+          <option>Старт</option><option>Комфорт</option><option>Преміум</option><option>ДП</option>
+        </select>
+      </div>
     </div>
+
     <div class="fsec">Терміни</div>
-    <div class="form-row"><label>Дата старту</label><input id="f-start" type="date"></div>
-    <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
-    <div class="fsec">Додатково</div>
-    <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
-    <div class="form-row"><label>Google Диск (URL)</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
-
-    <div class="form-row"><label>Bitrix (URL)</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
-    <div class="form-row"><label>Меблі (URL)</label><input id="f-furniture" placeholder="https://..."></div>
-    <div class="form-row"><label>Money (URL)</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-    <div class="form-row"><label>Zakup (URL)</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
-    <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-    <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
-    <div class="form-row"><label>Платіж за прогресом (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
-    <div id="f-flags-row" style="display:none;flex-direction:column;gap:6px;margin-top:2px;padding:10px 12px;background:rgba(0,0,0,.03);border-radius:8px">
-      <div style="font-size:12px;color:var(--apple-secondary);font-weight:500;margin-bottom:2px">Закриті прапорці (зняти галочку = відновити)</div>
-      <label id="f-flag-kanban-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
-        <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:#0071e3;cursor:pointer">
-        <span style="color:#0071e3">🚩 канбан — закрито</span></label>
-      <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
-        <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:#c0392b;cursor:pointer">
-        <span style="color:#c0392b">🚩 платіж — закрито</span></label>
+    <div class="form-group">
+      <div class="form-row"><label>Дата старту</label><input id="f-start" type="date"></div>
+      <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
     </div>
-    <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
-      <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
-        <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content;margin-top:8px">
-        <input type="checkbox" id="f-closed" style="width:16px;height:16px;accent-color:#8e8e93;cursor:pointer"> 🔒 Закрито</label>
 
+    <div class="fsec">Команда</div>
+    <div class="form-group">
+      <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
     </div>
+
+    <div class="fsec">Посилання</div>
+    <div class="form-group">
+      <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
+      <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
+      <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..."></div>
+      <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+      <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
+    </div>
+
+    <div class="fsec">Прогрес</div>
+    <div class="form-group">
+      <div class="form-row"><label>Таблиця</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+      <div class="form-row"><label>Клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
+      <div class="form-row"><label>Платіж (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
+    </div>
+
+    <div id="f-flags-row" style="display:none">
+      <div class="fsec">Прапорці</div>
+      <div class="form-group" style="padding:12px 14px;gap:10px;flex-direction:column;align-items:flex-start">
+        <div style="font-size:12px;color:var(--text3);font-weight:500">Зняти галочку = відновити прапорець</div>
+        <label id="f-flag-kanban-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
+          <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer">
+          <span style="color:var(--blue)">🚩 канбан — закрито</span></label>
+        <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
+          <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
+          <span style="color:var(--red)">🚩 платіж — закрито</span></label>
+      </div>
+    </div>
+
+    <div class="fsec">Статус</div>
+    <div class="form-group">
+      <div class="form-row">
+        <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text);cursor:pointer;flex:1">
+          <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer"> ☆ В реалізації
+        </label>
+      </div>
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text);cursor:pointer;flex:1">
+          <input type="checkbox" id="f-closed" style="width:16px;height:16px;accent-color:var(--text4);cursor:pointer"> 🔒 Закрито
+        </label>
+      </div>
+    </div>
+
     <div class="err-msg" id="f-err">Введіть назву</div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModal()">Скасувати</button>
@@ -666,39 +642,38 @@ body{
 <div class="overlay" id="noteModal">
   <div class="modal" style="width:420px;max-width:calc(100vw - 32px)">
     <div class="modal-title">Замітка</div>
-    <div class="form-row"><label>Текст</label>
-      <textarea id="nm-text" rows="3" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:19px;
-        border:1.5px solid #e0e0e0;border-radius:4px;padding:6px;width:100%;
-        resize:vertical;background:transparent;outline:none"></textarea>
-    </div>
-    <div class="form-row"><label>Нагадування</label>
-      <div class="note-edit-date-row">
-<input id="nm-date" type="date">
-        <select id="nm-hour">
-          <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
-          <option value="9" selected>9:00</option><option value="10">10:00</option>
-          <option value="11">11:00</option><option value="12">12:00</option>
-          <option value="13">13:00</option><option value="14">14:00</option>
-          <option value="15">15:00</option><option value="16">16:00</option>
-          <option value="17">17:00</option><option value="18">18:00</option>
-          <option value="19">19:00</option><option value="20">20:00</option>
-          <option value="21">21:00</option><option value="22">22:00</option>
-        </select>
+    <div class="form-group" style="margin-bottom:4px">
+      <div class="form-row" style="align-items:flex-start;padding:12px 14px">
+        <label style="padding-top:4px">Текст</label>
+        <textarea id="nm-text" rows="3" style="font-family:inherit;font-size:15px;
+          border:none;border-radius:0;padding:0;width:100%;text-align:left;
+          resize:vertical;background:transparent;color:var(--text);outline:none;flex:1"></textarea>
+      </div>
+      <div class="form-row"><label>Нагадування</label>
+        <div class="note-edit-date-row">
+          <input id="nm-date" type="date">
+          <select id="nm-hour">
+            <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
+            <option value="9" selected>9:00</option><option value="10">10:00</option>
+            <option value="11">11:00</option><option value="12">12:00</option>
+            <option value="13">13:00</option><option value="14">14:00</option>
+            <option value="15">15:00</option><option value="16">16:00</option>
+            <option value="17">17:00</option><option value="18">18:00</option>
+            <option value="19">19:00</option><option value="20">20:00</option>
+            <option value="21">21:00</option><option value="22">22:00</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" id="nm-obj-row" style="display:none">
+        <label>Об'єкт</label>
+        <select id="nm-obj-select"></select>
       </div>
     </div>
-    <div class="form-row" id="nm-obj-row" style="display:none">
-      <label>Прив'язати до об'єкту</label>
-      <select id="nm-obj-select" style="font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;font-size:18px;
-        border:none;border-bottom:1.5px solid #e0e0e0;background:transparent;
-        outline:none;-webkit-appearance:none;appearance:none"></select>
-    </div>
-    <div style="margin-top:4px">
-      <button onclick="document.getElementById('nm-date').value='';document.getElementById('nm-hour').value='9'"
-        style="font-family:inherit;font-size:13px;border:none;background:transparent;
-          color:var(--apple-tertiary);cursor:pointer;text-decoration:underline;padding:0">
-        × прибрати нагадування
-      </button>
-    </div>
+    <button onclick="document.getElementById('nm-date').value='';document.getElementById('nm-hour').value='9'"
+      style="font-family:inherit;font-size:13px;border:none;background:transparent;
+        color:var(--text4);cursor:pointer;text-decoration:underline;padding:0 2px">
+      × прибрати нагадування
+    </button>
     <div class="err-msg" id="nm-err">Введіть текст</div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeNoteModal()">Скасувати</button>
@@ -715,7 +690,7 @@ body{
       <button class="btn-cancel" style="padding:2px 8px" onclick="closeHistory()">✕</button>
     </div>
     <div id="historyList"></div>
-    <div id="historyEmpty" style="font-size:17px;color:#ccc;font-style:italic;padding:12px 0">Нічого немає</div>
+    <div id="historyEmpty" style="font-size:17px;color:var(--text4);font-style:italic;padding:12px 0">Нічого немає</div>
   </div>
 </div>
 
@@ -909,7 +884,7 @@ function _renderObjects(){
   if(!grid)return;
   grid.innerHTML='';
   if(!objects.length){
-    grid.innerHTML='<div style="font-size:20px;color:#ccc;font-style:italic;padding:16px;grid-column:1/-1">Немає об\'єктів</div>';
+    grid.innerHTML='<div style="font-size:20px;color:var(--text4);font-style:italic;padding:16px;grid-column:1/-1">Немає об\'єктів</div>';
     return;
   }
   sortObjects();
@@ -976,7 +951,7 @@ function buildCard(o,i){
     row.appendChild(lbl);row.appendChild(nm);if(ds||de)row.appendChild(dt);
     // Edit btn
     const editB=document.createElement('button');editB.textContent='✏';
-    editB.style.cssText='border:none;background:transparent;color:var(--apple-tertiary);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px';
+    editB.style.cssText='border:none;background:transparent;color:var(--text4);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px';
     editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};
     row.appendChild(editB);
     card.appendChild(row);
@@ -1007,7 +982,7 @@ function buildCard(o,i){
   card.appendChild(nameRow);
 
   // Links row — між назвою і адресою, всі 4 іконки в один рядок
-  const linkStyle='display:inline-flex;flex-shrink:0;opacity:.55;align-items:center;gap:2px;font-size:11px;color:var(--apple-secondary);text-decoration:none';
+  const linkStyle='display:inline-flex;flex-shrink:0;opacity:.6;align-items:center;gap:2px;font-size:11px;color:var(--text3);text-decoration:none';
   if(o.linkFolder||o.bitrix||o.furniture||o.moneyUrl){
     const linksRow=document.createElement('div');
     linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:3px;margin-bottom:1px';
@@ -1106,7 +1081,7 @@ function buildCard(o,i){
     if(!isNaN(num)){
       // канбан — один прапорець, активний поріг визначає його стан
       const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-      if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
       if(o.paymentPct){
         const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
         if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
@@ -1179,13 +1154,13 @@ function buildCard(o,i){
   btn.onclick=()=>addObjNoteWithTime(o.id,addRow);
   // Reminder date+time (hidden by default)
   const dtToggle=document.createElement('button');dtToggle.textContent='+ нагадати';
-  dtToggle.style.cssText='font-family:inherit;font-size:11px;color:var(--apple-tertiary);border:none;background:transparent;cursor:pointer;padding:0 2px;text-decoration:underline;flex-shrink:0';
+  dtToggle.style.cssText='font-family:inherit;font-size:11px;color:var(--text4);border:none;background:transparent;cursor:pointer;padding:0 2px;text-decoration:underline;flex-shrink:0';
   const dtWrap=document.createElement('div');
   dtWrap.style.cssText='display:none;align-items:center;gap:6px;width:100%;padding-top:2px;flex-wrap:wrap';
   const dtDate=document.createElement('input');dtDate.type='date';
-  dtDate.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;color:var(--apple-text);-webkit-appearance:none;appearance:none;max-width:140px';
+  dtDate.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid var(--border);background:transparent;outline:none;color:var(--text);-webkit-appearance:none;appearance:none;max-width:140px';
   const dtHour=document.createElement('select');
-  dtHour.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;cursor:pointer;color:var(--apple-text);-webkit-appearance:none;appearance:none';
+  dtHour.style.cssText='font-family:inherit;font-size:12px;border:none;border-bottom:1px solid var(--border);background:transparent;outline:none;cursor:pointer;color:var(--text);-webkit-appearance:none;appearance:none';
   dtHour.innerHTML='<option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option><option value="9" selected>9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option>';
   dtWrap.appendChild(dtDate);dtWrap.appendChild(dtHour);
   dtToggle.onclick=()=>{
@@ -1197,7 +1172,7 @@ function buildCard(o,i){
   const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
   editBtn.onclick=()=>openEditModal(o.id);
   const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
-  delBtn.style.color='#e07070';
+  delBtn.style.color='var(--red)';
   delBtn.onclick=()=>deleteCard(o.id);
   addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(dtToggle);addRow.appendChild(editBtn);addRow.appendChild(delBtn);addRow.appendChild(dtWrap);
   addRow.style.marginTop='auto';addRow.style.paddingTop='6px';
@@ -1727,7 +1702,7 @@ async function loadCalendar(){
     });
 
     if(!todayEvs.length){
-      evEl.innerHTML='<span class="cal-ev" style="color:#ccc">Подій немає</span>';
+      evEl.innerHTML='<span class="cal-ev" style="color:var(--text4)">Подій немає</span>';
     } else {
       evEl.innerHTML='';
       todayEvs.forEach(ev=>{
@@ -1748,7 +1723,7 @@ async function loadCalendar(){
     }
 
   }catch(e){
-    evEl.innerHTML='<span style="color:#ccc;font-size:15px">Недоступно</span>';
+    evEl.innerHTML='<span style="color:var(--text4);font-size:15px">Недоступно</span>';
   }
 }
 
@@ -1820,10 +1795,10 @@ function updateProgressFlags(o){
   const row=document.getElementById('flags-wrap-'+o.id);
   const flags=[];
   const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-  if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
   if(o.paymentPct){
     const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-    if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
+    if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'var(--red)',bg:'var(--red-bg)'});
   }
   if(!flags.length){ if(row) row.style.display='none'; return; }
   if(!row) return; // will show on next render
