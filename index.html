@@ -539,6 +539,10 @@ function setSyncStatus(state,text){
   tx.textContent=text;
 }
 function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
+// localStorage cache for progress values (survives page reload)
+let _progressCache={};
+try{_progressCache=JSON.parse(localStorage.getItem('crm_progress')||'{}');}catch{}
+
 function parseObj(o){
   const parsed={...o,
     inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
@@ -546,6 +550,8 @@ function parseObj(o){
     progressUrl:o.progressUrl||'',
     progressCell:o.progressCell||''
   };
+  // Restore cached progress value so flags show immediately on first render
+  if(_progressCache[parsed.id||o.id]) parsed._progressValue=_progressCache[parsed.id||o.id];
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
@@ -1420,6 +1426,8 @@ async function saveCard(){
     // Find by id (not index) because sortObjects() may have reordered array
     const savedId=window._editObjId||( objects[editIdx]?objects[editIdx].id:null);
     if(savedId) obj.id=savedId;
+    // Restore cached progress value so flags don't disappear after save
+    if(obj.id&&_progressCache[obj.id]) obj._progressValue=_progressCache[obj.id];
     apiSave(obj).catch(e=>console.error(e));
     const realIdx=objects.findIndex(o=>String(o.id)===String(obj.id));
     if(realIdx>=0) objects[realIdx]=obj;
@@ -1603,6 +1611,11 @@ async function loadProgress(){
         else{val=Math.round(num)+'%';}
         // Cache in object so next render shows it immediately
         o._progressValue=val;
+        // Persist to localStorage and in-memory cache so value survives page reload and re-render
+        try{
+          _progressCache[o.id]=val;
+          localStorage.setItem('crm_progress',JSON.stringify(_progressCache));
+        }catch{}
         // Update DOM if element exists
         const wrap=document.getElementById('progress-wrap-'+o.id);
         if(wrap) wrap.textContent=val;
