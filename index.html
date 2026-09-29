@@ -454,10 +454,10 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Платіж за прогресом (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
     <div id="f-flags-row" style="display:none;flex-direction:column;gap:6px;margin-top:2px;padding:10px 12px;background:rgba(0,0,0,.03);border-radius:8px">
       <div style="font-size:12px;color:var(--apple-secondary);font-weight:500;margin-bottom:2px">Закриті прапорці (зняти галочку = відновити)</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
+      <label id="f-flag-kanban-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
         <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:#0071e3;cursor:pointer">
         <span style="color:#0071e3">🚩 канбан — закрито</span></label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
+      <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
         <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:#c0392b;cursor:pointer">
         <span style="color:#c0392b">🚩 платіж — закрито</span></label>
     </div>
@@ -918,9 +918,9 @@ function buildCard(o,i){
     const closed=o._closedFlags||{};
     const flags=[];
     if(!isNaN(num)){
-      if(num>=1)  flags.push({key:'kanban1',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
-      if(num>=30) flags.push({key:'kanban2',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
-      if(num>=90) flags.push({key:'kanban3',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      // канбан — один прапорець, активний поріг визначає його стан
+      const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
+      if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
       if(o.paymentPct){
         const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
         if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
@@ -1412,20 +1412,23 @@ function openEditModal(objId){
   if(document.getElementById('f-payment-pct')) document.getElementById('f-payment-pct').value=o.paymentPct||'';
   // Flags closed state
   const closedFlags=o._closedFlags||{};
+  const pv=o._progressValue;
+  const pnum=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+  const activeKanbanKey=!isNaN(pnum)?(pnum>=90?'kanban3':pnum>=30?'kanban2':pnum>=1?'kanban1':null):null;
+  const hasFlagKanban=!!activeKanbanKey;
+  const hasFlagPayment=!!o.paymentPct&&!isNaN(pnum)&&pnum>=parseFloat(o.paymentPct);
+  const anyFlag=hasFlagKanban||hasFlagPayment;
   const flagsRow=document.getElementById('f-flags-row');
-  const hasFlagKanban=!!o._progressValue&&parseFloat(String(o._progressValue).replace('%',''))>=30;
-  const hasFlagPayment=!!o.paymentPct&&!!o._progressValue&&parseFloat(String(o._progressValue).replace('%',''))>=parseFloat(o.paymentPct);
-  if(flagsRow){
-    flagsRow.style.display=(hasFlagKanban||hasFlagPayment)?'flex':'none';
-    if(document.getElementById('f-flag-kanban-closed')){
-      document.getElementById('f-flag-kanban-closed').checked=!!closedFlags.kanban;
-      document.getElementById('f-flag-kanban-closed').parentElement.style.display=hasFlagKanban?'flex':'none';
-    }
-    if(document.getElementById('f-flag-payment-closed')){
-      document.getElementById('f-flag-payment-closed').checked=!!closedFlags.payment;
-      document.getElementById('f-flag-payment-closed').parentElement.style.display=hasFlagPayment?'flex':'none';
-    }
-  }
+  if(flagsRow) flagsRow.style.display=anyFlag?'flex':'none';
+  [
+    ['f-flag-kanban-row','f-flag-kanban-closed',activeKanbanKey,hasFlagKanban],
+    ['f-flag-payment-row','f-flag-payment-closed','payment',hasFlagPayment],
+  ].forEach(([rowId,cbId,key,show])=>{
+    const rowEl=document.getElementById(rowId);
+    const cbEl=document.getElementById(cbId);
+    if(rowEl) rowEl.style.display=show?'flex':'none';
+    if(cbEl&&key) cbEl.checked=!!closedFlags[key];
+  });
   document.getElementById('f-inwork').checked=!!o.inwork;
   if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
@@ -1456,10 +1459,17 @@ async function saveCard(){
     progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
     paymentPct:document.getElementById('f-payment-pct')?.value.trim()||'',
-    _closedFlags:{
-      kanban:document.getElementById('f-flag-kanban-closed')?.checked||false,
-      payment:document.getElementById('f-flag-payment-closed')?.checked||false
-    },
+    _closedFlags:(()=>{
+      const prev=(editIdx!==null&&objects[editIdx]?objects[editIdx]._closedFlags:null)||{};
+      // Determine active kanban key from current progress
+      const cpv=editIdx!==null&&objects[editIdx]?objects[editIdx]._progressValue:null;
+      const cn=cpv?parseFloat(String(cpv).replace('%','').replace(',','.')):NaN;
+      const cKey=!isNaN(cn)?(cn>=90?'kanban3':cn>=30?'kanban2':cn>=1?'kanban1':null):null;
+      const kanbanClosed=document.getElementById('f-flag-kanban-closed')?.checked||false;
+      const out={...prev,payment:document.getElementById('f-flag-payment-closed')?.checked||false};
+      if(cKey) out[cKey]=kanbanClosed;
+      return out;
+    })(),
     inwork:document.getElementById('f-inwork').checked,
     closed:document.getElementById('f-closed')?.checked||false,
     masters:false,
@@ -1623,9 +1633,8 @@ function updateProgressFlags(o){
   if(isNaN(num)) return;
   const row=document.getElementById('flags-wrap-'+o.id);
   const flags=[];
-  if(num>=1)  flags.push({key:'kanban1',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
-  if(num>=30) flags.push({key:'kanban2',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
-  if(num>=90) flags.push({key:'kanban3',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
+  if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
   if(o.paymentPct){
     const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
     if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
