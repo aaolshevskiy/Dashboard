@@ -918,7 +918,9 @@ function buildCard(o,i){
     const closed=o._closedFlags||{};
     const flags=[];
     if(!isNaN(num)){
-      if(num>=30) flags.push({key:'kanban',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(num>=1)  flags.push({key:'kanban1',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(num>=30) flags.push({key:'kanban2',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(num>=90) flags.push({key:'kanban3',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
       if(o.paymentPct){
         const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
         if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
@@ -1621,7 +1623,9 @@ function updateProgressFlags(o){
   if(isNaN(num)) return;
   const row=document.getElementById('flags-wrap-'+o.id);
   const flags=[];
-  if(num>=30) flags.push({key:'kanban',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(num>=1)  flags.push({key:'kanban1',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(num>=30) flags.push({key:'kanban2',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(num>=90) flags.push({key:'kanban3',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
   if(o.paymentPct){
     const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
     if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
