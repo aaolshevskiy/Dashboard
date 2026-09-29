@@ -451,6 +451,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Zakup (URL)</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
     <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
     <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
+    <div class="form-row"><label>Платіж за прогресом (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
         <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
@@ -553,6 +554,7 @@ function parseObj(o){
   if(!parsed.moneyUrl) parsed.moneyUrl='';
   if(!parsed.progressUrl) parsed.progressUrl='';
   if(!parsed.progressCell) parsed.progressCell='';
+  if(!parsed.paymentPct) parsed.paymentPct='';
   return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
@@ -624,6 +626,7 @@ async function apiSave(obj){
       ratyfikacjaUrl:obj.ratyfikacjaUrl||'',
       progressUrl:obj.progressUrl||'',
       progressCell:obj.progressCell||'',
+      paymentPct:obj.paymentPct||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -886,6 +889,30 @@ function buildCard(o,i){
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
+  // Progress indicators (flags) — always render container so updateProgressFlags can find it
+  {
+    const pv=o._progressValue;
+    const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+    const flags=[];
+    if(!isNaN(num)){
+      if(num>=30) flags.push({label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(o.paymentPct){
+        const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
+        if(!isNaN(threshold)&&num>=threshold) flags.push({label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
+      }
+    }
+    const row=document.createElement('div');
+    row.id='flags-wrap-'+o.id;
+    row.style.cssText='display:'+(flags.length?'flex':'none')+';flex-wrap:wrap;gap:5px;margin-top:4px';
+    flags.forEach(f=>{
+      const tag=document.createElement('span');
+      tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;'
+        +'color:'+f.color+';background:'+f.bg+';border-radius:5px;padding:2px 7px;letter-spacing:.01em';
+      tag.innerHTML='🚩 '+f.label;
+      row.appendChild(tag);
+    });
+    card.appendChild(row);
+  }
 
   // Dates — always shown
   const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
@@ -1351,6 +1378,7 @@ function openEditModal(objId){
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
   if(document.getElementById('f-progress-url')) document.getElementById('f-progress-url').value=o.progressUrl||'';
   if(document.getElementById('f-progress-cell')) document.getElementById('f-progress-cell').value=o.progressCell||'';
+  if(document.getElementById('f-payment-pct')) document.getElementById('f-payment-pct').value=o.paymentPct||'';
   document.getElementById('f-inwork').checked=!!o.inwork;
   if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
@@ -1380,6 +1408,7 @@ async function saveCard(){
     moneyUrl:document.getElementById('f-money-url')?.value.trim()||'',
     progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
+    paymentPct:document.getElementById('f-payment-pct')?.value.trim()||'',
     inwork:document.getElementById('f-inwork').checked,
     closed:document.getElementById('f-closed')?.checked||false,
     masters:false,
@@ -1514,7 +1543,40 @@ async function restoreHistory(idx){
   closeHistory();openHistory();
 }
 
-// ── PROGRESS DEBUG ──
+// ── PROGRESS FLAGS ──
+function updateProgressFlags(o){
+  const pv=o._progressValue;
+  if(!pv) return;
+  const num=parseFloat(String(pv).replace('%','').replace(',','.'));
+  if(isNaN(num)) return;
+  // Find flags container by id
+  const flagsId='flags-wrap-'+o.id;
+  let row=document.getElementById(flagsId);
+  const flags=[];
+  if(num>=30) flags.push({label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(o.paymentPct){
+    const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
+    if(!isNaN(threshold)&&num>=threshold) flags.push({label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
+  }
+  if(!flags.length){
+    if(row) row.style.display='none';
+    return;
+  }
+  if(!row){
+    // Can't inject without re-render; will show on next render
+    return;
+  }
+  row.style.display='flex';
+  row.innerHTML='';
+  flags.forEach(f=>{
+    const tag=document.createElement('span');
+    tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;'
+      +'color:'+f.color+';background:'+f.bg+';border-radius:5px;padding:2px 7px;letter-spacing:.01em';
+    tag.innerHTML='🚩 '+f.label;
+    row.appendChild(tag);
+  });
+}
+
 // ── PROGRESS LOADING ──
 // _progressLoading: set to prevent parallel fetches
 let _progressLoading=false;
@@ -1544,6 +1606,8 @@ async function loadProgress(){
         // Update DOM if element exists
         const wrap=document.getElementById('progress-wrap-'+o.id);
         if(wrap) wrap.textContent=val;
+        // Update progress flags
+        updateProgressFlags(o);
       }catch(e){
         console.error('[progress] error for',o.name,e);
       }
