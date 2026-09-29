@@ -452,6 +452,15 @@ body{font-size:15px;-webkit-font-smoothing:antialiased;font-family:-apple-system
     <div class="form-row"><label>Прогрес — таблиця (URL)</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
     <div class="form-row"><label>Прогрес — клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
     <div class="form-row"><label>Платіж за прогресом (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
+    <div id="f-flags-row" style="display:none;flex-direction:column;gap:6px;margin-top:2px;padding:10px 12px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div style="font-size:12px;color:var(--apple-secondary);font-weight:500;margin-bottom:2px">Закриті прапорці (зняти галочку = відновити)</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
+        <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:#0071e3;cursor:pointer">
+        <span style="color:#0071e3">🚩 канбан — закрито</span></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--apple-text);cursor:pointer">
+        <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:#c0392b;cursor:pointer">
+        <span style="color:#c0392b">🚩 платіж — закрито</span></label>
+    </div>
     <div class="form-row" style="flex-direction:row;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--apple-text);cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);width:fit-content">
         <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--apple-blue);cursor:pointer"> ☆ В реалізації</label>
@@ -542,6 +551,10 @@ function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 // localStorage cache for progress values (survives page reload)
 let _progressCache={};
 try{_progressCache=JSON.parse(localStorage.getItem('crm_progress')||'{}');}catch{}
+// localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
+let _closedFlagsCache={};
+try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
+function saveClosedFlagsCache(){try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}}
 
 function parseObj(o){
   const parsed={...o,
@@ -552,6 +565,9 @@ function parseObj(o){
   };
   // Restore cached progress value so flags show immediately on first render
   if(_progressCache[parsed.id||o.id]) parsed._progressValue=_progressCache[parsed.id||o.id];
+  // Restore closed flags state
+  if(_closedFlagsCache[parsed.id||o.id]) parsed._closedFlags=_closedFlagsCache[parsed.id||o.id];
+  else parsed._closedFlags={};
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
@@ -899,22 +915,29 @@ function buildCard(o,i){
   {
     const pv=o._progressValue;
     const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+    const closed=o._closedFlags||{};
     const flags=[];
     if(!isNaN(num)){
-      if(num>=30) flags.push({label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+      if(num>=30) flags.push({key:'kanban',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
       if(o.paymentPct){
         const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-        if(!isNaN(threshold)&&num>=threshold) flags.push({label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
+        if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
       }
     }
     const row=document.createElement('div');
     row.id='flags-wrap-'+o.id;
     row.style.cssText='display:'+(flags.length?'flex':'none')+';flex-wrap:wrap;gap:5px;margin-top:4px';
     flags.forEach(f=>{
+      const isClosed=!!closed[f.key];
       const tag=document.createElement('span');
-      tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;'
-        +'color:'+f.color+';background:'+f.bg+';border-radius:5px;padding:2px 7px;letter-spacing:.01em';
-      tag.innerHTML='🚩 '+f.label;
+      tag.title=isClosed?'Закрито. Натисніть, щоб скасувати':'Натисніть, щоб закрити прапорець';
+      tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;cursor:pointer;'
+        +'border-radius:5px;padding:2px 7px;letter-spacing:.01em;transition:opacity .15s;'
+        +(isClosed
+          ?'color:#aaa;background:rgba(0,0,0,.06);text-decoration:line-through;opacity:.6;'
+          :'color:'+f.color+';background:'+f.bg+';');
+      tag.innerHTML=(isClosed?'🏳️':'🚩')+' '+f.label;
+      tag.addEventListener('click',()=>toggleFlag(o,f.key,f.label));
       row.appendChild(tag);
     });
     card.appendChild(row);
@@ -1385,6 +1408,22 @@ function openEditModal(objId){
   if(document.getElementById('f-progress-url')) document.getElementById('f-progress-url').value=o.progressUrl||'';
   if(document.getElementById('f-progress-cell')) document.getElementById('f-progress-cell').value=o.progressCell||'';
   if(document.getElementById('f-payment-pct')) document.getElementById('f-payment-pct').value=o.paymentPct||'';
+  // Flags closed state
+  const closedFlags=o._closedFlags||{};
+  const flagsRow=document.getElementById('f-flags-row');
+  const hasFlagKanban=!!o._progressValue&&parseFloat(String(o._progressValue).replace('%',''))>=30;
+  const hasFlagPayment=!!o.paymentPct&&!!o._progressValue&&parseFloat(String(o._progressValue).replace('%',''))>=parseFloat(o.paymentPct);
+  if(flagsRow){
+    flagsRow.style.display=(hasFlagKanban||hasFlagPayment)?'flex':'none';
+    if(document.getElementById('f-flag-kanban-closed')){
+      document.getElementById('f-flag-kanban-closed').checked=!!closedFlags.kanban;
+      document.getElementById('f-flag-kanban-closed').parentElement.style.display=hasFlagKanban?'flex':'none';
+    }
+    if(document.getElementById('f-flag-payment-closed')){
+      document.getElementById('f-flag-payment-closed').checked=!!closedFlags.payment;
+      document.getElementById('f-flag-payment-closed').parentElement.style.display=hasFlagPayment?'flex':'none';
+    }
+  }
   document.getElementById('f-inwork').checked=!!o.inwork;
   if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
@@ -1415,6 +1454,10 @@ async function saveCard(){
     progressUrl:document.getElementById('f-progress-url')?.value.trim()||'',
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
     paymentPct:document.getElementById('f-payment-pct')?.value.trim()||'',
+    _closedFlags:{
+      kanban:document.getElementById('f-flag-kanban-closed')?.checked||false,
+      payment:document.getElementById('f-flag-payment-closed')?.checked||false
+    },
     inwork:document.getElementById('f-inwork').checked,
     closed:document.getElementById('f-closed')?.checked||false,
     masters:false,
@@ -1428,6 +1471,11 @@ async function saveCard(){
     if(savedId) obj.id=savedId;
     // Restore cached progress value so flags don't disappear after save
     if(obj.id&&_progressCache[obj.id]) obj._progressValue=_progressCache[obj.id];
+    // Save closed flags to cache
+    if(obj.id&&obj._closedFlags){
+      _closedFlagsCache[obj.id]=obj._closedFlags;
+      saveClosedFlagsCache();
+    }
     apiSave(obj).catch(e=>console.error(e));
     const realIdx=objects.findIndex(o=>String(o.id)===String(obj.id));
     if(realIdx>=0) objects[realIdx]=obj;
@@ -1552,37 +1600,57 @@ async function restoreHistory(idx){
 }
 
 // ── PROGRESS FLAGS ──
+function buildFlagTag(o,f){
+  const isClosed=!!(o._closedFlags||{})[f.key];
+  const tag=document.createElement('span');
+  tag.title=isClosed?'Закрито. Натисніть, щоб скасувати':'Натисніть, щоб закрити прапорець';
+  tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;cursor:pointer;'
+    +'border-radius:5px;padding:2px 7px;letter-spacing:.01em;transition:opacity .15s;'
+    +(isClosed
+      ?'color:#aaa;background:rgba(0,0,0,.06);text-decoration:line-through;opacity:.6;'
+      :'color:'+f.color+';background:'+f.bg+';');
+  tag.innerHTML=(isClosed?'🏳️':'🚩')+' '+f.label;
+  tag.addEventListener('click',()=>toggleFlag(o,f.key,f.label));
+  return tag;
+}
+
 function updateProgressFlags(o){
   const pv=o._progressValue;
   if(!pv) return;
   const num=parseFloat(String(pv).replace('%','').replace(',','.'));
   if(isNaN(num)) return;
-  // Find flags container by id
-  const flagsId='flags-wrap-'+o.id;
-  let row=document.getElementById(flagsId);
+  const row=document.getElementById('flags-wrap-'+o.id);
   const flags=[];
-  if(num>=30) flags.push({label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
+  if(num>=30) flags.push({key:'kanban',label:'канбан',color:'#0071e3',bg:'rgba(0,113,227,.10)'});
   if(o.paymentPct){
     const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-    if(!isNaN(threshold)&&num>=threshold) flags.push({label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
+    if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
   }
-  if(!flags.length){
-    if(row) row.style.display='none';
-    return;
-  }
-  if(!row){
-    // Can't inject without re-render; will show on next render
-    return;
-  }
+  if(!flags.length){ if(row) row.style.display='none'; return; }
+  if(!row) return; // will show on next render
   row.style.display='flex';
   row.innerHTML='';
-  flags.forEach(f=>{
-    const tag=document.createElement('span');
-    tag.style.cssText='display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;'
-      +'color:'+f.color+';background:'+f.bg+';border-radius:5px;padding:2px 7px;letter-spacing:.01em';
-    tag.innerHTML='🚩 '+f.label;
-    row.appendChild(tag);
-  });
+  flags.forEach(f=>row.appendChild(buildFlagTag(o,f)));
+}
+
+function toggleFlag(o,key,label){
+  const closed=o._closedFlags||{};
+  const isCurrentlyClosed=!!closed[key];
+  if(isCurrentlyClosed){
+    // Reopen without confirmation
+    closed[key]=false;
+    o._closedFlags=closed;
+    _closedFlagsCache[o.id]=closed;
+    saveClosedFlagsCache();
+    updateProgressFlags(o);
+  } else {
+    if(!confirm('Закрити прапорець "'+label+'"?\nВідновити можна в налаштуваннях картки.')){return;}
+    closed[key]=true;
+    o._closedFlags=closed;
+    _closedFlagsCache[o.id]=closed;
+    saveClosedFlagsCache();
+    updateProgressFlags(o);
+  }
 }
 
 // ── PROGRESS LOADING ──
