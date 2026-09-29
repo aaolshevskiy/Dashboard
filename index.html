@@ -825,7 +825,7 @@ function buildCard(o,i){
   if(o.linkFolder||o.bitrix||o.furniture||o.moneyUrl){
     const linksRow=document.createElement('div');
     linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:3px;margin-bottom:1px';
-    // Порядок: Диск → Bitrix → Меблі → Oferta → Rozliczenie
+    // Порядок: Диск → Bitrix → Oferta → Money → Zakup → Меблі
     if(o.linkFolder){
       const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
       gd.style.cssText=linkStyle;gd.onclick=e=>e.stopPropagation();
@@ -837,12 +837,6 @@ function buildCard(o,i){
       bx.style.cssText=linkStyle;bx.onclick=e=>e.stopPropagation();
       bx.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12"><rect x="2" y="2" width="20" height="20" rx="4" fill="#FF5722"/><path d="M7 7h4.5a2.5 2.5 0 0 1 0 5H7zm0 5h5a2.5 2.5 0 0 1 0 5H7z" fill="white"/></svg>Bitrix';
       linksRow.appendChild(bx);
-    }
-    if(o.furniture){
-      const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
-      fw.style.cssText=linkStyle;fw.onclick=e=>e.stopPropagation();
-      fw.innerHTML='🪑 Меблі';
-      linksRow.appendChild(fw);
     }
     if(o.ofertaUrl){
       const of=document.createElement('a');of.href=o.ofertaUrl;of.target='_blank';of.title='Oferta';
@@ -861,6 +855,12 @@ function buildCard(o,i){
       rt.style.cssText=linkStyle;rt.onclick=e=>e.stopPropagation();
       rt.innerHTML='🛒 Zakup';
       linksRow.appendChild(rt);
+    }
+    if(o.furniture){
+      const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
+      fw.style.cssText=linkStyle;fw.onclick=e=>e.stopPropagation();
+      fw.innerHTML='🪑 Меблі';
+      linksRow.appendChild(fw);
     }
     card.appendChild(linksRow);
   }
