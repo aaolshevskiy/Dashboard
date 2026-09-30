@@ -776,16 +776,14 @@ async function apiGet(){
     setSyncStatus('ok','збережено ✓');
   }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
   finally{
-    // Save focused input value before render
+    // If user is typing anywhere — skip re-render entirely to avoid losing focus/text
     const ae=document.activeElement;
-    const savedVal=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')?ae.value:'';
-    const savedId=ae?ae.id:'';
-    render();renderNotes();renderOverdueZone();
-    // Restore focused input
-    if(savedId&&savedVal){
-      const el=document.getElementById(savedId);
-      if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){el.value=savedVal;el.focus();}
+    const isTyping=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&ae.value.trim()!=='';
+    if(isTyping){
+      // Data updated in memory, but don't touch the DOM while user types
+      return;
     }
+    render();renderNotes();renderOverdueZone();
   }
 }
 
@@ -1948,10 +1946,15 @@ setTimeout(()=>{render();renderNotes();},500);
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
-setInterval(()=>{
+
+// Helper: is the user actively typing in any input/textarea?
+function userIsTyping(){
   const ae=document.activeElement;
-  const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
-  if(!typing){renderNotes();renderOverdueZone();}
+  return !!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'));
+}
+
+setInterval(()=>{
+  if(!userIsTyping()){renderNotes();renderOverdueZone();}
 },30000);
 // Refresh progress from server every 5 minutes
 setInterval(()=>{ _progressLoading=false; loadProgress(); },300000);
