@@ -421,25 +421,25 @@ body{
 }
 
 /* ── CHECKLIST IN CARD ── */
-.card-checklist{margin-top:6px;border-top:1px solid var(--border);}
 .card-checklist-toggle{
-  width:100%;display:flex;align-items:center;gap:5px;
+  display:inline-flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;
   background:none;border:none;cursor:pointer;
-  padding:6px 0 4px;font-family:inherit;
-  color:var(--text3);font-size:12px;font-weight:500;
-  letter-spacing:.01em;text-align:left;
+  padding:2px 4px;border-radius:6px;font-family:inherit;
+  color:var(--text4);font-size:11px;font-weight:500;
+  letter-spacing:.01em;text-align:left;line-height:1;
+  transition:color .15s,background .15s;
 }
-.card-checklist-toggle:hover{color:var(--text);}
+.card-checklist-toggle:hover{color:var(--text2);background:var(--surface3);}
 .card-checklist-arrow{
-  font-size:9px;transition:transform .18s;display:inline-block;color:var(--text4);
+  font-size:8px;transition:transform .18s;display:inline-block;
 }
 .card-checklist-arrow.open{transform:rotate(90deg);}
 .card-checklist-progress{
-  margin-left:auto;font-size:11px;font-weight:600;
-  color:var(--text4);font-variant-numeric:tabular-nums;
+  font-size:11px;font-weight:600;
+  color:inherit;font-variant-numeric:tabular-nums;
 }
 .card-checklist-body{
-  display:none;padding-bottom:4px;
+  display:none;padding:4px 0 2px;border-top:1px solid var(--border);margin-top:4px;
 }
 .card-checklist-body.open{display:block;}
 .card-cl-item{
@@ -1213,7 +1213,66 @@ function buildCard(o,i){
   name.textContent=nameText;
   if(o.completed) name.style.textDecoration='line-through';
   nameRow.appendChild(name);
+
+  // ── Checklist toggle (top-right of name row) ──
+  let clBodyElem=null;
+  if(_clItems.length>0){
+    const clKey='cl_open_'+o.id;
+    let clOpen=false;try{clOpen=sessionStorage.getItem(clKey)==='1';}catch{}
+    const checks=clGetChecks(o.id);
+    const doneCount=_clItems.filter(it=>checks[it.id]).length;
+    const total=_clItems.length;
+
+    const toggle=document.createElement('button');
+    toggle.className='card-checklist-toggle';
+    toggle.addEventListener('mousedown',e=>e.stopPropagation());
+
+    const arrow=document.createElement('span');arrow.className='card-checklist-arrow'+(clOpen?' open':'');
+    arrow.textContent='▶';
+
+    const prog=document.createElement('span');
+    prog.className='card-checklist-progress';
+    prog.textContent=doneCount+'/'+total;
+    if(doneCount===total&&total>0) prog.style.color='var(--green)';
+
+    toggle.appendChild(arrow);toggle.appendChild(prog);
+
+    const body=document.createElement('div');
+    body.className='card-checklist-body'+(clOpen?' open':'');
+
+    _clItems.forEach(item=>{
+      const row=document.createElement('div');row.className='card-cl-item';
+      row.addEventListener('mousedown',e=>e.stopPropagation());
+      const cb=document.createElement('input');cb.type='checkbox';cb.className='card-cl-cb';
+      cb.checked=!!checks[item.id];
+      cb.onchange=()=>{
+        clSetCheck(o.id,item.id,cb.checked);
+        lbl.className='card-cl-label'+(cb.checked?' done':'');
+        const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
+        prog.textContent=newDone+'/'+total;
+        prog.style.color=(newDone===total&&total>0)?'var(--green)':'inherit';
+      };
+      const lbl=document.createElement('span');
+      lbl.className='card-cl-label'+(cb.checked?' done':'');
+      lbl.textContent=item.text;
+      lbl.onclick=()=>{cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));};
+      row.appendChild(cb);row.appendChild(lbl);
+      body.appendChild(row);
+    });
+
+    toggle.onclick=()=>{
+      clOpen=!clOpen;
+      body.className='card-checklist-body'+(clOpen?' open':'');
+      arrow.className='card-checklist-arrow'+(clOpen?' open':'');
+      try{sessionStorage.setItem(clKey,clOpen?'1':'0');}catch{}
+    };
+
+    nameRow.appendChild(toggle);
+    clBodyElem=body;
+  }
+
   card.appendChild(nameRow);
+  if(clBodyElem) card.appendChild(clBodyElem);
 
   // Links row — між назвою і адресою, всі 4 іконки в один рядок
   const linkStyle='display:inline-flex;flex-shrink:0;opacity:.6;align-items:center;gap:2px;font-size:11px;color:var(--text3);text-decoration:none';
@@ -1376,70 +1435,6 @@ function buildCard(o,i){
       nl.appendChild(row);
     });
     card.appendChild(nl);
-  }
-
-  // ── Checklist (collapsed by default, per-card state in sessionStorage) ──
-  if(_clItems.length>0){
-    const clWrap=document.createElement('div');clWrap.className='card-checklist';
-    const clKey='cl_open_'+o.id;
-    let clOpen=false;try{clOpen=sessionStorage.getItem(clKey)==='1';}catch{}
-
-    const checks=clGetChecks(o.id);
-    const doneCount=_clItems.filter(it=>checks[it.id]).length;
-    const total=_clItems.length;
-
-    const toggle=document.createElement('button');
-    toggle.className='card-checklist-toggle';
-    toggle.addEventListener('mousedown',e=>e.stopPropagation());
-
-    const arrow=document.createElement('span');arrow.className='card-checklist-arrow'+(clOpen?' open':'');
-    arrow.textContent='▶';
-
-    const label=document.createElement('span');label.textContent='Чеклист';
-
-    const prog=document.createElement('span');
-    prog.className='card-checklist-progress';
-    prog.textContent=doneCount+'/'+total;
-    if(doneCount===total&&total>0) prog.style.color='var(--green)';
-
-    toggle.appendChild(arrow);toggle.appendChild(label);toggle.appendChild(prog);
-
-    const body=document.createElement('div');
-    body.className='card-checklist-body'+(clOpen?' open':'');
-
-    _clItems.forEach(item=>{
-      const row=document.createElement('div');row.className='card-cl-item';
-      row.addEventListener('mousedown',e=>e.stopPropagation());
-
-      const cb=document.createElement('input');cb.type='checkbox';cb.className='card-cl-cb';
-      cb.checked=!!checks[item.id];
-      cb.onchange=()=>{
-        clSetCheck(o.id,item.id,cb.checked);
-        lbl.className='card-cl-label'+(cb.checked?' done':'');
-        // update progress
-        const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
-        prog.textContent=newDone+'/'+total;
-        prog.style.color=(newDone===total&&total>0)?'var(--green)':'var(--text4)';
-      };
-
-      const lbl=document.createElement('span');
-      lbl.className='card-cl-label'+(cb.checked?' done':'');
-      lbl.textContent=item.text;
-      lbl.onclick=()=>{cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));};
-
-      row.appendChild(cb);row.appendChild(lbl);
-      body.appendChild(row);
-    });
-
-    toggle.onclick=()=>{
-      clOpen=!clOpen;
-      body.className='card-checklist-body'+(clOpen?' open':'');
-      arrow.className='card-checklist-arrow'+(clOpen?' open':'');
-      try{sessionStorage.setItem(clKey,clOpen?'1':'0');}catch{}
-    };
-
-    clWrap.appendChild(toggle);clWrap.appendChild(body);
-    card.appendChild(clWrap);
   }
 
   // Add note input
