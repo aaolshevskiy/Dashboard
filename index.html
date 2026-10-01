@@ -828,43 +828,48 @@ let _clItems=[];
 let _clChecks={};
 
 function clLoad(){
-  // Items завантажуються з сервера через clFetchItems() — тут тільки локальний кеш галочок
+  // Локальний кеш — для миттєвого відображення до завантаження з сервера
   try{_clItems=JSON.parse(localStorage.getItem('crm_cl_items')||'[]');}catch{_clItems=[];}
   try{_clChecks=JSON.parse(localStorage.getItem('crm_cl_checks')||'{}');}catch{_clChecks={};}
 }
 
-// Завантажити пункти чеклісту з сервера
+// Завантажити і пункти і галочки з сервера
 async function clFetchItems(){
   try{
     const res=await fetch(API_URL+'?action=getChecklist');
     const data=await res.json();
+    let updated=false;
     if(data&&Array.isArray(data.items)){
       _clItems=data.items;
-      // Оновити локальний кеш
       try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
-      return true;
+      updated=true;
     }
+    if(data&&data.checks&&typeof data.checks==='object'){
+      _clChecks=data.checks;
+      try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
+      updated=true;
+    }
+    return updated;
   }catch(e){console.warn('[Checklist] fetch failed',e);}
   return false;
 }
 
-// Зберегти пункти на сервер
-async function clSaveItemsRemote(){
-  try{
-    localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));
-  }catch{}
+// Зберегти і пункти і галочки на сервер одним запитом
+async function clSaveRemote(){
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'saveChecklist',items:_clItems})});
+      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks})});
   }catch(e){console.warn('[Checklist] save failed',e);}
 }
 
 function clSaveItems(){
-  // Зберігаємо локально одразу, на сервер — асинхронно
   try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
-  clSaveItemsRemote();
+  clSaveRemote();
 }
-function clSaveChecks(){try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}}
+function clSaveChecks(){
+  try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
+  clSaveRemote();
+}
 function clUid(){return 'cl'+Date.now()+Math.random().toString(36).slice(2,6);}
 
 function clGetChecks(objId){
