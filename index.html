@@ -2241,7 +2241,8 @@ loadCalendar();
 // Guarantee render after DOM is fully ready
 setTimeout(()=>{render();renderNotes();},500);
 
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){apiGet();loadCalendar();}});
+// visibilitychange — handled inside startAutoRefresh() below; here only calendar
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){loadCalendar();}});
 window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
 
 // Helper: is the user actively typing in any input/textarea?
@@ -2250,9 +2251,80 @@ function userIsTyping(){
   return !!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'));
 }
 
+// Helper: is any modal currently open?
+function anyModalOpen(){
+  const modals=['editModal','addModal','historyModal','checklistModal','calModal'];
+  return modals.some(id=>{
+    const el=document.getElementById(id);
+    return el&&(el.style.display==='flex'||el.classList.contains('open'));
+  });
+}
+
 setInterval(()=>{
   if(!userIsTyping()){renderNotes();renderOverdueZone();}
 },30000);
+
+// ── Background auto-refresh every 5 minutes ──────────────────────────────────
+// Guards: no parallel requests, no refresh while modal is open or user is typing,
+// exponential back-off on errors (up to 20 min), resets on tab focus.
+(function startAutoRefresh(){
+  const INTERVAL_MS   = 2 * 60 * 1000;   // 2 хвилини — нормальний інтервал
+  const MAX_BACKOFF   = 20 * 60 * 1000;  // 20 хвилин — максимальна затримка при помилках
+  const BACKOFF_MULTI = 2;               // множник при кожній помилці
+
+  let timer        = null;
+  let isFetching   = false;
+  let errorCount   = 0;
+  let nextInterval = INTERVAL_MS;
+
+  function scheduleNext(ms){
+    clearTimeout(timer);
+    timer=setTimeout(tryRefresh, ms);
+  }
+
+  async function tryRefresh(){
+    // Safety guards — skip this tick, reschedule normally
+    if(isFetching)          { scheduleNext(nextInterval); return; }
+    if(anyModalOpen())      { scheduleNext(nextInterval); return; }
+    if(userIsTyping())      { scheduleNext(nextInterval); return; }
+    if(document.visibilityState!=='visible'){ scheduleNext(nextInterval); return; }
+
+    isFetching=true;
+    try{
+      await apiGet();
+      // success — reset back-off
+      errorCount=0;
+      nextInterval=INTERVAL_MS;
+    }catch(e){
+      // apiGet() itself catches errors internally; this is a secondary safety net
+      errorCount++;
+      nextInterval=Math.min(INTERVAL_MS*Math.pow(BACKOFF_MULTI,errorCount), MAX_BACKOFF);
+      console.warn('[AutoRefresh] error #'+errorCount+', next in '+(nextInterval/1000)+'s',e);
+    }finally{
+      isFetching=false;
+      scheduleNext(nextInterval);
+    }
+  }
+
+  // Start first tick after the initial interval
+  scheduleNext(INTERVAL_MS);
+
+  // When user returns to the tab — refresh immediately (if safe), then reset schedule
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'){
+      clearTimeout(timer);
+      // Small delay so page finishes paint before fetching
+      setTimeout(()=>{
+        if(!anyModalOpen()&&!userIsTyping()){
+          tryRefresh();
+        } else {
+          scheduleNext(INTERVAL_MS);
+        }
+      },800);
+    }
+  });
+})();
+
 // Refresh progress from server every 5 minutes
 setInterval(()=>{ _progressLoading=false; loadProgress(); },300000);
 </script>
