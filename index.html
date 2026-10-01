@@ -422,14 +422,17 @@ body{
 
 /* ── CHECKLIST IN CARD ── */
 .card-checklist-toggle{
-  display:inline-flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;
+  display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;
   background:none;border:none;cursor:pointer;
   padding:2px 4px;border-radius:6px;font-family:inherit;
   color:var(--text4);font-size:11px;font-weight:500;
   letter-spacing:.01em;text-align:left;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-appearance:none;
   transition:color .15s,background .15s;
 }
 .card-checklist-toggle:hover{color:var(--text2);background:var(--surface3);}
+.card-checklist-toggle:active{color:var(--text2);background:var(--surface3);}
 .card-checklist-arrow{
   font-size:8px;transition:transform .18s;display:inline-block;
 }
@@ -1225,7 +1228,7 @@ function buildCard(o,i){
 
   // Name row with Drive+Bitrix icons
   const nameRow=document.createElement('div');
-  nameRow.style.cssText='display:flex;align-items:center;gap:5px;flex-wrap:nowrap';
+  nameRow.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0';
   const name=document.createElement('div');
   name.className='obj-card-name'+(hasNotes?' has-notes':'');
   name.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
