@@ -993,6 +993,25 @@ function fmtDate(iso){
 }
 
 // ── API ──
+// ── Snapshot cache: persist objects+stickyNotes to localStorage for instant first render ──
+const SNAPSHOT_KEY='crm_snapshot_v1';
+function saveSnapshot(){
+  try{
+    localStorage.setItem(SNAPSHOT_KEY,JSON.stringify({objects,stickyNotes,ts:Date.now()}));
+  }catch(e){console.warn('[Snapshot] save failed',e);}
+}
+function loadSnapshot(){
+  try{
+    const raw=localStorage.getItem(SNAPSHOT_KEY);
+    if(!raw)return false;
+    const snap=JSON.parse(raw);
+    if(!snap||!Array.isArray(snap.objects))return false;
+    objects=snap.objects;
+    stickyNotes=Array.isArray(snap.stickyNotes)?snap.stickyNotes:[];
+    return true;
+  }catch(e){console.warn('[Snapshot] load failed',e);return false;}
+}
+
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
@@ -1009,6 +1028,7 @@ async function apiGet(){
       }else{ob.push(parseObj(o));}
     });
     objects=ob;stickyNotes=st;
+    saveSnapshot(); // persist fresh data for next page open
     setSyncStatus('ok','збережено ✓');
   }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
   finally{
@@ -1051,7 +1071,9 @@ async function apiSave(obj){
       body:JSON.stringify({action:'save',object:full})});
     const data=await res.json();
     if(data.id)obj.id=data.id;
-    setSyncStatus('ok','збережено ✓');return true;
+    setSyncStatus('ok','збережено ✓');
+    saveSnapshot(); // keep cache fresh after every save
+    return true;
   }catch(e){setSyncStatus('err','помилка збереження');console.error(e);return false;}
 }
 
@@ -2233,13 +2255,16 @@ function stopMic(){
 
 clLoad();
 loadHistory();
+
+// ── Fast first render: show cached snapshot instantly, then fetch fresh data ──
+const _hadSnapshot=loadSnapshot();
 render();
 renderNotes();
 renderOverdueZone();
+
+// Fetch fresh data from server (runs in background; updates DOM when done)
 apiGet();
 loadCalendar();
-// Guarantee render after DOM is fully ready
-setTimeout(()=>{render();renderNotes();},500);
 
 // visibilitychange — handled inside startAutoRefresh() below; here only calendar
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){loadCalendar();}});
