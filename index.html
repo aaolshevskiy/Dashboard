@@ -828,10 +828,42 @@ let _clItems=[];
 let _clChecks={};
 
 function clLoad(){
+  // Items завантажуються з сервера через clFetchItems() — тут тільки локальний кеш галочок
   try{_clItems=JSON.parse(localStorage.getItem('crm_cl_items')||'[]');}catch{_clItems=[];}
   try{_clChecks=JSON.parse(localStorage.getItem('crm_cl_checks')||'{}');}catch{_clChecks={};}
 }
-function clSaveItems(){try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}}
+
+// Завантажити пункти чеклісту з сервера
+async function clFetchItems(){
+  try{
+    const res=await fetch(API_URL+'?action=getChecklist');
+    const data=await res.json();
+    if(data&&Array.isArray(data.items)){
+      _clItems=data.items;
+      // Оновити локальний кеш
+      try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
+      return true;
+    }
+  }catch(e){console.warn('[Checklist] fetch failed',e);}
+  return false;
+}
+
+// Зберегти пункти на сервер
+async function clSaveItemsRemote(){
+  try{
+    localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));
+  }catch{}
+  try{
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveChecklist',items:_clItems})});
+  }catch(e){console.warn('[Checklist] save failed',e);}
+}
+
+function clSaveItems(){
+  // Зберігаємо локально одразу, на сервер — асинхронно
+  try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
+  clSaveItemsRemote();
+}
 function clSaveChecks(){try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}}
 function clUid(){return 'cl'+Date.now()+Math.random().toString(36).slice(2,6);}
 
@@ -1023,6 +1055,7 @@ async function apiGet(){
     let data;try{data=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
     const st=[],ob=[];
     (data||[]).forEach(o=>{
+      if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
@@ -1243,16 +1276,23 @@ function buildCard(o,i){
   let clBodyElem=null;
   if(_clItems.length>0){
     const clKey='cl_open_'+o.id;
-    let clOpen=false;try{clOpen=sessionStorage.getItem(clKey)==='1';}catch{}
+    let clOpen=false;
+    try{clOpen=sessionStorage.getItem(clKey)==='1';}catch{}
     const checks=clGetChecks(o.id);
     const doneCount=_clItems.filter(it=>checks[it.id]).length;
     const total=_clItems.length;
 
     const toggle=document.createElement('button');
+    toggle.type='button'; // важливо для iOS — без цього може submit форму
     toggle.className='card-checklist-toggle';
-    toggle.addEventListener('mousedown',e=>e.stopPropagation());
 
-    const arrow=document.createElement('span');arrow.className='card-checklist-arrow'+(clOpen?' open':'');
+    // Зупиняємо і mouse і touch події щоб не тригерити drag картки
+    ['mousedown','touchstart'].forEach(ev=>
+      toggle.addEventListener(ev,e=>e.stopPropagation(),{passive:true})
+    );
+
+    const arrow=document.createElement('span');
+    arrow.className='card-checklist-arrow'+(clOpen?' open':'');
     arrow.textContent='▶';
 
     const prog=document.createElement('span');
@@ -1260,32 +1300,47 @@ function buildCard(o,i){
     prog.textContent=doneCount+'/'+total;
     if(doneCount===total&&total>0) prog.style.color='var(--green)';
 
-    toggle.appendChild(arrow);toggle.appendChild(prog);
+    toggle.appendChild(arrow);
+    toggle.appendChild(prog);
 
     const body=document.createElement('div');
     body.className='card-checklist-body'+(clOpen?' open':'');
 
     _clItems.forEach(item=>{
-      const row=document.createElement('div');row.className='card-cl-item';
-      row.addEventListener('mousedown',e=>e.stopPropagation());
-      const cb=document.createElement('input');cb.type='checkbox';cb.className='card-cl-cb';
+      const row=document.createElement('div');
+      row.className='card-cl-item';
+      ['mousedown','touchstart'].forEach(ev=>
+        row.addEventListener(ev,e=>e.stopPropagation(),{passive:true})
+      );
+
+      const cb=document.createElement('input');
+      cb.type='checkbox';cb.className='card-cl-cb';
       cb.checked=!!checks[item.id];
-      cb.onchange=()=>{
-        clSetCheck(o.id,item.id,cb.checked);
-        lbl.className='card-cl-label'+(cb.checked?' done':'');
-        const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
-        prog.textContent=newDone+'/'+total;
-        prog.style.color=(newDone===total&&total>0)?'var(--green)':'inherit';
-      };
+
       const lbl=document.createElement('span');
       lbl.className='card-cl-label'+(cb.checked?' done':'');
       lbl.textContent=item.text;
+
+      const updateProgress=()=>{
+        const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
+        prog.textContent=newDone+'/'+total;
+        prog.style.color=(newDone===total&&total>0)?'var(--green)':'';
+      };
+
+      cb.onchange=()=>{
+        clSetCheck(o.id,item.id,cb.checked);
+        lbl.className='card-cl-label'+(cb.checked?' done':'');
+        updateProgress();
+      };
+      // На iOS label.onclick надійніший за addEventListener
       lbl.onclick=()=>{cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));};
+
       row.appendChild(cb);row.appendChild(lbl);
       body.appendChild(row);
     });
 
-    toggle.onclick=()=>{
+    toggle.onclick=e=>{
+      e.stopPropagation();
       clOpen=!clOpen;
       body.className='card-checklist-body'+(clOpen?' open':'');
       arrow.className='card-checklist-arrow'+(clOpen?' open':'');
@@ -2256,7 +2311,7 @@ function stopMic(){
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
 
-clLoad();
+clLoad();       // локальний кеш — миттєво
 loadHistory();
 
 // ── Fast first render: show cached snapshot instantly, then fetch fresh data ──
@@ -2268,6 +2323,9 @@ renderOverdueZone();
 // Fetch fresh data from server (runs in background; updates DOM when done)
 apiGet();
 loadCalendar();
+
+// Завантажити пункти чеклісту з сервера (асинхронно, потім ре-рендер)
+clFetchItems().then(updated=>{ if(updated) render(); });
 
 // visibilitychange — handled inside startAutoRefresh() below; here only calendar
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){loadCalendar();}});
