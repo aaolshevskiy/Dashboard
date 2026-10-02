@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 /* ── TOKENS ── */
 :root{
@@ -570,7 +571,7 @@ body{
 }
 
 /* ── READ-ONLY MODE ── */
-/* When body.readonly — hide all editing controls */
+/* When body.readonly — hide all editing controls, keep everything else visible */
 body.readonly .edit-only { display: none !important; }
 body.readonly .obj-card { cursor: default !important; }
 body.readonly .obj-note-del { display: none !important; }
@@ -578,17 +579,6 @@ body.readonly .note-del { display: none !important; }
 body.readonly .obj-add-note { display: none !important; }
 body.readonly .notes-add { display: none !important; }
 body.readonly .mobile-add-zone { display: none !important; }
-body.readonly input, body.readonly textarea, body.readonly select {
-  pointer-events: none; user-select: text;
-}
-/* Read-only badge in topbar */
-.readonly-badge {
-  display: none;
-  font-size: 11px; font-weight: 600; color: var(--text4);
-  background: var(--surface3); border-radius: 20px;
-  padding: 2px 10px; letter-spacing: .02em;
-}
-body.readonly .readonly-badge { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -600,7 +590,9 @@ body.readonly .readonly-badge { display: inline-flex; align-items: center; }
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
-    <span class="readonly-badge">👁 Перегляд</span>
+    <!-- Google auth area -->
+    <div id="authInfo" style="display:none;align-items:center;gap:4px;flex-shrink:0"></div>
+    <div id="authBtn" style="flex-shrink:0"></div>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
@@ -839,41 +831,113 @@ body.readonly .readonly-badge { display: inline-flex; align-items: center; }
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyspZOC1EnAbCwrcT_U1b3vpebBOBKkAtSb0O39CCS67YqRa6dIKbfDRlYP4yTfdzNR/exec";
 
-// ── ACCESS CONTROL ──
-// SHA-256 hash of the edit token. To change the password:
-//   1. Pick a new secret, e.g. "mySecret42"
-//   2. Run in browser console: crypto.subtle.digest('SHA-256', new TextEncoder().encode('mySecret42'))
-//      .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-//   3. Paste the resulting hex string here.
-const EDIT_TOKEN_HASH = 'bb1be7b38f77eb3a8da7a6af2acac3ea73f9ca8c3f8b76e08c85b6cade6e7af4'; // hash of "dashboard2024"
+// ── ACCESS CONTROL via Google Sign-In ──
+// Add email addresses of people who can edit the dashboard.
+// Everyone else sees read-only view. Comparison is case-insensitive.
+const EDITORS = [
+  'aaolshevskiy@gmail.com',
+  // add more emails here if needed
+];
 
-async function _sha256hex(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
-}
+// Google OAuth client ID (from Google Cloud Console → APIs & Services → Credentials)
+// This is a PUBLIC identifier — safe to keep in HTML.
+const GOOGLE_CLIENT_ID = ''; // ← paste your Client ID here (see instructions below)
 
-// Returns true if current user has edit rights
-function canEdit(){ return sessionStorage.getItem('crm_edit_auth')==='1'; }
+/*
+  HOW TO GET YOUR CLIENT ID (one-time setup, ~5 minutes):
+  1. Go to https://console.cloud.google.com/
+  2. Create a project (or use an existing one)
+  3. APIs & Services → OAuth consent screen → External → Fill app name → Save
+  4. APIs & Services → Credentials → "+ Create Credentials" → OAuth client ID
+  5. Application type: Web application
+  6. Authorised JavaScript origins: add the URL where your HTML is hosted
+     (e.g. https://yoursite.com  or  http://localhost for local testing)
+  7. Copy the Client ID (ends with .apps.googleusercontent.com) and paste above
+*/
 
-// Check URL param on load — ?edit=TOKEN grants edit session
-async function _checkEditToken(){
-  const params=new URLSearchParams(location.search);
-  const tok=params.get('edit');
-  if(tok){
-    const h=await _sha256hex(tok);
-    if(h===EDIT_TOKEN_HASH){
-      sessionStorage.setItem('crm_edit_auth','1');
-    }
-    // Clean token from URL so it's not shared accidentally
-    const clean=location.pathname+(location.hash||'');
-    history.replaceState(null,'',clean);
-  }
+let _googleUser = null; // { email, name, picture } after sign-in
+
+function canEdit(){
+  if(!_googleUser) return false;
+  return EDITORS.some(e => e.toLowerCase() === _googleUser.email.toLowerCase());
 }
 
 // Block write operations in read-only mode
 function _requireEdit(){
   if(!canEdit()){ console.warn('[readonly] write blocked'); return false; }
   return true;
+}
+
+// Called by Google GSI after token decode
+function _onGoogleSignIn(credential){
+  // Decode JWT payload (no verification needed — Google already verified)
+  try{
+    const payload = JSON.parse(atob(credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    _googleUser = { email: payload.email, name: payload.name, picture: payload.picture };
+    sessionStorage.setItem('crm_google_user', JSON.stringify(_googleUser));
+  } catch(e){ console.error('GSI decode error', e); return; }
+  _applyAccessState(true); // trigger full re-render after login
+}
+
+function _applyAccessState(triggerRender){
+  const edit = canEdit();
+  document.body.classList.toggle('readonly', !edit);
+  // Update sign-in button area
+  const btn = document.getElementById('authBtn');
+  const info = document.getElementById('authInfo');
+  if(btn){
+    if(_googleUser || !GOOGLE_CLIENT_ID){
+      btn.style.display = 'none';
+    } else {
+      // Show sign-in button if GSI available
+      btn.style.display = '';
+      if(GOOGLE_CLIENT_ID && typeof google !== 'undefined'){
+        btn.innerHTML = '';
+        google.accounts.id.renderButton(btn, {type:'standard',shape:'pill',theme:'outline',size:'small',text:'signin_with',logo_alignment:'left'});
+      } else {
+        btn.innerHTML = '<span style="font-size:11px;color:var(--text4)">Увійдіть через Google для редагування</span>';
+      }
+    }
+  }
+  if(info && _googleUser){
+    info.innerHTML =
+      (_googleUser.picture ? '<img src="'+_googleUser.picture+'" style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:5px">' : '') +
+      '<span style="font-size:12px;color:var(--text3)">'+_googleUser.name+'</span>' +
+      (edit ? '' : '<span style="font-size:11px;color:var(--text4);margin-left:6px">· тільки перегляд</span>');
+    info.style.display = 'flex';
+  }
+  // Re-render only if called after page is fully initialised
+  if(triggerRender && typeof render === 'function'){
+    render(); renderNotes(); renderOverdueZone();
+  }
+}
+
+// Restore previous session from sessionStorage (avoids re-login on refresh)
+function _restoreGoogleSession(){
+  try{
+    const saved = sessionStorage.getItem('crm_google_user');
+    if(saved){ _googleUser = JSON.parse(saved); }
+  } catch(e){}
+  _applyAccessState();
+}
+
+// Kick off Google GSI auto-select if Client ID is set
+function _initGoogleAuth(){
+  if(!GOOGLE_CLIENT_ID){ _applyAccessState(true); return; } // no GSI → re-render with readonly state
+  if(typeof google === 'undefined'){ setTimeout(_initGoogleAuth, 200); return; }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: r => _onGoogleSignIn(r.credential),
+    auto_select: true,
+    cancel_on_tap_outside: false,
+  });
+  // Show One-Tap only if not already signed in
+  if(!_googleUser){
+    google.accounts.id.prompt();
+  } else {
+    // Already restored from sessionStorage — re-render now that GSI is ready
+    _applyAccessState(true);
+  }
 }
 
 // ── STATE ──
@@ -2424,13 +2488,9 @@ function stopMic(){
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
 
-// ── ACCESS: check ?edit=TOKEN param and apply read-only mode ──
-(async function initAccess(){
-  await _checkEditToken(); // may set sessionStorage 'crm_edit_auth'
-  if(!canEdit()){
-    document.body.classList.add('readonly');
-  }
-})();
+// ── ACCESS: restore Google session from cache, then kick off GSI ──
+_restoreGoogleSession(); // instant — reads sessionStorage
+window.addEventListener('load', _initGoogleAuth); // GSI after page load
 
 clLoad();       // локальний кеш — миттєво
 loadHistory();
