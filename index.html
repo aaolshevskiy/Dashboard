@@ -171,8 +171,8 @@ body{
 .obj-card-addr:hover{color:var(--blue);}
 .obj-card-meta{font-size:12px;color:var(--text3);line-height:1.4;}
 .obj-card-dates{
-  font-size:11px;color:var(--text3);line-height:1.4;margin-top:3px;
-  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  font-size:11px;color:var(--text3);line-height:1.4;
+  display:inline-flex;align-items:center;gap:4px;
 }
 .obj-badge{
   display:inline-flex;align-items:center;
@@ -1650,14 +1650,13 @@ function buildCard(o,i){
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
-  // Progress indicators (flags) — always render container so updateProgressFlags can find it
+  // Flags + Dates — один рядок: прапорці зліва, дати справа
   {
     const pv=o._progressValue;
     const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
     const closed=o._closedFlags||{};
     const flags=[];
     if(!isNaN(num)){
-      // канбан — один прапорець, активний поріг визначає його стан
       const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
       if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
       if(o.paymentPct){
@@ -1665,9 +1664,13 @@ function buildCard(o,i){
         if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
       }
     }
+    const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
+    const hasDates=!!(ds||de);
     const row=document.createElement('div');
     row.id='flags-wrap-'+o.id;
-    row.style.cssText='display:'+(flags.length?'flex':'none')+';flex-wrap:wrap;gap:5px;margin-top:4px';
+    // завжди flex щоб дати були справа навіть без прапорців
+    row.style.cssText='display:'+(flags.length||hasDates?'flex':'none')
+      +';align-items:center;flex-wrap:wrap;gap:5px;margin-top:4px';
     flags.forEach(f=>{
       const isClosed=!!closed[f.key];
       const tag=document.createElement('span');
@@ -1681,16 +1684,14 @@ function buildCard(o,i){
       tag.addEventListener('click',()=>toggleFlag(o,f.key,f.label));
       row.appendChild(tag);
     });
+    if(hasDates){
+      const dates=document.createElement('span');
+      dates.className='obj-card-dates';
+      dates.style.cssText='margin-left:auto;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;margin-top:0';
+      dates.innerHTML=(ds?'<span style="color:#888;font-size:10px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
+      row.appendChild(dates);
+    }
     card.appendChild(row);
-  }
-
-  // Dates — always shown
-  const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
-  if(ds||de){
-    const dates=document.createElement('div');
-    dates.className='obj-card-dates';
-    dates.innerHTML=(ds?'<span style="color:#888;font-size:11px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
-    card.appendChild(dates);
   }
 
   // Notes — collapsible toggle (like checklist)
