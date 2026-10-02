@@ -582,6 +582,9 @@ body.readonly .mobile-add-zone { display: none !important; }
 /* Hide notes (per-object and global) for read-only viewers */
 body.readonly .obj-notes-list { display: none !important; }
 body.readonly #overdueZone { display: none !important; }
+/* Hide checklist toggle and body for read-only viewers */
+body.readonly .card-checklist-toggle { display: none !important; }
+body.readonly .card-checklist-body { display: none !important; }
 </style>
 </head>
 <body>
@@ -596,6 +599,7 @@ body.readonly #overdueZone { display: none !important; }
     <!-- Google auth area -->
     <div id="authInfo" style="display:none;align-items:center;gap:4px;flex-shrink:0"></div>
     <div id="authBtn" style="flex-shrink:0"></div>
+    <button id="pinBtn" onclick="_checkPin()" style="display:none;font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--text3)">🔑 PIN</button>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
@@ -842,9 +846,12 @@ const EDITORS = [
   // add more emails here if needed
 ];
 
-// Google OAuth client ID (from Google Cloud Console → APIs & Services → Credentials)
-// This is a PUBLIC identifier — safe to keep in HTML.
+// Google OAuth client ID
 const GOOGLE_CLIENT_ID = '187069473894-h0ai5dqi6k6aqqs8erj2clbilqmgtllg.apps.googleusercontent.com';
+
+// Fallback PIN for editing when Google Sign-In is unavailable (e.g. local file://)
+// Change this to any secret code you want. Set to '' to disable PIN fallback.
+const EDIT_PIN = '2024';
 
 /*
   HOW TO GET YOUR CLIENT ID (one-time setup, ~5 minutes):
@@ -859,12 +866,32 @@ const GOOGLE_CLIENT_ID = '187069473894-h0ai5dqi6k6aqqs8erj2clbilqmgtllg.apps.goo
 */
 
 let _googleUser = null; // { email, name, picture } after sign-in
+let _pinUnlocked = false; // true if user entered correct PIN
 
 function canEdit(){
-  // If no Client ID configured — open editing for everyone (legacy mode)
-  if(!GOOGLE_CLIENT_ID) return true;
+  if(!GOOGLE_CLIENT_ID) return true; // no auth configured — everyone edits
+  if(_pinUnlocked) return true;      // PIN entered correctly
   if(!_googleUser) return false;
   return EDITORS.some(e => e.toLowerCase() === _googleUser.email.toLowerCase());
+}
+
+function _checkPin(){
+  if(!EDIT_PIN) return;
+  const entered = prompt('Введіть PIN для редагування:');
+  if(entered === null) return; // cancelled
+  if(entered === EDIT_PIN){
+    _pinUnlocked = true;
+    try{ sessionStorage.setItem('crm_pin_ok','1'); }catch(e){}
+    _applyAccessState(true);
+  } else {
+    alert('Невірний PIN');
+  }
+}
+
+function _restorePin(){
+  try{
+    if(sessionStorage.getItem('crm_pin_ok')==='1'){ _pinUnlocked=true; }
+  }catch(e){}
 }
 
 // Block write operations in read-only mode
@@ -887,35 +914,73 @@ function _onGoogleSignIn(credential){
 function _applyAccessState(triggerRender){
   const edit = canEdit();
   document.body.classList.toggle('readonly', !edit);
-  // Update sign-in button area
-  const btn = document.getElementById('authBtn');
-  const info = document.getElementById('authInfo');
+
+  const btn    = document.getElementById('authBtn');
+  const info   = document.getElementById('authInfo');
+  const pinBtn = document.getElementById('pinBtn');
+
   if(btn){
-    if(!GOOGLE_CLIENT_ID || _googleUser){
-      // No GSI configured, or already signed in — hide the sign-in button
+    if(!GOOGLE_CLIENT_ID){
+      btn.style.display = 'none';
+    } else if(_googleUser || _pinUnlocked){
       btn.style.display = 'none';
     } else {
-      // Show sign-in button (GSI is configured but user hasn't signed in yet)
       btn.style.display = '';
       if(typeof google !== 'undefined'){
         btn.innerHTML = '';
-        google.accounts.id.renderButton(btn, {type:'standard',shape:'pill',theme:'outline',size:'small',text:'signin_with',logo_alignment:'left'});
+        try{
+          google.accounts.id.renderButton(btn, {
+            type:'standard', shape:'pill', theme:'outline',
+            size:'small', text:'signin_with', logo_alignment:'left'
+          });
+        }catch(e){ btn.style.display='none'; }
       } else {
-        btn.innerHTML = '<span style="font-size:11px;color:var(--text4)">Увійдіть через Google для редагування</span>';
+        btn.style.display = 'none';
       }
     }
   }
-  if(info && _googleUser){
-    info.innerHTML =
-      (_googleUser.picture ? '<img src="'+_googleUser.picture+'" style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:5px">' : '') +
-      '<span style="font-size:12px;color:var(--text3)">'+_googleUser.name+'</span>' +
-      (edit ? '' : '<span style="font-size:11px;color:var(--text4);margin-left:6px">· тільки перегляд</span>');
-    info.style.display = 'flex';
+
+  // PIN button: show when GSI not available and EDIT_PIN is set and not yet unlocked
+  if(pinBtn){
+    const gsiReady = typeof google !== 'undefined';
+    const needPin  = GOOGLE_CLIENT_ID && EDIT_PIN && !_googleUser && !_pinUnlocked;
+    pinBtn.style.display = (needPin && !gsiReady) ? '' : 'none';
   }
-  // Re-render only if called after page is fully initialised
+
+  if(info){
+    if(_googleUser){
+      info.innerHTML =
+        (_googleUser.picture ? '<img src="'+_googleUser.picture+'" style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:5px">' : '') +
+        '<span style="font-size:12px;color:var(--text3)">'+_googleUser.name+'</span>' +
+        (edit ? '' : '<span style="font-size:11px;color:var(--text4);margin-left:6px">· перегляд</span>');
+      info.style.display = 'flex';
+    } else if(_pinUnlocked){
+      info.innerHTML = '<span style="font-size:12px;color:var(--text3)">🔑 редагування</span>';
+      info.style.display = 'flex';
+    } else {
+      info.style.display = 'none';
+    }
+  }
+
   if(triggerRender && typeof render === 'function'){
     render(); renderNotes(); renderOverdueZone();
   }
+}
+
+// Fallback: open Google sign-in popup manually
+function _googleSignInPopup(){
+  if(typeof google === 'undefined') return;
+  google.accounts.id.prompt(notification => {
+    if(notification.isNotDisplayed() || notification.isSkippedMoment()){
+      // One-Tap not available — use redirect flow
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'openid email profile',
+        callback: () => {}
+      });
+      client.requestAccessToken();
+    }
+  });
 }
 
 // Restore previous session from sessionStorage (avoids re-login on refresh)
@@ -928,9 +993,16 @@ function _restoreGoogleSession(){
 }
 
 // Kick off Google GSI auto-select if Client ID is set
+let _gsiRetries = 0;
 function _initGoogleAuth(){
-  if(!GOOGLE_CLIENT_ID){ return; } // no GSI configured — canEdit() returns true for everyone
-  if(typeof google === 'undefined'){ setTimeout(_initGoogleAuth, 200); return; }
+  if(!GOOGLE_CLIENT_ID){ return; }
+  if(typeof google === 'undefined'){
+    _gsiRetries++;
+    if(_gsiRetries < 20){ setTimeout(_initGoogleAuth, 300); return; }
+    // GSI failed to load (file://, blocked, offline) — show PIN button instead
+    _applyAccessState(true);
+    return;
+  }
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: r => _onGoogleSignIn(r.credential),
@@ -2495,7 +2567,8 @@ function stopMic(){
 }
 
 // ── ACCESS: restore Google session from cache, then kick off GSI ──
-_restoreGoogleSession(); // instant — reads sessionStorage
+_restorePin();            // restore PIN unlock from sessionStorage
+_restoreGoogleSession();  // restore Google login from sessionStorage
 window.addEventListener('load', _initGoogleAuth); // GSI after page load
 
 clLoad();       // локальний кеш — миттєво
