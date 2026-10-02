@@ -576,17 +576,29 @@ body{
 
 /* ── MOBILE ── */
 @media(max-width:768px){
-  body{padding:0 6px 32px;min-width:unset;}
-  .board-inner{padding:0;}
-  .topbar{padding:10px 6px 8px;}
+  body{padding:0 0 32px;min-width:unset;}
+  .board-inner{padding:0 8px;}
+  .topbar{
+    padding:8px 10px 8px;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-left:0;margin-right:0;
+  }
+  .board-title{font-size:18px!important;flex-shrink:0;}
+  .topbar-right{
+    width:100%;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:flex-start;
+  }
+  .sync-status{order:-1;width:100%;font-size:11px;}
   .objects-grid{grid-template-columns:1fr!important;gap:8px;}
   .section-label{display:block!important;}
   .obj-card{min-height:unset;}
   .notes-cols{grid-template-columns:1fr;}
   .obj-card-name{font-size:15px!important;}
   .obj-note-text{font-size:13px!important;}
-  .board-title{font-size:18px!important;}
-  .btn{font-size:12px!important;padding:0 12px!important;height:30px!important;}
+  .btn{font-size:12px!important;padding:0 11px!important;height:30px!important;}
   .form-row label{min-width:90px;}
 }
 @media(min-width:769px) and (max-width:1100px){
@@ -878,12 +890,21 @@ body.readonly .card-checklist-body { display: none !important; }
       </div>
       <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
         <label style="font-size:13px;color:var(--text3);flex-shrink:0">Новий PIN</label>
-        <input id="pinNewInput" type="text" maxlength="20"
+        <input id="pinNewInput" type="password" maxlength="20"
           placeholder="введіть новий PIN..."
+          style="font-family:inherit;font-size:14px;border:none;background:transparent;
+            outline:none;flex:1;color:var(--text);text-align:right"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('pinConfirmInput').focus();}">
+      </div>
+      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
+        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Повторіть PIN</label>
+        <input id="pinConfirmInput" type="password" maxlength="20"
+          placeholder="повторіть PIN..."
           style="font-family:inherit;font-size:14px;border:none;background:transparent;
             outline:none;flex:1;color:var(--text);text-align:right"
           onkeydown="if(event.key==='Enter')savePinSettings()">
       </div>
+      <div id="pinMismatchMsg" style="display:none;font-size:12px;color:var(--red);padding:2px 4px">PIN-коди не співпадають</div>
     </div>
     <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
       <button class="btn" onclick="closePinSettings()">Скасувати</button>
@@ -951,6 +972,10 @@ function openPinSettings(){
   if(disp) disp.textContent = _getPin();
   const inp = document.getElementById('pinNewInput');
   if(inp){ inp.value=''; }
+  const conf = document.getElementById('pinConfirmInput');
+  if(conf){ conf.value=''; }
+  const msg = document.getElementById('pinMismatchMsg');
+  if(msg){ msg.style.display='none'; }
   const m = document.getElementById('pinSettingsModal');
   if(m){ m.style.display='flex'; setTimeout(()=>{ const i=document.getElementById('pinNewInput'); if(i)i.focus(); },100); }
 }
@@ -962,13 +987,23 @@ function closePinSettings(){
 
 function savePinSettings(){
   const inp = document.getElementById('pinNewInput');
+  const conf = document.getElementById('pinConfirmInput');
+  const msg = document.getElementById('pinMismatchMsg');
   const newPin = inp ? inp.value.trim() : '';
-  if(!newPin){ alert('PIN не може бути порожнім'); return; }
+  const confPin = conf ? conf.value.trim() : '';
+  if(!newPin){ alert('PIN не може бути порожнім'); inp&&inp.focus(); return; }
+  if(newPin !== confPin){
+    if(msg){ msg.style.display='block'; }
+    conf&&conf.focus();
+    return;
+  }
+  if(msg){ msg.style.display='none'; }
   try{ localStorage.setItem('crm_edit_pin', newPin); }catch(e){ alert('Не вдалося зберегти PIN'); return; }
   // Update display
   const disp = document.getElementById('pinCurrentDisplay');
   if(disp) disp.textContent = newPin;
   if(inp) inp.value = '';
+  if(conf) conf.value = '';
   alert('PIN змінено успішно ✓');
   closePinSettings();
 }
@@ -1040,7 +1075,7 @@ function _applyAccessState(triggerRender){
         (edit ? '' : '<span style="font-size:11px;color:var(--text4);margin-left:6px">· перегляд</span>');
       info.style.display = 'flex';
     } else if(_pinUnlocked){
-      info.innerHTML = '<span style="font-size:12px;color:var(--text3)">🔑 редагування</span>';
+      info.innerHTML = '';
       info.style.display = 'flex';
     } else {
       info.style.display = 'none';
@@ -2641,6 +2676,7 @@ let _recognition=null;
 let _micActive=false;
 let _micInputId=null;
 let _micBtnId=null;
+let _micSuppressAutoSave=false; // true when user interacted with select — don't auto-submit
 
 function toggleMic(inputId, btnId){
   const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -2653,6 +2689,7 @@ function toggleMic(inputId, btnId){
   }
   _micInputId=inputId;
   _micBtnId=btnId;
+  _micSuppressAutoSave=false;
   _recognition=new SpeechRecognition();
   _recognition.lang='uk-UA';
   _recognition.continuous=false;
@@ -2660,7 +2697,16 @@ function toggleMic(inputId, btnId){
   const btn=document.getElementById(btnId);
   const inp=document.getElementById(inputId);
   _micActive=true;
-  if(btn){btn.textContent='🔴';btn.style.color='#ff3b30';}
+  if(btn){btn.textContent='\uD83D\uDD34';btn.style.color='#ff3b30';}
+
+  // iOS: if user taps the object <select> while mic is active, suppress auto-submit
+  // so the note isn't sent before they finish selecting the object
+  const selEl=document.getElementById('mobileObjSelect')||document.getElementById('noteObjSelect');
+  const _onSelectFocus=()=>{ _micSuppressAutoSave=true; };
+  if(selEl) selEl.addEventListener('focus',_onSelectFocus,{once:true});
+  if(selEl) selEl.addEventListener('mousedown',_onSelectFocus,{once:true});
+  if(selEl) selEl.addEventListener('touchstart',_onSelectFocus,{once:true,passive:true});
+
   _recognition.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
@@ -2671,8 +2717,9 @@ function toggleMic(inputId, btnId){
   };
   _recognition.onend=()=>{
     _micActive=false;
-    if(btn){btn.textContent='🎤';btn.style.color='';}
-    // Auto-save if text present
+    if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
+    if(_micSuppressAutoSave){ _micSuppressAutoSave=false; return; }
+    // Auto-save only if text present and user didn't interact with select
     const inp=document.getElementById(_micInputId);
     if(inp&&inp.value.trim()){
       if(_micInputId==='noteAddInput') addGlobalNote();
@@ -2681,7 +2728,8 @@ function toggleMic(inputId, btnId){
   };
   _recognition.onerror=e=>{
     _micActive=false;
-    if(btn){btn.textContent='🎤';btn.style.color='';}
+    if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
+    _micSuppressAutoSave=false;
     if(e.error!=='no-speech') console.error('Speech error:',e.error);
   };
   _recognition.start();
