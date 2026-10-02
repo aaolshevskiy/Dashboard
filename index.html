@@ -657,7 +657,7 @@ body.readonly .card-checklist-body { display: none !important; }
 <div class="notes-zone edit-only">
   <!-- Mobile quick add — shown only on mobile, above notes -->
   <div id="mobileAddZone" class="mobile-add-zone">
-    <input id="mobileNoteInput" placeholder="нова нотатка..."
+    <input id="mobileNoteInput" placeholder="нова нотатка..." autocomplete="off"
       onkeydown="if(event.key===’Enter’)addMobileNote()"
       style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid var(--border);
         background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--text)">
@@ -679,7 +679,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <div id="notesRight"></div>
   </div>
   <div class="notes-add" style="margin-top:10px">
-    <input id="noteAddInput" placeholder="нова нотатка..."
+    <input id="noteAddInput" placeholder="нова нотатка..." autocomplete="off"
       onkeydown="if(event.key==='Enter')addGlobalNote()">
     <button onclick="addGlobalNote()">↵</button>
     <button id="micBtn" onclick="toggleMic('noteAddInput','micBtn')" title="Голосовий ввід"
@@ -689,7 +689,7 @@ body.readonly .card-checklist-body { display: none !important; }
   </div>
   <div class="dt-row" id="noteDtRow" style="padding-top:4px">
     <span class="dt-label">коли:</span>
-    <input type="date" id="noteDtDate">
+    <input type="date" id="noteDtDate" autocomplete="off">
     <select class="hour-sel" id="noteDtHour">
       <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
       <option value="9" selected>9:00</option><option value="10">10:00</option>
@@ -714,14 +714,16 @@ body.readonly .card-checklist-body { display: none !important; }
 <div class="overlay" id="addModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">Новий об'єкт</div>
+    <!-- Фейковий пароль — зупиняє Chrome від підстановки збережених паролів у поля форми -->
+    <input type="password" tabindex="-1" style="display:none" autocomplete="new-password">
 
     <div class="fsec">Основне</div>
     <div class="form-group">
-      <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту"></div>
-      <div class="form-row"><label>Клієнт</label><input id="f-client" placeholder="Ім'я клієнта"></div>
-      <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто"></div>
-      <div class="form-row"><label>Домофон</label><input id="f-intercom" placeholder="код домофону"></div>
-      <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту" autocomplete="off"></div>
+      <div class="form-row"><label>Клієнт</label><input id="f-client" placeholder="Ім'я клієнта" autocomplete="off"></div>
+      <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто" autocomplete="off"></div>
+      <div class="form-row"><label>Домофон</label><input id="f-intercom" placeholder="код домофону" autocomplete="off"></div>
+      <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0" autocomplete="off"></div>
       <div class="form-row"><label>Пакет</label>
         <select id="f-pack">
           <option value="">—</option>
@@ -732,29 +734,29 @@ body.readonly .card-checklist-body { display: none !important; }
 
     <div class="fsec">Терміни</div>
     <div class="form-group">
-      <div class="form-row"><label>Дата старту</label><input id="f-start" type="date"></div>
-      <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date"></div>
+      <div class="form-row"><label>Дата старту</label><input id="f-start" type="date" autocomplete="off"></div>
+      <div class="form-row"><label>Дата фінішу</label><input id="f-end" type="date" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Команда</div>
     <div class="form-group">
-      <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба"></div>
+      <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Посилання</div>
     <div class="form-group">
-      <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..."></div>
-      <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..."></div>
-      <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..."></div>
-      <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-      <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..."></div>
+      <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..." autocomplete="off"></div>
+      <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..." autocomplete="off"></div>
+      <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..." autocomplete="off"></div>
+      <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
+      <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
     <div class="form-group">
-      <div class="form-row"><label>Таблиця</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-      <div class="form-row"><label>Клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2"></div>
-      <div class="form-row"><label>Платіж (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50"></div>
+      <div class="form-row"><label>Таблиця</label><input id="f-progress-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
+      <div class="form-row"><label>Клітинка</label><input id="f-progress-cell" placeholder="Лист1!B2" autocomplete="off"></div>
+      <div class="form-row"><label>Платіж (%)</label><input id="f-payment-pct" type="number" min="0" max="100" placeholder="напр. 50" autocomplete="off"></div>
     </div>
 
     <div id="f-flags-row" style="display:none">
@@ -805,7 +807,7 @@ body.readonly .card-checklist-body { display: none !important; }
       </div>
       <div class="form-row"><label>Нагадування</label>
         <div class="note-edit-date-row">
-          <input id="nm-date" type="date">
+          <input id="nm-date" type="date" autocomplete="off">
           <select id="nm-hour">
             <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
             <option value="9" selected>9:00</option><option value="10">10:00</option>
@@ -848,7 +850,7 @@ body.readonly .card-checklist-body { display: none !important; }
     </div>
     <div id="clItemsList"></div>
     <div class="cl-add-row">
-      <input class="cl-add-input" id="clAddInput" placeholder="Новий пункт..." onkeydown="if(event.key==='Enter')clAddItem()">
+      <input class="cl-add-input" id="clAddInput" placeholder="Новий пункт..." autocomplete="off" onkeydown="if(event.key==='Enter')clAddItem()">
       <button class="cl-add-btn" onclick="clAddItem()">+ Додати</button>
     </div>
     <div class="modal-footer" style="justify-content:space-between">
