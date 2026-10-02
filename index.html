@@ -421,6 +421,29 @@ body{
   flex-shrink:0;white-space:nowrap;
 }
 
+/* ── NOTES TOGGLE IN CARD ── */
+.card-notes-toggle{
+  display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
+  background:none;border:none;cursor:pointer;
+  padding:2px 4px;border-radius:6px;font-family:inherit;
+  color:var(--text4);font-size:11px;font-weight:500;
+  letter-spacing:.01em;text-align:left;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-appearance:none;
+  transition:color .15s,background .15s;
+  margin-top:4px;
+}
+.card-notes-toggle:hover{color:var(--text2);background:var(--surface3);}
+.card-notes-toggle:active{color:var(--text2);background:var(--surface3);}
+.card-notes-arrow{
+  font-size:8px;transition:transform .18s;display:inline-block;
+}
+.card-notes-arrow.open{transform:rotate(90deg);}
+.card-notes-body{
+  display:none;padding-top:2px;
+}
+.card-notes-body.open{display:block;}
+
 /* ── CHECKLIST IN CARD ── */
 .card-checklist-toggle{
   display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;
@@ -580,6 +603,8 @@ body.readonly .obj-add-note { display: none !important; }
 body.readonly .notes-add { display: none !important; }
 body.readonly .mobile-add-zone { display: none !important; }
 /* Hide notes (per-object and global) for read-only viewers */
+body.readonly .card-notes-toggle { display: none !important; }
+body.readonly .card-notes-body { display: none !important; }
 body.readonly .obj-notes-list { display: none !important; }
 body.readonly #overdueZone { display: none !important; }
 /* Hide checklist toggle and body for read-only viewers */
@@ -1789,8 +1814,39 @@ function buildCard(o,i){
     card.appendChild(dates);
   }
 
-  // Notes (always expanded)
+  // Notes — collapsible toggle (like checklist)
   if(hasNotes){
+    const notesKey='notes_open_'+o.id;
+    let notesOpen=false;
+    try{ notesOpen=sessionStorage.getItem(notesKey)==='1'; }catch{}
+
+    const overdueCount=o.notes.filter(n=>isNoteActive(n)).length;
+    const normalCount=o.notes.filter(n=>!isNoteActive(n)).length;
+
+    const notesToggle=document.createElement('button');
+    notesToggle.type='button';
+    notesToggle.className='card-notes-toggle';
+    ['mousedown','touchstart'].forEach(ev=>
+      notesToggle.addEventListener(ev,e=>e.stopPropagation(),{passive:true})
+    );
+
+    const notesArrow=document.createElement('span');
+    notesArrow.className='card-notes-arrow'+(notesOpen?' open':'');
+    notesArrow.textContent='\u25B6';
+
+    const notesSummary=document.createElement('span');
+    notesSummary.className='card-checklist-progress';
+    notesSummary.style.fontVariantNumeric='tabular-nums';
+    const redPart=overdueCount>0?'<span style="color:var(--red);font-weight:600">'+overdueCount+'</span>':'<span style="color:var(--red);font-weight:600">0</span>';
+    const blackPart='<span style="color:var(--text2);font-weight:500">'+normalCount+'</span>';
+    notesSummary.innerHTML=redPart+'<span style="color:var(--text4)">/</span>'+blackPart;
+
+    notesToggle.appendChild(notesArrow);
+    notesToggle.appendChild(notesSummary);
+
+    const notesBody=document.createElement('div');
+    notesBody.className='card-notes-body'+(notesOpen?' open':'');
+
     const nl=document.createElement('div');nl.className='obj-notes-list';
     // Map original indices before sort
     const withIdx=o.notes.map((n,origNi)=>({n,origNi}));
@@ -1810,12 +1866,23 @@ function buildCard(o,i){
         t.textContent=fmtDT(n.time);
         row.appendChild(t);
       }
-      const del=document.createElement('button');del.className='obj-note-del';del.textContent='✕';
+      const del=document.createElement('button');del.className='obj-note-del';del.textContent='\u2715';
       del.onclick=()=>deleteObjNote(o.id,origNi);
       row.appendChild(del);
       nl.appendChild(row);
     });
-    card.appendChild(nl);
+    notesBody.appendChild(nl);
+
+    notesToggle.onclick=e=>{
+      e.stopPropagation();
+      notesOpen=!notesOpen;
+      notesBody.className='card-notes-body'+(notesOpen?' open':'');
+      notesArrow.className='card-notes-arrow'+(notesOpen?' open':'');
+      try{sessionStorage.setItem(notesKey,notesOpen?'1':'0');}catch{}
+    };
+
+    card.appendChild(notesToggle);
+    card.appendChild(notesBody);
   }
 
   // Add note input
