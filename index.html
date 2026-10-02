@@ -602,6 +602,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <button id="pinBtn" onclick="_checkPin()" style="display:none;font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--text3)">🔑 PIN</button>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
+    <button class="btn edit-only" onclick="openPinSettings()" title="Змінити PIN" style="padding:0 10px">⚙️</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
@@ -835,6 +836,37 @@ body.readonly .card-checklist-body { display: none !important; }
   </div>
 </div>
 
+<!-- PIN SETTINGS MODAL -->
+<div class="overlay" id="pinSettingsModal">
+  <div class="modal" style="width:360px">
+    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🔑 PIN для редагування</span>
+      <button class="btn-cancel" style="padding:2px 8px" onclick="closePinSettings()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.5">
+      PIN використовується як запасний варіант входу коли Google Sign-In недоступний (наприклад, при відкритті локального файлу).
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
+        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Поточний PIN</label>
+        <span id="pinCurrentDisplay" style="font-size:14px;font-weight:600;color:var(--text);letter-spacing:.1em"></span>
+      </div>
+      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
+        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Новий PIN</label>
+        <input id="pinNewInput" type="text" maxlength="20"
+          placeholder="введіть новий PIN..."
+          style="font-family:inherit;font-size:14px;border:none;background:transparent;
+            outline:none;flex:1;color:var(--text);text-align:right"
+          onkeydown="if(event.key==='Enter')savePinSettings()">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="closePinSettings()">Скасувати</button>
+      <button class="btn btn-primary" onclick="savePinSettings()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyspZOC1EnAbCwrcT_U1b3vpebBOBKkAtSb0O39CCS67YqRa6dIKbfDRlYP4yTfdzNR/exec";
 
@@ -849,9 +881,9 @@ const EDITORS = [
 // Google OAuth client ID
 const GOOGLE_CLIENT_ID = '187069473894-h0ai5dqi6k6aqqs8erj2clbilqmgtllg.apps.googleusercontent.com';
 
-// Fallback PIN for editing when Google Sign-In is unavailable (e.g. local file://)
-// Change this to any secret code you want. Set to '' to disable PIN fallback.
-const EDIT_PIN = '2024';
+// Fallback PIN — default value, overridden by localStorage 'crm_edit_pin' if set
+const EDIT_PIN_DEFAULT = '2024';
+function _getPin(){ try{ return localStorage.getItem('crm_edit_pin') || EDIT_PIN_DEFAULT; }catch(e){ return EDIT_PIN_DEFAULT; } }
 
 /*
   HOW TO GET YOUR CLIENT ID (one-time setup, ~5 minutes):
@@ -876,16 +908,44 @@ function canEdit(){
 }
 
 function _checkPin(){
-  if(!EDIT_PIN) return;
+  const pin = _getPin();
+  if(!pin) return;
   const entered = prompt('Введіть PIN для редагування:');
-  if(entered === null) return; // cancelled
-  if(entered === EDIT_PIN){
+  if(entered === null) return;
+  if(entered === pin){
     _pinUnlocked = true;
     try{ sessionStorage.setItem('crm_pin_ok','1'); }catch(e){}
     _applyAccessState(true);
   } else {
     alert('Невірний PIN');
   }
+}
+
+function openPinSettings(){
+  const disp = document.getElementById('pinCurrentDisplay');
+  if(disp) disp.textContent = _getPin();
+  const inp = document.getElementById('pinNewInput');
+  if(inp){ inp.value=''; }
+  const m = document.getElementById('pinSettingsModal');
+  if(m){ m.style.display='flex'; setTimeout(()=>{ const i=document.getElementById('pinNewInput'); if(i)i.focus(); },100); }
+}
+
+function closePinSettings(){
+  const m = document.getElementById('pinSettingsModal');
+  if(m) m.style.display='none';
+}
+
+function savePinSettings(){
+  const inp = document.getElementById('pinNewInput');
+  const newPin = inp ? inp.value.trim() : '';
+  if(!newPin){ alert('PIN не може бути порожнім'); return; }
+  try{ localStorage.setItem('crm_edit_pin', newPin); }catch(e){ alert('Не вдалося зберегти PIN'); return; }
+  // Update display
+  const disp = document.getElementById('pinCurrentDisplay');
+  if(disp) disp.textContent = newPin;
+  if(inp) inp.value = '';
+  alert('PIN змінено успішно ✓');
+  closePinSettings();
 }
 
 function _restorePin(){
@@ -943,7 +1003,7 @@ function _applyAccessState(triggerRender){
   // PIN button: show when GSI not available and EDIT_PIN is set and not yet unlocked
   if(pinBtn){
     const gsiReady = typeof google !== 'undefined';
-    const needPin  = GOOGLE_CLIENT_ID && EDIT_PIN && !_googleUser && !_pinUnlocked;
+    const needPin  = GOOGLE_CLIENT_ID && _getPin() && !_googleUser && !_pinUnlocked;
     pinBtn.style.display = (needPin && !gsiReady) ? '' : 'none';
   }
 
@@ -2597,7 +2657,7 @@ function userIsTyping(){
 
 // Helper: is any modal currently open?
 function anyModalOpen(){
-  const modals=['editModal','addModal','historyModal','checklistModal','calModal'];
+  const modals=['editModal','addModal','historyModal','checklistModal','calModal','pinSettingsModal'];
   return modals.some(id=>{
     const el=document.getElementById(id);
     return el&&(el.style.display==='flex'||el.classList.contains('open'));
