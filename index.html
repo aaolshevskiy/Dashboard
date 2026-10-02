@@ -858,6 +858,8 @@ const GOOGLE_CLIENT_ID = ''; // ← paste your Client ID here (see instructions 
 let _googleUser = null; // { email, name, picture } after sign-in
 
 function canEdit(){
+  // If no Client ID configured — open editing for everyone (legacy mode)
+  if(!GOOGLE_CLIENT_ID) return true;
   if(!_googleUser) return false;
   return EDITORS.some(e => e.toLowerCase() === _googleUser.email.toLowerCase());
 }
@@ -886,12 +888,13 @@ function _applyAccessState(triggerRender){
   const btn = document.getElementById('authBtn');
   const info = document.getElementById('authInfo');
   if(btn){
-    if(_googleUser || !GOOGLE_CLIENT_ID){
+    if(!GOOGLE_CLIENT_ID || _googleUser){
+      // No GSI configured, or already signed in — hide the sign-in button
       btn.style.display = 'none';
     } else {
-      // Show sign-in button if GSI available
+      // Show sign-in button (GSI is configured but user hasn't signed in yet)
       btn.style.display = '';
-      if(GOOGLE_CLIENT_ID && typeof google !== 'undefined'){
+      if(typeof google !== 'undefined'){
         btn.innerHTML = '';
         google.accounts.id.renderButton(btn, {type:'standard',shape:'pill',theme:'outline',size:'small',text:'signin_with',logo_alignment:'left'});
       } else {
@@ -923,7 +926,7 @@ function _restoreGoogleSession(){
 
 // Kick off Google GSI auto-select if Client ID is set
 function _initGoogleAuth(){
-  if(!GOOGLE_CLIENT_ID){ _applyAccessState(true); return; } // no GSI → re-render with readonly state
+  if(!GOOGLE_CLIENT_ID){ return; } // no GSI configured — canEdit() returns true for everyone
   if(typeof google === 'undefined'){ setTimeout(_initGoogleAuth, 200); return; }
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
