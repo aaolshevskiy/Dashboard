@@ -579,6 +579,9 @@ body.readonly .note-del { display: none !important; }
 body.readonly .obj-add-note { display: none !important; }
 body.readonly .notes-add { display: none !important; }
 body.readonly .mobile-add-zone { display: none !important; }
+/* Hide notes (per-object and global) for read-only viewers */
+body.readonly .obj-notes-list { display: none !important; }
+body.readonly #overdueZone { display: none !important; }
 </style>
 </head>
 <body>
@@ -600,7 +603,7 @@ body.readonly .mobile-add-zone { display: none !important; }
 </div>
 
 <!-- CALENDAR STRIP -->
-<div class="cal-strip" id="calStrip">
+<div class="cal-strip edit-only" id="calStrip">
   <span class="cal-strip-date" id="calStripDate"></span>
   <div class="cal-strip-events" id="calStripEvents">
     <span class="cal-ev" style="color:var(--text4)">завантаження...</span>
@@ -614,7 +617,7 @@ body.readonly .mobile-add-zone { display: none !important; }
 <div class="objects-grid" id="objectsGrid"></div>
 
 <!-- NOTES ZONE -->
-<div class="notes-zone">
+<div class="notes-zone edit-only">
   <!-- Mobile quick add — shown only on mobile, above notes -->
   <div id="mobileAddZone" class="mobile-add-zone">
     <input id="mobileNoteInput" placeholder="нова нотатка..."
