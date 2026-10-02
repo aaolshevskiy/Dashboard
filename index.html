@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-title" content="Дашборд">
 <title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 /* ── TOKENS ── */
 :root{
@@ -592,8 +591,6 @@ body{
     justify-content:flex-start;
   }
   .sync-status{order:-1;width:100%;font-size:11px;}
-  #authInfo{display:none!important;}
-  #authBtn{display:none!important;}
   .objects-grid{grid-template-columns:1fr!important;gap:8px;}
   .section-label{display:block!important;}
   .obj-card{min-height:unset;}
@@ -635,13 +632,10 @@ body.readonly .card-checklist-body { display: none !important; }
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
-    <!-- Google auth area -->
-    <div id="authInfo" style="display:none;align-items:center;gap:4px;flex-shrink:0"></div>
-    <div id="authBtn" style="flex-shrink:0"></div>
-    <button id="pinBtn" onclick="_checkPin()" style="display:none;font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--text3)">🔑 PIN</button>
+    <button id="loginBtn" onclick="_checkPin()" style="font-family:inherit;font-size:12px;padding:5px 12px;border:none;border-radius:20px;background:var(--blue);cursor:pointer;color:#fff;font-weight:500">Увійти</button>
+    <button id="logoutBtn" onclick="_logout()" style="display:none;font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--text3)">Вийти</button>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
-    <button class="btn edit-only" onclick="openPinSettings()" title="Змінити PIN" style="padding:0 10px">⚙️</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
@@ -725,7 +719,9 @@ body.readonly .card-checklist-body { display: none !important; }
     <div class="fsec">Основне</div>
     <div class="form-group">
       <div class="form-row"><label>Назва *</label><input id="f-name" placeholder="Назва проєкту"></div>
+      <div class="form-row"><label>Клієнт</label><input id="f-client" placeholder="Ім'я клієнта"></div>
       <div class="form-row"><label>Адреса</label><input id="f-addr" placeholder="вул. Прикладна 1, Місто"></div>
+      <div class="form-row"><label>Домофон</label><input id="f-intercom" placeholder="код домофону"></div>
       <div class="form-row"><label>Площа м²</label><input id="f-area" type="number" placeholder="0"></div>
       <div class="form-row"><label>Пакет</label>
         <select id="f-pack">
@@ -875,89 +871,23 @@ body.readonly .card-checklist-body { display: none !important; }
   </div>
 </div>
 
-<!-- PIN SETTINGS MODAL -->
-<div class="overlay" id="pinSettingsModal">
-  <div class="modal" style="width:360px">
-    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>🔑 PIN для редагування</span>
-      <button class="btn-cancel" style="padding:2px 8px" onclick="closePinSettings()">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.5">
-      PIN використовується як запасний варіант входу коли Google Sign-In недоступний (наприклад, при відкритті локального файлу).
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
-        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Поточний PIN</label>
-        <span id="pinCurrentDisplay" style="font-size:14px;font-weight:600;color:var(--text);letter-spacing:.1em"></span>
-      </div>
-      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
-        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Новий PIN</label>
-        <input id="pinNewInput" type="password" maxlength="20"
-          placeholder="введіть новий PIN..."
-          style="font-family:inherit;font-size:14px;border:none;background:transparent;
-            outline:none;flex:1;color:var(--text);text-align:right"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('pinConfirmInput').focus();}">
-      </div>
-      <div class="form-row" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px">
-        <label style="font-size:13px;color:var(--text3);flex-shrink:0">Повторіть PIN</label>
-        <input id="pinConfirmInput" type="password" maxlength="20"
-          placeholder="повторіть PIN..."
-          style="font-family:inherit;font-size:14px;border:none;background:transparent;
-            outline:none;flex:1;color:var(--text);text-align:right"
-          onkeydown="if(event.key==='Enter')savePinSettings()">
-      </div>
-      <div id="pinMismatchMsg" style="display:none;font-size:12px;color:var(--red);padding:2px 4px">PIN-коди не співпадають</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
-      <button class="btn" onclick="closePinSettings()">Скасувати</button>
-      <button class="btn btn-primary" onclick="savePinSettings()">Зберегти</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyspZOC1EnAbCwrcT_U1b3vpebBOBKkAtSb0O39CCS67YqRa6dIKbfDRlYP4yTfdzNR/exec";
 
 // ── ACCESS CONTROL via Google Sign-In ──
-// Add email addresses of people who can edit the dashboard.
-// Everyone else sees read-only view. Comparison is case-insensitive.
-const EDITORS = [
-  'aaolshevskiy@gmail.com',
-  // add more emails here if needed
-];
+// PIN для редагування — зберігається в localStorage, сесія в sessionStorage
+const EDIT_PIN_DEFAULT = '0115';
+function _getPin(){ return EDIT_PIN_DEFAULT; }
 
-// Google OAuth client ID
-const GOOGLE_CLIENT_ID = '187069473894-h0ai5dqi6k6aqqs8erj2clbilqmgtllg.apps.googleusercontent.com';
-
-// Fallback PIN — default value, overridden by localStorage 'crm_edit_pin' if set
-const EDIT_PIN_DEFAULT = '2024';
-function _getPin(){ try{ return localStorage.getItem('crm_edit_pin') || EDIT_PIN_DEFAULT; }catch(e){ return EDIT_PIN_DEFAULT; } }
-
-/*
-  HOW TO GET YOUR CLIENT ID (one-time setup, ~5 minutes):
-  1. Go to https://console.cloud.google.com/
-  2. Create a project (or use an existing one)
-  3. APIs & Services → OAuth consent screen → External → Fill app name → Save
-  4. APIs & Services → Credentials → "+ Create Credentials" → OAuth client ID
-  5. Application type: Web application
-  6. Authorised JavaScript origins: add the URL where your HTML is hosted
-     (e.g. https://yoursite.com  or  http://localhost for local testing)
-  7. Copy the Client ID (ends with .apps.googleusercontent.com) and paste above
-*/
-
-let _googleUser = null; // { email, name, picture } after sign-in
-let _pinUnlocked = false; // true if user entered correct PIN
+let _pinUnlocked = false;
 
 function canEdit(){
-  if(!GOOGLE_CLIENT_ID) return true; // no auth configured — everyone edits
-  if(_pinUnlocked) return true;      // PIN entered correctly
-  if(!_googleUser) return false;
-  return EDITORS.some(e => e.toLowerCase() === _googleUser.email.toLowerCase());
+  return _pinUnlocked;
 }
 
 function _checkPin(){
   const pin = _getPin();
-  if(!pin) return;
   const entered = prompt('Введіть PIN для редагування:');
   if(entered === null) return;
   if(entered === pin){
@@ -969,177 +899,34 @@ function _checkPin(){
   }
 }
 
-function openPinSettings(){
-  const disp = document.getElementById('pinCurrentDisplay');
-  if(disp) disp.textContent = _getPin();
-  const inp = document.getElementById('pinNewInput');
-  if(inp){ inp.value=''; }
-  const conf = document.getElementById('pinConfirmInput');
-  if(conf){ conf.value=''; }
-  const msg = document.getElementById('pinMismatchMsg');
-  if(msg){ msg.style.display='none'; }
-  const m = document.getElementById('pinSettingsModal');
-  if(m){ m.style.display='flex'; setTimeout(()=>{ const i=document.getElementById('pinNewInput'); if(i)i.focus(); },100); }
-}
-
-function closePinSettings(){
-  const m = document.getElementById('pinSettingsModal');
-  if(m) m.style.display='none';
-}
-
-function savePinSettings(){
-  const inp = document.getElementById('pinNewInput');
-  const conf = document.getElementById('pinConfirmInput');
-  const msg = document.getElementById('pinMismatchMsg');
-  const newPin = inp ? inp.value.trim() : '';
-  const confPin = conf ? conf.value.trim() : '';
-  if(!newPin){ alert('PIN не може бути порожнім'); inp&&inp.focus(); return; }
-  if(newPin !== confPin){
-    if(msg){ msg.style.display='block'; }
-    conf&&conf.focus();
-    return;
-  }
-  if(msg){ msg.style.display='none'; }
-  try{ localStorage.setItem('crm_edit_pin', newPin); }catch(e){ alert('Не вдалося зберегти PIN'); return; }
-  // Update display
-  const disp = document.getElementById('pinCurrentDisplay');
-  if(disp) disp.textContent = newPin;
-  if(inp) inp.value = '';
-  if(conf) conf.value = '';
-  alert('PIN змінено успішно ✓');
-  closePinSettings();
+function _logout(){
+  _pinUnlocked = false;
+  try{ sessionStorage.removeItem('crm_pin_ok'); }catch(e){}
+  _applyAccessState(true);
 }
 
 function _restorePin(){
-  try{
-    if(sessionStorage.getItem('crm_pin_ok')==='1'){ _pinUnlocked=true; }
-  }catch(e){}
+  try{ if(sessionStorage.getItem('crm_pin_ok')==='1'){ _pinUnlocked=true; } }catch(e){}
 }
 
-// Block write operations in read-only mode
 function _requireEdit(){
   if(!canEdit()){ console.warn('[readonly] write blocked'); return false; }
   return true;
-}
-
-// Called by Google GSI after token decode
-function _onGoogleSignIn(credential){
-  // Decode JWT payload (no verification needed — Google already verified)
-  try{
-    const payload = JSON.parse(atob(credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    _googleUser = { email: payload.email, name: payload.name, picture: payload.picture };
-    sessionStorage.setItem('crm_google_user', JSON.stringify(_googleUser));
-  } catch(e){ console.error('GSI decode error', e); return; }
-  _applyAccessState(true); // trigger full re-render after login
 }
 
 function _applyAccessState(triggerRender){
   const edit = canEdit();
   document.body.classList.toggle('readonly', !edit);
 
-  const btn    = document.getElementById('authBtn');
-  const info   = document.getElementById('authInfo');
-  const pinBtn = document.getElementById('pinBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn){ logoutBtn.style.display = edit ? '' : 'none'; }
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn){ loginBtn.style.display = edit ? 'none' : ''; }
 
-  if(btn){
-    if(!GOOGLE_CLIENT_ID){
-      btn.style.display = 'none';
-    } else if(_googleUser || _pinUnlocked){
-      btn.style.display = 'none';
-    } else {
-      btn.style.display = '';
-      if(typeof google !== 'undefined'){
-        btn.innerHTML = '';
-        try{
-          google.accounts.id.renderButton(btn, {
-            type:'standard', shape:'pill', theme:'outline',
-            size:'small', text:'signin_with', logo_alignment:'left'
-          });
-        }catch(e){ btn.style.display='none'; }
-      } else {
-        btn.style.display = 'none';
-      }
-    }
-  }
-
-  // PIN button: show when GSI not available and EDIT_PIN is set and not yet unlocked
-  if(pinBtn){
-    const gsiReady = typeof google !== 'undefined';
-    const needPin  = GOOGLE_CLIENT_ID && _getPin() && !_googleUser && !_pinUnlocked;
-    pinBtn.style.display = (needPin && !gsiReady) ? '' : 'none';
-  }
-
-  if(info){
-    if(_googleUser){
-      info.innerHTML =
-        (_googleUser.picture ? '<img src="'+_googleUser.picture+'" style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:5px">' : '') +
-        '<span style="font-size:12px;color:var(--text3)">'+_googleUser.name+'</span>' +
-        (edit ? '' : '<span style="font-size:11px;color:var(--text4);margin-left:6px">· перегляд</span>');
-      info.style.display = 'flex';
-    } else if(_pinUnlocked){
-      info.innerHTML = '';
-      info.style.display = 'none';
-    } else {
-      info.style.display = 'none';
-    }
-  }
-
-  if(triggerRender && typeof render === 'function'){
-    render(); renderNotes(); renderOverdueZone();
-  }
+  if(triggerRender){ render(); renderNotes(); renderOverdueZone(); }
 }
 
-// Fallback: open Google sign-in popup manually
-function _googleSignInPopup(){
-  if(typeof google === 'undefined') return;
-  google.accounts.id.prompt(notification => {
-    if(notification.isNotDisplayed() || notification.isSkippedMoment()){
-      // One-Tap not available — use redirect flow
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'openid email profile',
-        callback: () => {}
-      });
-      client.requestAccessToken();
-    }
-  });
-}
-
-// Restore previous session from sessionStorage (avoids re-login on refresh)
-function _restoreGoogleSession(){
-  try{
-    const saved = sessionStorage.getItem('crm_google_user');
-    if(saved){ _googleUser = JSON.parse(saved); }
-  } catch(e){}
-  _applyAccessState();
-}
-
-// Kick off Google GSI auto-select if Client ID is set
-let _gsiRetries = 0;
-function _initGoogleAuth(){
-  if(!GOOGLE_CLIENT_ID){ return; }
-  if(typeof google === 'undefined'){
-    _gsiRetries++;
-    if(_gsiRetries < 20){ setTimeout(_initGoogleAuth, 300); return; }
-    // GSI failed to load (file://, blocked, offline) — show PIN button instead
-    _applyAccessState(true);
-    return;
-  }
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: r => _onGoogleSignIn(r.credential),
-    auto_select: true,
-    cancel_on_tap_outside: false,
-  });
-  // Show One-Tap only if not already signed in
-  if(!_googleUser){
-    google.accounts.id.prompt();
-  } else {
-    // Already restored from sessionStorage — re-render now that GSI is ready
-    _applyAccessState(true);
-  }
-}
-
+// ── STATE ──
 // ── STATE ──
 let objects=[], stickyNotes=[], editIdx=null, noteCtx=null;
 let actionLog=[];
@@ -1446,7 +1233,7 @@ async function apiSave(obj){
       mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }else{
-    full={id:obj.id||'',name:obj.name||'',addr:obj.addr||'',stage:obj.stage||'',
+    full={id:obj.id||'',name:obj.name||'',client:obj.client||'',addr:obj.addr||'',intercom:obj.intercom||'',stage:obj.stage||'',
       status:obj.status||'active',pack:obj.pack||'',area:obj.area||'',
       inwork:!!obj.inwork,completed:false,masters:false,closed:!!obj.closed||false,
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
@@ -1635,6 +1422,14 @@ function buildCard(o,i){
   if(o.completed) name.style.textDecoration='line-through';
   nameRow.appendChild(name);
 
+  // Client name — blue, right after object name
+  if(o.client){
+    const clientEl=document.createElement('span');
+    clientEl.style.cssText='font-size:12px;font-weight:500;color:var(--blue);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%';
+    clientEl.textContent=o.client;
+    nameRow.appendChild(clientEl);
+  }
+
   // ── Checklist toggle (top-right of name row) ──
   let clBodyElem=null;
   if(_clItems.length>0){
@@ -1762,13 +1557,25 @@ function buildCard(o,i){
     card.appendChild(linksRow);
   }
 
-  // Address
-  if(o.addr){
-    const a=document.createElement('a');
-    a.className='obj-card-addr';
-    a.href=mapsUrl(o.addr);a.target='_blank';
-    a.textContent=o.addr;
-    card.appendChild(a);
+  // Address + intercom
+  if(o.addr||o.intercom){
+    const addrRow=document.createElement('div');
+    addrRow.style.cssText='display:flex;align-items:baseline;gap:8px;flex-wrap:wrap';
+    if(o.addr){
+      const a=document.createElement('a');
+      a.className='obj-card-addr';
+      a.style.cssText='flex:1;min-width:0;display:block';
+      a.href=mapsUrl(o.addr);a.target='_blank';
+      a.textContent=o.addr;
+      addrRow.appendChild(a);
+    }
+    if(o.intercom){
+      const ic=document.createElement('span');
+      ic.style.cssText='font-size:12px;color:var(--text2);white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px';
+      ic.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.31 6.31l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'+o.intercom;
+      addrRow.appendChild(ic);
+    }
+    card.appendChild(addrRow);
   }
 
   // Meta
@@ -2309,7 +2116,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2343,7 +2150,9 @@ function openEditModal(objId){
   };
   document.getElementById('modalTitle').textContent='Редагувати об\'єкт';
   document.getElementById('f-name').value=o.name||'';
+  document.getElementById('f-client').value=o.client||'';
   document.getElementById('f-addr').value=o.addr||'';
+  document.getElementById('f-intercom').value=o.intercom||'';
   document.getElementById('f-area').value=o.area||'';
   document.getElementById('f-pack').value=o.pack||'';
   document.getElementById('f-start').value=toInputDate(o.dateStart);
@@ -2397,7 +2206,9 @@ async function saveCard(){
   const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Зберігаємо...';
   const obj={
     name,
+    client:document.getElementById('f-client')?.value.trim()||'',
     addr:document.getElementById('f-addr').value.trim(),
+    intercom:document.getElementById('f-intercom')?.value.trim()||'',
     area:document.getElementById('f-area').value.trim(),
     pack:document.getElementById('f-pack').value,
     dateStart:document.getElementById('f-start').value,
@@ -2744,10 +2555,9 @@ function stopMic(){
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
 
-// ── ACCESS: restore Google session from cache, then kick off GSI ──
+// ── ACCESS: restore PIN session ──
 _restorePin();            // restore PIN unlock from sessionStorage
-_restoreGoogleSession();  // restore Google login from sessionStorage
-window.addEventListener('load', _initGoogleAuth); // GSI after page load
+_applyAccessState(false); // apply readonly/edit mode without re-render
 
 clLoad();       // локальний кеш — миттєво
 loadHistory();
@@ -2775,7 +2585,7 @@ function userIsTyping(){
 
 // Helper: is any modal currently open?
 function anyModalOpen(){
-  const modals=['editModal','addModal','historyModal','checklistModal','calModal','pinSettingsModal'];
+  const modals=['editModal','addModal','historyModal','checklistModal','calModal'];
   return modals.some(id=>{
     const el=document.getElementById(id);
     return el&&(el.style.display==='flex'||el.classList.contains('open'));
