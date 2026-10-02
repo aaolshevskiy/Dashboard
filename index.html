@@ -1459,8 +1459,23 @@ function buildCard(o,i){
   // Client name — blue, right after object name
   if(o.client){
     const clientEl=document.createElement('span');
-    clientEl.style.cssText='font-size:12px;font-weight:500;color:var(--blue);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%';
+    clientEl.style.cssText='font-size:12px;font-weight:500;color:var(--blue);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%;cursor:pointer;transition:max-width .2s ease';
     clientEl.textContent=o.client;
+    clientEl.title=o.client;
+    let _clExpanded=false;
+    clientEl.addEventListener('click',e=>{
+      e.stopPropagation();
+      _clExpanded=!_clExpanded;
+      if(_clExpanded){
+        clientEl.style.maxWidth='none';
+        clientEl.style.whiteSpace='normal';
+        clientEl.style.wordBreak='break-word';
+      } else {
+        clientEl.style.maxWidth='40%';
+        clientEl.style.whiteSpace='nowrap';
+        clientEl.style.wordBreak='';
+      }
+    });
     nameRow.appendChild(clientEl);
   }
 
