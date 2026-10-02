@@ -1456,7 +1456,13 @@ function buildCard(o,i){
   if(o.completed) name.style.textDecoration='line-through';
   nameRow.appendChild(name);
 
-  // Client name — окремим рядком під назвою (буде додано після nameRow)
+  // Client name — blue, right after object name
+  if(o.client){
+    const clientEl=document.createElement('span');
+    clientEl.style.cssText='font-size:12px;font-weight:500;color:var(--blue);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%';
+    clientEl.textContent=o.client;
+    nameRow.appendChild(clientEl);
+  }
 
   // ── Checklist toggle (top-right of name row) ──
   let clBodyElem=null;
@@ -1538,12 +1544,6 @@ function buildCard(o,i){
   }
 
   card.appendChild(nameRow);
-  if(o.client){
-    const clientEl=document.createElement('div');
-    clientEl.style.cssText='font-size:12px;font-weight:500;color:var(--blue);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-    clientEl.textContent=o.client;
-    card.appendChild(clientEl);
-  }
   if(clBodyElem) card.appendChild(clBodyElem);
 
   // Links row — між назвою і адресою, всі 4 іконки в один рядок
