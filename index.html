@@ -568,6 +568,27 @@ body{
 @media(min-width:769px) and (max-width:1100px){
   .objects-grid{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ── READ-ONLY MODE ── */
+/* When body.readonly — hide all editing controls */
+body.readonly .edit-only { display: none !important; }
+body.readonly .obj-card { cursor: default !important; }
+body.readonly .obj-note-del { display: none !important; }
+body.readonly .note-del { display: none !important; }
+body.readonly .obj-add-note { display: none !important; }
+body.readonly .notes-add { display: none !important; }
+body.readonly .mobile-add-zone { display: none !important; }
+body.readonly input, body.readonly textarea, body.readonly select {
+  pointer-events: none; user-select: text;
+}
+/* Read-only badge in topbar */
+.readonly-badge {
+  display: none;
+  font-size: 11px; font-weight: 600; color: var(--text4);
+  background: var(--surface3); border-radius: 20px;
+  padding: 2px 10px; letter-spacing: .02em;
+}
+body.readonly .readonly-badge { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -579,9 +600,10 @@ body{
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
-    <button class="btn" onclick="openChecklistSettings()">☑ Чеклист</button>
-    <button class="btn" onclick="openHistory()">📋 Історія</button>
-    <button class="btn btn-primary" onclick="openAddModal()">+ Додати об'єкт</button>
+    <span class="readonly-badge">👁 Перегляд</span>
+    <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
+    <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
+    <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
 
@@ -817,6 +839,43 @@ body{
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyspZOC1EnAbCwrcT_U1b3vpebBOBKkAtSb0O39CCS67YqRa6dIKbfDRlYP4yTfdzNR/exec";
 
+// ── ACCESS CONTROL ──
+// SHA-256 hash of the edit token. To change the password:
+//   1. Pick a new secret, e.g. "mySecret42"
+//   2. Run in browser console: crypto.subtle.digest('SHA-256', new TextEncoder().encode('mySecret42'))
+//      .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+//   3. Paste the resulting hex string here.
+const EDIT_TOKEN_HASH = 'bb1be7b38f77eb3a8da7a6af2acac3ea73f9ca8c3f8b76e08c85b6cade6e7af4'; // hash of "dashboard2024"
+
+async function _sha256hex(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+// Returns true if current user has edit rights
+function canEdit(){ return sessionStorage.getItem('crm_edit_auth')==='1'; }
+
+// Check URL param on load — ?edit=TOKEN grants edit session
+async function _checkEditToken(){
+  const params=new URLSearchParams(location.search);
+  const tok=params.get('edit');
+  if(tok){
+    const h=await _sha256hex(tok);
+    if(h===EDIT_TOKEN_HASH){
+      sessionStorage.setItem('crm_edit_auth','1');
+    }
+    // Clean token from URL so it's not shared accidentally
+    const clean=location.pathname+(location.hash||'');
+    history.replaceState(null,'',clean);
+  }
+}
+
+// Block write operations in read-only mode
+function _requireEdit(){
+  if(!canEdit()){ console.warn('[readonly] write blocked'); return false; }
+  return true;
+}
+
 // ── STATE ──
 let objects=[], stickyNotes=[], editIdx=null, noteCtx=null;
 let actionLog=[];
@@ -856,6 +915,7 @@ async function clFetchItems(){
 
 // Зберегти і пункти і галочки на сервер одним запитом
 async function clSaveRemote(){
+  if(!_requireEdit()) return; // read-only: don't write checklist to server
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks})});
@@ -884,6 +944,7 @@ function clSetCheck(objId,itemId,val){
 
 // ── CHECKLIST SETTINGS MODAL ──
 function openChecklistSettings(){
+  if(!_requireEdit()) return;
   document.getElementById('checklistModal').classList.add('open');
   clRenderSettingsList();
   setTimeout(()=>document.getElementById('clAddInput').focus(),80);
@@ -959,6 +1020,7 @@ function clRenderSettingsList(){
 }
 
 function clAddItem(){
+  if(!_requireEdit()) return;
   const inp=document.getElementById('clAddInput');
   const text=(inp.value||'').trim();
   if(!text)return;
@@ -971,6 +1033,7 @@ function clAddItem(){
 }
 
 function clResetAll(){
+  if(!_requireEdit()) return;
   if(!confirm('Скинути всі галочки для всіх об\'єктів?'))return;
   _clChecks={};
   clSaveChecks();
@@ -1034,10 +1097,14 @@ function fmtDate(iso){
 
 // ── API ──
 // ── Snapshot cache: persist objects+stickyNotes to localStorage for instant first render ──
-const SNAPSHOT_KEY='crm_snapshot_v1';
+const SNAPSHOT_KEY='crm_snapshot_v2'; // v2: includes checklist
 function saveSnapshot(){
   try{
-    localStorage.setItem(SNAPSHOT_KEY,JSON.stringify({objects,stickyNotes,ts:Date.now()}));
+    localStorage.setItem(SNAPSHOT_KEY,JSON.stringify({
+      objects,stickyNotes,
+      clItems:_clItems,clChecks:_clChecks,
+      ts:Date.now()
+    }));
   }catch(e){console.warn('[Snapshot] save failed',e);}
 }
 function loadSnapshot(){
@@ -1048,6 +1115,9 @@ function loadSnapshot(){
     if(!snap||!Array.isArray(snap.objects))return false;
     objects=snap.objects;
     stickyNotes=Array.isArray(snap.stickyNotes)?snap.stickyNotes:[];
+    // Restore checklist from snapshot (cross-device will be overwritten by server fetch)
+    if(Array.isArray(snap.clItems))  _clItems=snap.clItems;
+    if(snap.clChecks&&typeof snap.clChecks==='object') _clChecks=snap.clChecks;
     return true;
   }catch(e){console.warn('[Snapshot] load failed',e);return false;}
 }
@@ -1055,11 +1125,15 @@ function loadSnapshot(){
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
-    const res=await fetch(API_URL+'?action=getAll');
+    // getAllWithChecklist: один запит замість двох (getAll + getChecklist)
+    const res=await fetch(API_URL+'?action=getAllWithChecklist');
     const text=await res.text();
-    let data;try{data=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
+    let payload;try{payload=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
+
+    // Обробка об'єктів
+    const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
     const st=[],ob=[];
-    (data||[]).forEach(o=>{
+    rawObjects.forEach(o=>{
       if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
@@ -1069,6 +1143,20 @@ async function apiGet(){
       }else{ob.push(parseObj(o));}
     });
     objects=ob;stickyNotes=st;
+
+    // Обробка checklist (якщо прийшов разом з об'єктами)
+    if(payload&&payload.checklist){
+      const cl=payload.checklist;
+      if(Array.isArray(cl.items)){
+        _clItems=cl.items;
+        try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
+      }
+      if(cl.checks&&typeof cl.checks==='object'){
+        _clChecks=cl.checks;
+        try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
+      }
+    }
+
     saveSnapshot(); // persist fresh data for next page open
     setSyncStatus('ok','збережено ✓');
   }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
@@ -1085,6 +1173,7 @@ async function apiGet(){
 }
 
 async function apiSave(obj){
+  if(!_requireEdit()) return false;
   setSyncStatus('ok','збережено ✓'); // optimistic — show immediately
   let full;
   if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
@@ -1119,6 +1208,7 @@ async function apiSave(obj){
 }
 
 async function apiDelete(id){
+  if(!_requireEdit()) return;
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'delete',id})});
@@ -1199,9 +1289,10 @@ function buildCard(o,i){
   card.className='obj-card'+(o.completed?' completed':'')+(isClosed?' closed':'');
   card.id='card-'+i;
   card.dataset.objid=o.id;
-  card.draggable=true;
+  card.draggable=canEdit(); // drag-and-drop only in edit mode
 
   card.addEventListener('dragstart',e=>{
+    if(!canEdit()){e.preventDefault();return;}
     e.dataTransfer.effectAllowed='move';
     e.dataTransfer.setData('text/plain',String(o.id));
     setTimeout(()=>card.classList.add('dragging'),0);
@@ -1220,6 +1311,7 @@ function buildCard(o,i){
   card.addEventListener('drop',e=>{
     e.preventDefault();
     card.classList.remove('drag-over');
+    if(!canEdit()) return; // read-only: ignore drops
     const fromId=e.dataTransfer.getData('text/plain');
     const toId=String(o.id);
     if(fromId===toId)return;
@@ -1246,14 +1338,16 @@ function buildCard(o,i){
     const dt=document.createElement('span');dt.className='obj-card-closed-dates';
     dt.textContent=(ds&&de)?ds+' → '+de:(ds||de||'');
     row.appendChild(lbl);row.appendChild(nm);if(ds||de)row.appendChild(dt);
-    // Edit btn
+    // Edit btn (hidden in read-only)
     const editB=document.createElement('button');editB.textContent='✏';
+    editB.className='edit-only';
     editB.style.cssText='border:none;background:transparent;color:var(--text4);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px';
     editB.onclick=e=>{e.stopPropagation();openEditModal(o.id);};
     row.appendChild(editB);
     card.appendChild(row);
-    // Click to expand — open edit modal
+    // Click to expand — open edit modal (only in edit mode)
     card.onclick=e=>{
+      if(!canEdit()) return; // read-only: no expand on click
       if(e.target.closest('button')) return; // ignore edit button clicks
       const ri=objects.findIndex(x=>String(x.id)===String(o.id));
       if(ri<0)return;
@@ -1546,10 +1640,12 @@ function buildCard(o,i){
     dtWrap.style.display=vis?'none':'flex';
     dtToggle.textContent=vis?'+ нагадати':'− прибрати';
   };
-  // Edit button
+  // Edit button (hidden in read-only)
   const editBtn=document.createElement('button');editBtn.textContent='✏';editBtn.title='Редагувати';
+  editBtn.className='edit-only';
   editBtn.onclick=()=>openEditModal(o.id);
   const delBtn=document.createElement('button');delBtn.textContent='✕';delBtn.title='Видалити';
+  delBtn.className='edit-only';
   delBtn.style.color='var(--red)';
   delBtn.onclick=()=>deleteCard(o.id);
   addRow.appendChild(inp);addRow.appendChild(btn);addRow.appendChild(dtToggle);addRow.appendChild(editBtn);addRow.appendChild(delBtn);addRow.appendChild(dtWrap);
@@ -1677,6 +1773,7 @@ function renderNotes(){
 
 // ── OBJ NOTE ACTIONS ──
 async function addObjNoteWithTime(objId,addRow){
+  if(!_requireEdit()) return;
   const inp=addRow.querySelector('input[placeholder]');
   const text=inp?inp.value.trim():'';if(!text)return;
   const dtDate=addRow.querySelector('input[type=date]');
@@ -1698,6 +1795,7 @@ async function addObjNoteWithTime(objId,addRow){
 }
 
 async function addObjNote(objId,inp){
+  if(!_requireEdit()) return;
   const text=inp.value.trim();if(!text)return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
@@ -1709,6 +1807,7 @@ async function addObjNote(objId,inp){
 }
 
 async function deleteObjNote(objId,ni){
+  if(!_requireEdit()) return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
@@ -1727,6 +1826,7 @@ function toggleQuickDt(){
 }
 
 async function addQuickNote(){
+  if(!_requireEdit()) return;
   const inp=document.getElementById('quickNoteInput');
   const text=inp?inp.value.trim():'';if(!text)return;
   const date=document.getElementById('quickDtDate')?.value||'';
@@ -1746,6 +1846,7 @@ async function addQuickNote(){
 }
 
 async function addMobileNote(){
+  if(!_requireEdit()) return;
   const inp=document.getElementById('mobileNoteInput');
   const text=inp?inp.value.trim():'';if(!text)return;
   const selObjId=document.getElementById('mobileObjSelect')?.value||'';
@@ -1770,6 +1871,7 @@ async function addMobileNote(){
 }
 
 async function addGlobalNote(){
+  if(!_requireEdit()) return;
   const inp=document.getElementById('noteAddInput');
   const text=inp?inp.value.trim():'';if(!text)return;
   const date=document.getElementById('noteDtDate')?.value||'';
@@ -1804,6 +1906,7 @@ async function addGlobalNote(){
 }
 
 async function deleteStickyNote(idx){
+  if(!_requireEdit()) return;
   const sn=stickyNotes[idx];
   addHistory({type:'sticky',label:sn.name,data:{...sn}});
   const id=sn.id;stickyNotes.splice(idx,1);
@@ -1857,6 +1960,7 @@ function closeNoteModal(){
 }
 
 async function saveNoteModal(){
+  if(!_requireEdit()) return;
   const text=document.getElementById('nm-text').value.trim();
   if(!text){document.getElementById('nm-err').style.display='block';return;}
   const date=document.getElementById('nm-date').value;
@@ -1895,6 +1999,7 @@ async function saveNoteModal(){
 
 // ── ADD/EDIT OBJECT MODAL ──
 function openAddModal(){
+  if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
   ['f-name','f-addr','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
@@ -1910,6 +2015,7 @@ function openAddModal(){
 }
 
 function openEditModal(objId){
+  if(!_requireEdit()) return;
   const i=objects.findIndex(o=>String(o.id)===String(objId));
   if(i<0)return;
   editIdx=i;
@@ -1977,6 +2083,7 @@ function openEditModal(objId){
 function closeAddModal(){document.getElementById('addModal').classList.remove('open');}
 
 async function saveCard(){
+  if(!_requireEdit()) return;
   try{
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-err').style.display='block';return;}
@@ -2050,6 +2157,7 @@ async function saveCard(){
 
 // ── DELETE CARD ──
 async function deleteCard(objId){
+  if(!_requireEdit()) return;
   const i=objects.findIndex(o=>String(o.id)===String(objId));
   if(i<0)return;
   const o=objects[i];
@@ -2316,6 +2424,14 @@ function stopMic(){
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
 
+// ── ACCESS: check ?edit=TOKEN param and apply read-only mode ──
+(async function initAccess(){
+  await _checkEditToken(); // may set sessionStorage 'crm_edit_auth'
+  if(!canEdit()){
+    document.body.classList.add('readonly');
+  }
+})();
+
 clLoad();       // локальний кеш — миттєво
 loadHistory();
 
@@ -2325,16 +2441,14 @@ render();
 renderNotes();
 renderOverdueZone();
 
-// Fetch fresh data from server (runs in background; updates DOM when done)
-apiGet();
-loadCalendar();
-
-// Завантажити пункти чеклісту з сервера (асинхронно, потім ре-рендер)
-clFetchItems().then(updated=>{ if(updated) render(); });
+// ── Старт: два паралельних запити замість трьох послідовних ──
+// apiGet() тепер включає checklist (getAllWithChecklist).
+// loadCalendar() йде паралельно — скорочує загальний час завантаження.
+Promise.allSettled([apiGet(), loadCalendar()]);
 
 // visibilitychange — handled inside startAutoRefresh() below; here only calendar
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){loadCalendar();}});
-window.addEventListener('pageshow',e=>{if(e.persisted){apiGet();loadCalendar();}});
+window.addEventListener('pageshow',e=>{if(e.persisted){Promise.allSettled([apiGet(),loadCalendar()]);}});
 
 // Helper: is the user actively typing in any input/textarea?
 function userIsTyping(){
