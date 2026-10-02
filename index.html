@@ -592,6 +592,8 @@ body{
     justify-content:flex-start;
   }
   .sync-status{order:-1;width:100%;font-size:11px;}
+  #authInfo{display:none!important;}
+  #authBtn{display:none!important;}
   .objects-grid{grid-template-columns:1fr!important;gap:8px;}
   .section-label{display:block!important;}
   .obj-card{min-height:unset;}
@@ -1076,7 +1078,7 @@ function _applyAccessState(triggerRender){
       info.style.display = 'flex';
     } else if(_pinUnlocked){
       info.innerHTML = '';
-      info.style.display = 'flex';
+      info.style.display = 'none';
     } else {
       info.style.display = 'none';
     }
