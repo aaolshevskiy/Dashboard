@@ -1668,9 +1668,10 @@ function buildCard(o,i){
     const hasDates=!!(ds||de);
     const row=document.createElement('div');
     row.id='flags-wrap-'+o.id;
-    row.style.cssText='display:'+(flags.length||hasDates?'flex':'none')
-      +';align-items:center;flex-wrap:wrap;gap:5px;'
-      +(flags.length||hasDates?'margin-top:4px':'');
+    const _showRow=flags.length||hasDates;
+    row.style.cssText='display:'+(_showRow?'flex':'none')
+      +';align-items:center;flex-wrap:wrap;gap:5px;margin-top:'+(_showRow?'4px':'0')+'';
+
     flags.forEach(f=>{
       const isClosed=!!closed[f.key];
       const tag=document.createElement('span');
@@ -2429,27 +2430,35 @@ function buildFlagTag(o,f){
 
 function updateProgressFlags(o){
   const pv=o._progressValue;
-  if(!pv) return;
-  const num=parseFloat(String(pv).replace('%','').replace(',','.'));
-  if(isNaN(num)) return;
   const row=document.getElementById('flags-wrap-'+o.id);
   if(!row) return;
+  const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
   const flags=[];
-  const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-  if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
-  if(o.paymentPct){
-    const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-    if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'var(--red)',bg:'var(--red-bg)'});
+  if(!isNaN(num)){
+    const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
+    if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
+    if(o.paymentPct){
+      const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
+      if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'var(--red)',bg:'var(--red-bg)'});
+    }
   }
-  // Зберігаємо елемент дат щоб не стерти його при оновленні прапорців
-  const datesEl=row.querySelector('.obj-card-dates');
-  row.innerHTML='';
-  flags.forEach(f=>row.appendChild(buildFlagTag(o,f)));
-  // Повертаємо дати назад (справа)
-  if(datesEl) row.appendChild(datesEl);
   const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
   const hasDates=!!(ds||de);
+  // Очищаємо тільки прапорці, не чіпаємо .obj-card-dates
+  Array.from(row.children).forEach(ch=>{ if(!ch.classList.contains('obj-card-dates')) ch.remove(); });
+  // Вставляємо прапорці перед датами (або в кінець якщо дат немає)
+  const datesEl=row.querySelector('.obj-card-dates');
+  flags.forEach(f=>row.insertBefore(buildFlagTag(o,f), datesEl||null));
+  // Якщо дат ще немає в DOM але вони є — створюємо
+  if(hasDates&&!datesEl){
+    const dates=document.createElement('span');
+    dates.className='obj-card-dates';
+    dates.style.cssText='margin-left:auto;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap';
+    dates.innerHTML=(ds?'<span style="color:#888;font-size:10px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
+    row.appendChild(dates);
+  }
   row.style.display=(flags.length||hasDates)?'flex':'none';
+  row.style.marginTop=(flags.length||hasDates)?'4px':'0';
 }
 
 function toggleFlag(o,key,label){
