@@ -1668,9 +1668,9 @@ function buildCard(o,i){
     const hasDates=!!(ds||de);
     const row=document.createElement('div');
     row.id='flags-wrap-'+o.id;
-    // завжди flex щоб дати були справа навіть без прапорців
     row.style.cssText='display:'+(flags.length||hasDates?'flex':'none')
-      +';align-items:center;flex-wrap:wrap;gap:5px;margin-top:4px';
+      +';align-items:center;flex-wrap:wrap;gap:5px;'
+      +(flags.length||hasDates?'margin-top:4px':'');
     flags.forEach(f=>{
       const isClosed=!!closed[f.key];
       const tag=document.createElement('span');
@@ -2433,6 +2433,7 @@ function updateProgressFlags(o){
   const num=parseFloat(String(pv).replace('%','').replace(',','.'));
   if(isNaN(num)) return;
   const row=document.getElementById('flags-wrap-'+o.id);
+  if(!row) return;
   const flags=[];
   const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
   if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
@@ -2440,11 +2441,15 @@ function updateProgressFlags(o){
     const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
     if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'var(--red)',bg:'var(--red-bg)'});
   }
-  if(!flags.length){ if(row) row.style.display='none'; return; }
-  if(!row) return; // will show on next render
-  row.style.display='flex';
+  // Зберігаємо елемент дат щоб не стерти його при оновленні прапорців
+  const datesEl=row.querySelector('.obj-card-dates');
   row.innerHTML='';
   flags.forEach(f=>row.appendChild(buildFlagTag(o,f)));
+  // Повертаємо дати назад (справа)
+  if(datesEl) row.appendChild(datesEl);
+  const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
+  const hasDates=!!(ds||de);
+  row.style.display=(flags.length||hasDates)?'flex':'none';
 }
 
 function toggleFlag(o,key,label){
