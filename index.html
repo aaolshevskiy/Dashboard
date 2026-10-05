@@ -876,18 +876,25 @@ body.readonly .card-checklist-body { display: none !important; }
   <div class="modal" style="width:320px;text-align:center">
     <div style="font-size:18px;font-weight:700;margin-bottom:6px;letter-spacing:-.02em">🔒 Вхід</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Введіть PIN для редагування</div>
-    <input id="pinModalInput" type="password" inputmode="numeric" maxlength="20"
-      placeholder="••••"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      style="width:100%;font-family:inherit;font-size:22px;letter-spacing:.2em;text-align:center;
-        padding:10px 14px;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
-        background:var(--surface2);color:var(--text);outline:none;
-        -webkit-text-security:disc"
-      onkeydown="if(event.key==='Enter')_pinModalSubmit();if(event.key==='Escape')_pinModalClose()">
+    <!-- form потрібна Safari/iOS щоб пропонувати зберегти пароль -->
+    <form id="pinForm" onsubmit="event.preventDefault();_pinModalSubmit()" action="javascript:void(0)">
+      <!-- прихований username — Safari вимагає пару логін+пароль для збереження -->
+      <input type="text" name="username" value="crm-user" style="display:none" autocomplete="username">
+      <input id="pinModalInput" type="password" name="password"
+        inputmode="numeric" maxlength="20"
+        placeholder="••••"
+        autocomplete="current-password"
+        autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="width:100%;font-family:inherit;font-size:22px;letter-spacing:.2em;text-align:center;
+          padding:10px 14px;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+          background:var(--surface2);color:var(--text);outline:none;
+          -webkit-text-security:disc"
+        onkeydown="if(event.key==='Escape')_pinModalClose()">
+    </form>
     <div id="pinModalErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px">Невірний PIN</div>
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
       <button class="btn" onclick="_pinModalClose()">Скасувати</button>
-      <button class="btn btn-primary" onclick="_pinModalSubmit()">Увійти</button>
+      <button class="btn btn-primary" type="submit" form="pinForm">Увійти</button>
     </div>
   </div>
 </div>
