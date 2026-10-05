@@ -1361,6 +1361,20 @@ function render(){
   // Load progress after DOM is ready (non-blocking)
   setTimeout(loadProgress,0);
 }
+
+// Replace only one card in the DOM — avoids full re-render flash
+function _rebuildOneCard(objId){
+  const ri=objects.findIndex(o=>String(o.id)===String(objId));
+  if(ri<0)return;
+  const existing=document.querySelector('.obj-card[data-objid="'+objId+'"]');
+  if(!existing){render();return;}
+  try{
+    const newCard=buildCard(objects[ri],ri);
+    existing.replaceWith(newCard);
+    // Re-load progress for this card only
+    setTimeout(loadProgress,0);
+  }catch(e){console.error('_rebuildOneCard error:',e);render();}
+}
 function _renderObjects(){
   const grid=document.getElementById('objectsGrid');
   if(!grid)return;
@@ -1992,7 +2006,7 @@ async function deleteObjNote(objId,ni){
   if(ri<0)return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
-  render();renderNotes();renderOverdueZone();
+  _rebuildOneCard(objects[ri].id);renderNotes();renderOverdueZone();
   apiSave(objects[ri]).catch(e=>console.error(e));
 }
 
