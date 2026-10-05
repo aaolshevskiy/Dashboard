@@ -1030,6 +1030,7 @@ function clGetChecks(objId){
   return _clChecks[String(objId)]||{};
 }
 function clSetCheck(objId,itemId,val){
+  if(!_requireEdit()) return;
   const k=String(objId);
   if(!_clChecks[k])_clChecks[k]={};
   _clChecks[k][itemId]=val;
@@ -1544,12 +1545,16 @@ function buildCard(o,i){
       };
 
       cb.onchange=()=>{
+        if(!canEdit()){cb.checked=!cb.checked;return;} // скасувати зміну в readonly
         clSetCheck(o.id,item.id,cb.checked);
         lbl.className='card-cl-label'+(cb.checked?' done':'');
         updateProgress();
       };
       // На iOS label.onclick надійніший за addEventListener
-      lbl.onclick=()=>{cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));};
+      lbl.onclick=()=>{
+        if(!canEdit()) return;
+        cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));
+      };
 
       row.appendChild(cb);row.appendChild(lbl);
       body.appendChild(row);
@@ -1656,6 +1661,7 @@ function buildCard(o,i){
       tspan.id='time-pct-'+o.id;
       tspan.textContent=timePct+'%';
       tspan.style.marginLeft='auto';
+      if(timePct>=100){tspan.style.color='var(--red)';tspan.style.fontWeight='700';}
       tspan.title='Час проекту: '+timePct+'% пройшло';
       meta.appendChild(tspan);
     }
@@ -2422,6 +2428,7 @@ function openHistory(){
 }
 function closeHistory(){document.getElementById('historyModal').classList.remove('open');}
 async function restoreHistory(idx){
+  if(!_requireEdit()) return;
   const h=actionLog[idx];if(!h)return;
   if(h.type==='obj'){
     const o={...h.data,id:''};await apiSave(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
@@ -2485,6 +2492,7 @@ function updateProgressFlags(o){
 }
 
 function toggleFlag(o,key,label){
+  if(!_requireEdit()) return;
   const closed=o._closedFlags||{};
   const isCurrentlyClosed=!!closed[key];
   if(isCurrentlyClosed){
