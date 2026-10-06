@@ -1209,6 +1209,8 @@ async function apiSave(obj){
       progressUrl:obj.progressUrl||'',
       progressCell:obj.progressCell||'',
       paymentPct:obj.paymentPct||'',
+      designer:obj.designer||'',
+      projectStatus:obj.projectStatus||'',
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -1660,7 +1662,7 @@ function buildCard(o,i){
     if(hasDates){
       const dates=document.createElement('span');
       dates.className='obj-card-dates';
-      dates.style.cssText='margin-left:auto;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;margin-top:0';
+      dates.style.cssText='display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;margin-top:0';
       dates.innerHTML=(ds?'<span style="color:#888;font-size:10px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
       row.appendChild(dates);
     }
