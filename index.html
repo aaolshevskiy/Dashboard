@@ -907,7 +907,7 @@ function clLoad(){
 // Завантажити і пункти і галочки з сервера
 async function clFetchItems(){
   try{
-    const res=await fetch(API_URL+'?action=getChecklist');
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getChecklist'})});
     const data=await res.json();
     let updated=false;
     if(data&&Array.isArray(data.items)){
@@ -1140,7 +1140,7 @@ async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
     // getAllWithChecklist: один запит замість двох (getAll + getChecklist)
-    const res=await fetch(API_URL+'?action=getAllWithChecklist');
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getAllWithChecklist'})});
     const text=await res.text();
     let payload;try{payload=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
 
@@ -2265,7 +2265,7 @@ async function loadCalendar(){
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
-    const res=await fetch(API_URL+'?action=getCalendar');
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getCalendar'})});
     const data=await res.json();
     // Filter only today's events
     const todayStr=now.toISOString().slice(0,10);
@@ -2427,10 +2427,7 @@ async function loadProgress(){
   try{
     await Promise.all(withProgress.map(async o=>{
       try{
-        const url=API_URL+'?action=getProgress'
-          +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
-          +'&cell='+encodeURIComponent(o.progressCell);
-        const res=await fetch(url);
+        const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getProgress',spreadsheetUrl:o.progressUrl,cell:o.progressCell})});
         const data=await res.json();
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
