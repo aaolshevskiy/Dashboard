@@ -1111,7 +1111,7 @@ function fmtDate(iso){
 }
 
 // ── Snapshot cache: persist objects+stickyNotes to localStorage for instant first render ──
-const SNAPSHOT_KEY='crm_snapshot_v2'; // v2: includes checklist
+const SNAPSHOT_KEY='crm_snapshot_v3'; // v3: reset після переплутаних заміток
 function saveSnapshot(){
   try{
     localStorage.setItem(SNAPSHOT_KEY,JSON.stringify({
