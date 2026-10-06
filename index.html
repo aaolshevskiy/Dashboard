@@ -158,6 +158,8 @@ body{
 }
 .obj-card-closed-dates{font-size:11px;color:var(--text4);flex-shrink:0;}
 .obj-card.completed{opacity:.5;}
+.obj-card.not-inwork{background:color-mix(in srgb,var(--surface) 70%,var(--bg) 30%);}
+.obj-card.has-overdue{background:color-mix(in srgb,var(--surface) 80%,var(--red-bg) 100%);border-color:color-mix(in srgb,var(--border) 60%,var(--red) 40%);}
 .obj-card-num{font-size:11px;color:var(--text4);margin-bottom:1px;}
 .obj-card-name{
   font-size:15px;font-weight:600;color:var(--text);
@@ -781,7 +783,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <div class="form-group">
       <div class="form-row">
         <label id="inwork-label" style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text);cursor:pointer;flex:1">
-          <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer"> ☆ В реалізації
+          <input type="checkbox" id="f-inwork" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer"> <span id="inwork-star">☆</span> В реалізації
         </label>
       </div>
       <div class="form-row">
@@ -1317,7 +1319,13 @@ function _renderObjects(){
 function buildCard(o,i){
   const card=document.createElement('div');
   const isClosed=!!o.closed;
-  card.className='obj-card'+(o.completed?' completed':'')+(isClosed?' closed':'');
+  const hasOverdueNote=!isClosed&&Array.isArray(o.notes)&&o.notes.some(n=>isNoteActive(n));
+  const notInWork=!isClosed&&!o.inwork&&!o.completed;
+  card.className='obj-card'
+    +(o.completed?' completed':'')
+    +(isClosed?' closed':'')
+    +(notInWork?' not-inwork':'')
+    +(hasOverdueNote?' has-overdue':'');
   card.id='card-'+i;
   card.dataset.objid=o.id;
   card.draggable=canEdit(); // drag-and-drop only in edit mode
@@ -1515,8 +1523,8 @@ function buildCard(o,i){
   const linkStyle='display:inline-flex;flex-shrink:0;opacity:.6;align-items:center;gap:2px;font-size:11px;color:var(--text3);text-decoration:none';
   if(o.linkFolder||o.bitrix||o.furniture||o.moneyUrl||o.ofertaUrl){
     const linksRow=document.createElement('div');
-    linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:3px;margin-bottom:1px';
-    // Порядок: Диск → Bitrix → Oferta → Money → Zakup → Меблі
+    linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;margin-bottom:1px';
+    // Порядок: Диск → Bitrix → Oferta → Zakup → Money → Меблі
     if(o.linkFolder){
       const gd=document.createElement('a');gd.href=o.linkFolder;gd.target='_blank';gd.title='Google Drive';
       gd.style.cssText=linkStyle;gd.onclick=e=>e.stopPropagation();
@@ -1535,17 +1543,17 @@ function buildCard(o,i){
       of.innerHTML='🧮 Oferta';
       linksRow.appendChild(of);
     }
-    if(o.moneyUrl){
-      const mn=document.createElement('a');mn.href=o.moneyUrl;mn.target='_blank';mn.title='Money';
-      mn.style.cssText=linkStyle;mn.onclick=e=>e.stopPropagation();
-      mn.innerHTML='💰 Money';
-      linksRow.appendChild(mn);
-    }
     if(o.ratyfikacjaUrl){
       const rt=document.createElement('a');rt.href=o.ratyfikacjaUrl;rt.target='_blank';rt.title='Zakup';
       rt.style.cssText=linkStyle;rt.onclick=e=>e.stopPropagation();
       rt.innerHTML='🛒 Zakup';
       linksRow.appendChild(rt);
+    }
+    if(o.moneyUrl){
+      const mn=document.createElement('a');mn.href=o.moneyUrl;mn.target='_blank';mn.title='Money';
+      mn.style.cssText=linkStyle;mn.onclick=e=>e.stopPropagation();
+      mn.innerHTML='💰 Money';
+      linksRow.appendChild(mn);
     }
     if(o.furniture){
       const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
@@ -2160,6 +2168,7 @@ function openEditModal(objId){
     if(cbEl&&key) cbEl.checked=!!closedFlags[key];
   });
   document.getElementById('f-inwork').checked=!!o.inwork;
+  {const lbl=document.getElementById('inwork-label');const star=document.getElementById('inwork-star');if(o.inwork){lbl.style.color='var(--blue)';star.textContent='★';}else{lbl.style.color='var(--text)';star.textContent='☆';}}
   if(document.getElementById('f-closed')) document.getElementById('f-closed').checked=!!o.closed;
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
@@ -2548,6 +2557,14 @@ const _hadSnapshot=loadSnapshot();
 render();
 renderNotes();
 renderOverdueZone();
+
+// ── Checkbox "В реалізації" — візуальний фідбек ──
+document.getElementById('f-inwork').addEventListener('change',function(){
+  const lbl=document.getElementById('inwork-label');
+  const star=document.getElementById('inwork-star');
+  if(this.checked){lbl.style.color='var(--blue)';star.textContent='★';}
+  else{lbl.style.color='var(--text)';star.textContent='☆';}
+});
 
 // ── Старт: два паралельних запити замість трьох послідовних ──
 // apiGet() тепер включає checklist (getAllWithChecklist).
