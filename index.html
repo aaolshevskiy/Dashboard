@@ -907,7 +907,7 @@ function clLoad(){
 // Завантажити і пункти і галочки з сервера
 async function clFetchItems(){
   try{
-    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getChecklist'})});
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getChecklist'}),redirect:'follow'});
     const data=await res.json();
     let updated=false;
     if(data&&Array.isArray(data.items)){
@@ -930,7 +930,7 @@ async function clSaveRemote(){
   if(!_requireEdit()) return; // read-only: don't write checklist to server
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks})});
+      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks}),redirect:'follow'});
   }catch(e){console.warn('[Checklist] save failed',e);}
 }
 
@@ -1140,7 +1140,7 @@ async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
     // getAllWithChecklist: один запит замість двох (getAll + getChecklist)
-    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getAllWithChecklist'})});
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getAllWithChecklist'}),redirect:'follow'});
     const text=await res.text();
     let payload;try{payload=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
 
@@ -1214,7 +1214,7 @@ async function apiSave(obj){
   }
   try{
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',object:full})});
+      body:JSON.stringify({action:'save',object:full}),redirect:'follow'});
     const data=await res.json();
     if(data.id)obj.id=data.id;
     setSyncStatus('ok','збережено ✓');
@@ -1227,7 +1227,7 @@ async function apiDelete(id){
   if(!_requireEdit()) return;
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'delete',id})});
+      body:JSON.stringify({action:'delete',id}),redirect:'follow'});
   }catch(e){console.error(e);}
 }
 
@@ -2265,7 +2265,7 @@ async function loadCalendar(){
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
-    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getCalendar'})});
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getCalendar'}),redirect:'follow'});
     const data=await res.json();
     // Filter only today's events
     const todayStr=now.toISOString().slice(0,10);
@@ -2427,7 +2427,7 @@ async function loadProgress(){
   try{
     await Promise.all(withProgress.map(async o=>{
       try{
-        const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getProgress',spreadsheetUrl:o.progressUrl,cell:o.progressCell})});
+        const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getProgress',spreadsheetUrl:o.progressUrl,cell:o.progressCell}),redirect:'follow'});
         const data=await res.json();
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
