@@ -907,9 +907,8 @@ function clLoad(){
 // Завантажити і пункти і галочки з сервера
 async function clFetchItems(){
   try{
-    let data;
-    try{data=await jsonpGet(API_URL+'?action=getChecklist');}
-    catch{const res=await fetch(API_URL+'?action=getChecklist');data=await res.json();}
+    const res=await fetch(API_URL+'?action=getChecklist');
+    const data=await res.json();
     let updated=false;
     if(data&&Array.isArray(data.items)){
       _clItems=data.items;
@@ -1111,35 +1110,6 @@ function fmtDate(iso){
   return d.getDate()+'.'+(d.getMonth()+1)+'.'+String(d.getFullYear()).slice(2);
 }
 
-// ── API ──
-// JSONP helper — обходить CORS при GET запитах до Apps Script
-// Apps Script redirect не блокує <script> теги на відміну від fetch
-let _jsonpCounter=0;
-function jsonpGet(url){
-  return new Promise((resolve,reject)=>{
-    const cbName='_gascb'+Date.now()+'_'+(++_jsonpCounter);
-    const timeout=setTimeout(()=>{
-      delete window[cbName];
-      if(sc.parentNode)sc.parentNode.removeChild(sc);
-      reject(new Error('JSONP timeout'));
-    },20000);
-    window[cbName]=function(data){
-      clearTimeout(timeout);
-      delete window[cbName];
-      if(sc.parentNode)sc.parentNode.removeChild(sc);
-      resolve(data);
-    };
-    const sc=document.createElement('script');
-    sc.src=url+(url.includes('?')?'&':'?')+'callback='+cbName;
-    sc.onerror=()=>{
-      clearTimeout(timeout);
-      delete window[cbName];
-      reject(new Error('JSONP script error'));
-    };
-    document.head.appendChild(sc);
-  });
-}
-
 // ── Snapshot cache: persist objects+stickyNotes to localStorage for instant first render ──
 const SNAPSHOT_KEY='crm_snapshot_v2'; // v2: includes checklist
 function saveSnapshot(){
@@ -1170,19 +1140,9 @@ async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
     // getAllWithChecklist: один запит замість двох (getAll + getChecklist)
-    // Використовуємо JSONP щоб обійти CORS при GET запитах до Apps Script
-    let payload;
-    try{
-      payload=await jsonpGet(API_URL+'?action=getAllWithChecklist');
-    }catch(jsonpErr){
-      // Fallback: спробувати звичайний fetch (для тестування з localhost)
-      try{
-        const res=await fetch(API_URL+'?action=getAllWithChecklist');
-        const text=await res.text();
-        payload=JSON.parse(text);
-      }catch{setSyncStatus('err','Помилка з\'єднання');render();renderNotes();return;}
-    }
-    if(!payload){setSyncStatus('err','Помилка даних');render();renderNotes();return;}
+    const res=await fetch(API_URL+'?action=getAllWithChecklist');
+    const text=await res.text();
+    let payload;try{payload=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
 
     // Обробка об'єктів
     const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
@@ -2305,9 +2265,8 @@ async function loadCalendar(){
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
   dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
   try{
-    let data;
-    try{data=await jsonpGet(API_URL+'?action=getCalendar');}
-    catch{const res=await fetch(API_URL+'?action=getCalendar');data=await res.json();}
+    const res=await fetch(API_URL+'?action=getCalendar');
+    const data=await res.json();
     // Filter only today's events
     const todayStr=now.toISOString().slice(0,10);
     const allEvs=Array.isArray(data)?data:[];
@@ -2471,9 +2430,8 @@ async function loadProgress(){
         const url=API_URL+'?action=getProgress'
           +'&spreadsheetUrl='+encodeURIComponent(o.progressUrl)
           +'&cell='+encodeURIComponent(o.progressCell);
-        let data;
-        try{data=await jsonpGet(url);}
-        catch{const res=await fetch(url);data=await res.json();}
+        const res=await fetch(url);
+        const data=await res.json();
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
         // Convert to %. If value is fraction (0..1) → multiply by 100
