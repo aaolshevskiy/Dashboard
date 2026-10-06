@@ -739,6 +739,12 @@ body.readonly .card-checklist-body { display: none !important; }
     <div class="fsec">Команда</div>
     <div class="form-group">
       <div class="form-row"><label>Прораб</label><input id="f-masters-name" placeholder="Ім'я прораба" autocomplete="off"></div>
+      <div class="form-row"><label>Дизайнер</label><input id="f-designer" placeholder="Ім'я дизайнера" autocomplete="off"></div>
+    </div>
+
+    <div class="fsec">Статус проєкту</div>
+    <div class="form-group">
+      <div class="form-row"><label>Етап</label><input id="f-project-status" placeholder="напр. Чекаємо матеріали, Монтаж" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Посилання</div>
@@ -1084,6 +1090,8 @@ function parseObj(o){
   if(!parsed.progressUrl) parsed.progressUrl='';
   if(!parsed.progressCell) parsed.progressCell='';
   if(!parsed.paymentPct) parsed.paymentPct='';
+  if(!parsed.designer) parsed.designer='';
+  if(!parsed.projectStatus) parsed.projectStatus='';
   return parsed;
 }
 function mapsUrl(addr){return'https://www.google.com/maps/search/'+encodeURIComponent(addr);}
@@ -1575,6 +1583,7 @@ function buildCard(o,i){
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
+  if(o.designer) meta.innerHTML+='<span style="font-size:12px;color:var(--blue);opacity:.75">✏ '+o.designer+'</span>';
   // Time progress (yellow): % of days elapsed between dateStart and dateEnd
   if(o.dateStart&&o.dateEnd){
     const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),now2=new Date();
@@ -1648,6 +1657,14 @@ function buildCard(o,i){
       row.appendChild(dates);
     }
     card.appendChild(row);
+  }
+
+  // Project status — always visible if set
+  if(o.projectStatus){
+    const ps=document.createElement('div');
+    ps.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;margin-top:4px;font-style:italic;line-height:1.4';
+    ps.textContent='▸ '+o.projectStatus;
+    card.appendChild(ps);
   }
 
   // Notes — always visible
@@ -2064,7 +2081,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-status'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2110,6 +2127,8 @@ function openEditModal(objId){
   console.log('[DATE DEBUG] toInputDate result:', toInputDate(o.dateStart), toInputDate(o.dateEnd));
   console.log('[DATE DEBUG] f-start value after set:', document.getElementById('f-start').value);
   document.getElementById('f-masters-name').value=o.mastersName||o.prorab||'';
+  if(document.getElementById('f-designer')) document.getElementById('f-designer').value=o.designer||'';
+  if(document.getElementById('f-project-status')) document.getElementById('f-project-status').value=o.projectStatus||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
@@ -2162,6 +2181,8 @@ async function saveCard(){
     dateStart:document.getElementById('f-start').value,
     dateEnd:document.getElementById('f-end').value,
     mastersName:document.getElementById('f-masters-name').value.trim(),
+    designer:document.getElementById('f-designer')?.value.trim()||'',
+    projectStatus:document.getElementById('f-project-status')?.value.trim()||'',
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
