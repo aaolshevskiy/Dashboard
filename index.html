@@ -1614,6 +1614,14 @@ function buildCard(o,i){
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
+  // Project status — always visible if set, above dates
+  if(o.projectStatus){
+    const ps=document.createElement('div');
+    ps.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;margin-top:4px;font-style:italic;line-height:1.4';
+    ps.textContent='▸ '+o.projectStatus;
+    card.appendChild(ps);
+  }
+
   // Flags + Dates — один рядок: прапорці зліва, дати справа
   {
     const pv=o._progressValue;
@@ -1657,14 +1665,6 @@ function buildCard(o,i){
       row.appendChild(dates);
     }
     card.appendChild(row);
-  }
-
-  // Project status — always visible if set
-  if(o.projectStatus){
-    const ps=document.createElement('div');
-    ps.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;margin-top:4px;font-style:italic;line-height:1.4';
-    ps.textContent='▸ '+o.projectStatus;
-    card.appendChild(ps);
   }
 
   // Notes — always visible
