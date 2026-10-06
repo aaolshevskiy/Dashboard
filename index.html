@@ -631,8 +631,6 @@ body.readonly .card-checklist-body { display: none !important; }
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
-    <button id="loginBtn" onclick="_checkPin()" style="font-family:inherit;font-size:12px;padding:5px 12px;border:none;border-radius:20px;background:var(--blue);cursor:pointer;color:#fff;font-weight:500">Увійти</button>
-    <button id="logoutBtn" onclick="_logout()" style="display:none;font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--text3)">Вийти</button>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
@@ -871,101 +869,15 @@ body.readonly .card-checklist-body { display: none !important; }
     <div id="historyEmpty" style="font-size:17px;color:var(--text4);font-style:italic;padding:12px 0">Нічого немає</div>
   </div>
 </div>
-<!-- PIN MODAL -->
-<div class="overlay" id="pinModal" style="z-index:9999">
-  <div class="modal" style="width:320px;text-align:center">
-    <div style="font-size:18px;font-weight:700;margin-bottom:6px;letter-spacing:-.02em">🔒 Вхід</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Введіть PIN для редагування</div>
-    <!-- form потрібна Safari/iOS щоб пропонувати зберегти пароль -->
-    <form id="pinForm" onsubmit="event.preventDefault();_pinModalSubmit()" action="javascript:void(0)">
-      <!-- прихований username — Safari вимагає пару логін+пароль для збереження -->
-      <input type="text" name="username" value="crm-user" style="display:none" autocomplete="username">
-      <input id="pinModalInput" type="password" name="password"
-        inputmode="numeric" maxlength="20"
-        placeholder="••••"
-        autocomplete="current-password"
-        autocorrect="off" autocapitalize="off" spellcheck="false"
-        style="width:100%;font-family:inherit;font-size:22px;letter-spacing:.2em;text-align:center;
-          padding:10px 14px;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
-          background:var(--surface2);color:var(--text);outline:none;
-          -webkit-text-security:disc"
-        onkeydown="if(event.key==='Escape')_pinModalClose()">
-    </form>
-    <div id="pinModalErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px">Невірний PIN</div>
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-      <button class="btn" onclick="_pinModalClose()">Скасувати</button>
-      <button class="btn btn-primary" type="submit" form="pinForm">Увійти</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyspZOC1EnAbCwrcT_U1b3vpebBOBKkAtSb0O39CCS67YqRa6dIKbfDRlYP4yTfdzNR/exec";
 
-// ── ACCESS CONTROL via Google Sign-In ──
-// PIN для редагування — зберігається в localStorage, сесія в sessionStorage
-const EDIT_PIN_DEFAULT = '0115';
-function _getPin(){ return EDIT_PIN_DEFAULT; }
-
-let _pinUnlocked = false;
-
-function canEdit(){
-  return _pinUnlocked;
-}
-
-function _checkPin(){
-  const modal=document.getElementById('pinModal');
-  const input=document.getElementById('pinModalInput');
-  const err=document.getElementById('pinModalErr');
-  if(!modal||!input) return;
-  input.value='';
-  if(err) err.style.display='none';
-  modal.classList.add('open');
-  setTimeout(()=>input.focus(),80);
-}
-function _pinModalClose(){
-  const modal=document.getElementById('pinModal');
-  if(modal) modal.classList.remove('open');
-}
-function _pinModalSubmit(){
-  const input=document.getElementById('pinModalInput');
-  const err=document.getElementById('pinModalErr');
-  const entered=(input?.value||'').trim();
-  if(entered===_getPin()){
-    _pinUnlocked=true;
-    try{ sessionStorage.setItem('crm_pin_ok','1'); }catch(e){}
-    _pinModalClose();
-    _applyAccessState(true);
-  } else {
-    if(err){ err.style.display='block'; }
-    if(input){ input.value=''; input.focus(); }
-  }
-}
-
-function _logout(){
-  _pinUnlocked = false;
-  try{ sessionStorage.removeItem('crm_pin_ok'); }catch(e){}
-  _applyAccessState(true);
-}
-
-function _restorePin(){
-  try{ if(sessionStorage.getItem('crm_pin_ok')==='1'){ _pinUnlocked=true; } }catch(e){}
-}
-
-function _requireEdit(){
-  if(!canEdit()){ console.warn('[readonly] write blocked'); return false; }
-  return true;
-}
-
+// ── ACCESS CONTROL — відкритий режим (без PIN) ──
+function canEdit(){ return true; }
+function _requireEdit(){ return true; }
 function _applyAccessState(triggerRender){
-  const edit = canEdit();
-  document.body.classList.toggle('readonly', !edit);
-
-  const logoutBtn = document.getElementById('logoutBtn');
-  if(logoutBtn){ logoutBtn.style.display = edit ? '' : 'none'; }
-  const loginBtn = document.getElementById('loginBtn');
-  if(loginBtn){ loginBtn.style.display = edit ? 'none' : ''; }
-
+  document.body.classList.remove('readonly');
   if(triggerRender){ render(); renderNotes(); renderOverdueZone(); }
 }
 
@@ -1738,42 +1650,9 @@ function buildCard(o,i){
     card.appendChild(row);
   }
 
-  // Notes — collapsible toggle (like checklist)
+  // Notes — always visible
   if(hasNotes){
-    const notesKey='notes_open_'+o.id;
-    let notesOpen=false;
-    try{ notesOpen=sessionStorage.getItem(notesKey)==='1'; }catch{}
-
-    const overdueCount=o.notes.filter(n=>isNoteActive(n)).length;
-    const normalCount=o.notes.filter(n=>!isNoteActive(n)).length;
-
-    const notesToggle=document.createElement('button');
-    notesToggle.type='button';
-    notesToggle.className='card-notes-toggle';
-    ['mousedown','touchstart'].forEach(ev=>
-      notesToggle.addEventListener(ev,e=>e.stopPropagation(),{passive:true})
-    );
-
-    const notesArrow=document.createElement('span');
-    notesArrow.className='card-notes-arrow'+(notesOpen?' open':'');
-    notesArrow.textContent='\u25B6';
-
-    const notesSummary=document.createElement('span');
-    notesSummary.style.fontVariantNumeric='tabular-nums';
-    const redWeight=overdueCount>0?'font-weight:700':'font-weight:400';
-    const redColor=overdueCount>0?'color:var(--red)':'color:var(--text4)';
-    const redPart='<span style="'+redColor+';'+redWeight+'">'+overdueCount+'</span>';
-    const blackPart='<span style="color:var(--text2);font-weight:500">'+normalCount+'</span>';
-    notesSummary.innerHTML=redPart+'<span style="color:var(--text4)">/</span>'+blackPart;
-
-    notesToggle.appendChild(notesArrow);
-    notesToggle.appendChild(notesSummary);
-
-    const notesBody=document.createElement('div');
-    notesBody.className='card-notes-body'+(notesOpen?' open':'');
-
     const nl=document.createElement('div');nl.className='obj-notes-list';
-    // Map original indices before sort
     const withIdx=o.notes.map((n,origNi)=>({n,origNi}));
     withIdx.sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
     withIdx.forEach(({n,origNi})=>{
@@ -1796,18 +1675,7 @@ function buildCard(o,i){
       row.appendChild(del);
       nl.appendChild(row);
     });
-    notesBody.appendChild(nl);
-
-    notesToggle.onclick=e=>{
-      e.stopPropagation();
-      notesOpen=!notesOpen;
-      notesBody.className='card-notes-body'+(notesOpen?' open':'');
-      notesArrow.className='card-notes-arrow'+(notesOpen?' open':'');
-      try{sessionStorage.setItem(notesKey,notesOpen?'1':'0');}catch{}
-    };
-
-    card.appendChild(notesToggle);
-    card.appendChild(notesBody);
+    card.appendChild(nl);
   }
 
   // Add note input
@@ -2650,9 +2518,7 @@ function stopMic(){
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
 
-// ── ACCESS: restore PIN session ──
-_restorePin();            // restore PIN unlock from sessionStorage
-_applyAccessState(false); // apply readonly/edit mode without re-render
+_applyAccessState(false); // знімає readonly одразу
 
 clLoad();       // локальний кеш — миттєво
 loadHistory();
