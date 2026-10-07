@@ -938,7 +938,14 @@ async function clFetchItems(){
       updated=true;
     }
     if(data&&data.checks&&typeof data.checks==='object'){
-      _clChecks=data.checks;
+      // Витягуємо __flags__ (прапорці об'єктів) — синхронізація між пристроями
+      if(data.checks.__flags__&&typeof data.checks.__flags__==='object'){
+        _closedFlagsCache=data.checks.__flags__;
+        saveClosedFlagsCache();
+      }
+      // _clChecks — без __flags__
+      const {__flags__:_f, ..._checks}=data.checks;
+      _clChecks=_checks;
       try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
       updated=true;
     }
@@ -948,11 +955,13 @@ async function clFetchItems(){
 }
 
 // Зберегти і пункти і галочки на сервер одним запитом
+// __flags__ — прапорці всіх об'єктів, вбудовані в checks для синхронізації між пристроями
 async function clSaveRemote(){
   if(!_requireEdit()) return; // read-only: don't write checklist to server
   try{
+    const checksWithFlags={..._clChecks, __flags__: _closedFlagsCache};
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks}),redirect:'follow'});
+      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:checksWithFlags}),redirect:'follow'});
   }catch(e){console.warn('[Checklist] save failed',e);}
 }
 
@@ -1092,7 +1101,11 @@ try{_progressCache=JSON.parse(localStorage.getItem('crm_progress')||'{}');}catch
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
-function saveClosedFlagsCache(){try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}}
+function saveClosedFlagsCache(syncToServer){
+  try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}
+  // syncToServer=true — викликати тільки коли юзер змінив прапорець (не при читанні з сервера)
+  if(syncToServer) clSaveRemote();
+}
 
 function parseObj(o){
   const parsed={...o,
@@ -1172,7 +1185,26 @@ async function apiGet(){
     const text=await res.text();
     let payload;try{payload=JSON.parse(text);}catch{setNotUpdated();render();renderNotes();return;}
 
-    // Обробка об'єктів
+    // Спочатку обробляємо checklist і flags — щоб parseObj вже мав актуальний _closedFlagsCache
+    if(payload&&payload.checklist){
+      const cl=payload.checklist;
+      if(Array.isArray(cl.items)){
+        _clItems=cl.items;
+        try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
+      }
+      if(cl.checks&&typeof cl.checks==='object'){
+        // Витягуємо __flags__ (прапорці об'єктів) — синхронізація між пристроями
+        if(cl.checks.__flags__&&typeof cl.checks.__flags__==='object'){
+          _closedFlagsCache=cl.checks.__flags__;
+          saveClosedFlagsCache(); // зберігаємо в localStorage (без запиту на сервер)
+        }
+        const {__flags__:_f2, ..._checks2}=cl.checks;
+        _clChecks=_checks2;
+        try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
+      }
+    }
+
+    // Обробка об'єктів (після оновлення _closedFlagsCache — parseObj підхопить правильні прапорці)
     const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
     const st=[],ob=[];
     rawObjects.forEach(o=>{
@@ -1185,19 +1217,6 @@ async function apiGet(){
       }else{ob.push(parseObj(o));}
     });
     objects=ob;stickyNotes=st;
-
-    // Обробка checklist (якщо прийшов разом з об'єктами)
-    if(payload&&payload.checklist){
-      const cl=payload.checklist;
-      if(Array.isArray(cl.items)){
-        _clItems=cl.items;
-        try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
-      }
-      if(cl.checks&&typeof cl.checks==='object'){
-        _clChecks=cl.checks;
-        try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
-      }
-    }
 
     saveSnapshot(); // persist fresh data for next page open
     setSyncStatus('ok','збережено ✓');
@@ -2443,10 +2462,8 @@ function toggleFlag(o,key,label){
   }
   o._closedFlags=closed;
   _closedFlagsCache[o.id]=closed;
-  saveClosedFlagsCache();
+  saveClosedFlagsCache(true); // true = синхронізувати на сервер
   updateProgressFlags(o);
-  // Sync to server so flags are shared across devices
-  apiSaveQueued(o).catch(e=>console.error(e));
 }
 
 // ── PROGRESS LOADING ──
