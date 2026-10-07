@@ -938,14 +938,7 @@ async function clFetchItems(){
       updated=true;
     }
     if(data&&data.checks&&typeof data.checks==='object'){
-      // Витягуємо __flags__ (прапорці об'єктів) — синхронізація між пристроями
-      if(data.checks.__flags__&&typeof data.checks.__flags__==='object'){
-        _closedFlagsCache=data.checks.__flags__;
-        saveClosedFlagsCache();
-      }
-      // _clChecks — без __flags__
-      const {__flags__:_f, ..._checks}=data.checks;
-      _clChecks=_checks;
+      _clChecks=data.checks;
       try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
       updated=true;
     }
@@ -955,13 +948,11 @@ async function clFetchItems(){
 }
 
 // Зберегти і пункти і галочки на сервер одним запитом
-// __flags__ — прапорці всіх об'єктів, вбудовані в checks для синхронізації між пристроями
 async function clSaveRemote(){
   if(!_requireEdit()) return; // read-only: don't write checklist to server
   try{
-    const checksWithFlags={..._clChecks, __flags__: _closedFlagsCache};
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:checksWithFlags}),redirect:'follow'});
+      body:JSON.stringify({action:'saveChecklist',items:_clItems,checks:_clChecks}),redirect:'follow'});
   }catch(e){console.warn('[Checklist] save failed',e);}
 }
 
@@ -1103,8 +1094,23 @@ let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
 function saveClosedFlagsCache(syncToServer){
   try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}
-  // syncToServer=true — викликати тільки коли юзер змінив прапорець (не при читанні з сервера)
-  if(syncToServer) clSaveRemote();
+  // syncToServer=true — зберегти прапорці на сервер як окремий рядок __flags__
+  if(syncToServer) _syncFlagsToServer();
+}
+
+// Зберігаємо прапорці в таблицю як окремий рядок id='__flags__'
+// Поле addr — рядок, Apps Script не парсить його автоматично
+async function _syncFlagsToServer(){
+  try{
+    const flagObj={
+      id:'__flags__',
+      status:'__flags__',
+      addr:JSON.stringify(_closedFlagsCache), // addr — рядковий, Apps Script не парсить
+      notes:[]
+    };
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save',object:flagObj}),redirect:'follow'});
+  }catch(e){console.warn('[Flags] sync failed',e);}
 }
 
 function parseObj(o){
@@ -1193,13 +1199,7 @@ async function apiGet(){
         try{localStorage.setItem('crm_cl_items',JSON.stringify(_clItems));}catch{}
       }
       if(cl.checks&&typeof cl.checks==='object'){
-        // Витягуємо __flags__ (прапорці об'єктів) — синхронізація між пристроями
-        if(cl.checks.__flags__&&typeof cl.checks.__flags__==='object'){
-          _closedFlagsCache=cl.checks.__flags__;
-          saveClosedFlagsCache(); // зберігаємо в localStorage (без запиту на сервер)
-        }
-        const {__flags__:_f2, ..._checks2}=cl.checks;
-        _clChecks=_checks2;
+        _clChecks=cl.checks;
         try{localStorage.setItem('crm_cl_checks',JSON.stringify(_clChecks));}catch{}
       }
     }
@@ -1209,6 +1209,17 @@ async function apiGet(){
     const st=[],ob=[];
     rawObjects.forEach(o=>{
       if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
+      // Рядок __flags__ — синхронізація прапорців між пристроями
+      if(String(o.id)==='__flags__'){
+        try{
+          const flags=JSON.parse(o.addr||'{}');
+          if(flags&&typeof flags==='object'&&!Array.isArray(flags)){
+            _closedFlagsCache=flags;
+            saveClosedFlagsCache(); // localStorage без запиту на сервер
+          }
+        }catch(e){}
+        return;
+      }
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
