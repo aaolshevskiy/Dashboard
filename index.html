@@ -70,6 +70,23 @@ body{
 .sync-status{font-size:12px;color:var(--text4);font-weight:400;}
 .sync-status.ok .sync-text{color:var(--green);}
 .sync-status.err .sync-text{color:var(--red);}
+.sync-status.not-updated .sync-text{color:var(--red);font-weight:600;}
+/* Pull-to-refresh indicator */
+#ptr-indicator{
+  position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-48px);
+  background:var(--surface);border:1px solid var(--border);border-radius:24px;
+  padding:6px 16px;font-size:13px;color:var(--text3);font-weight:500;
+  box-shadow:var(--shadow-card);transition:transform .2s ease,opacity .2s;
+  pointer-events:none;z-index:9000;opacity:0;white-space:nowrap;
+}
+#ptr-indicator.pulling{opacity:1;transform:translateX(-50%) translateY(12px);}
+#ptr-indicator.refreshing{opacity:1;transform:translateX(-50%) translateY(12px);color:var(--blue);}
+/* Offline queue badge */
+#offline-badge{
+  display:none;font-size:11px;font-weight:600;color:#fff;
+  background:var(--orange);border-radius:10px;padding:2px 7px;
+  margin-left:4px;vertical-align:middle;
+}
 
 /* ── BUTTONS ── */
 .btn{
@@ -628,11 +645,13 @@ body.readonly .card-checklist-body { display: none !important; }
 <div class="board">
 <div class="board-inner">
 
+<div id="ptr-indicator">↓ оновити</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="board-title">Мій дашборд</div>
   <div class="topbar-right">
-    <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span></div>
+    <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span><span id="offline-badge"></span></div>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
@@ -1063,6 +1082,9 @@ function setSyncStatus(state,text){
   el.className='sync-status '+state;
   tx.textContent=text;
 }
+function setNotUpdated(){
+  setSyncStatus('not-updated','не оновлено ✗');
+}
 function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 // localStorage cache for progress values (survives page reload)
 let _progressCache={};
@@ -1145,7 +1167,7 @@ async function apiGet(){
     // getAllWithChecklist: один запит замість двох (getAll + getChecklist)
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getAllWithChecklist'}),redirect:'follow'});
     const text=await res.text();
-    let payload;try{payload=JSON.parse(text);}catch{setSyncStatus('err','Помилка даних');render();renderNotes();return;}
+    let payload;try{payload=JSON.parse(text);}catch{setNotUpdated();render();renderNotes();return;}
 
     // Обробка об'єктів
     const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
@@ -1176,7 +1198,7 @@ async function apiGet(){
 
     saveSnapshot(); // persist fresh data for next page open
     setSyncStatus('ok','збережено ✓');
-  }catch(e){setSyncStatus('err','помилка з\'єднання');console.error(e);}
+  }catch(e){setNotUpdated();console.error(e);}
   finally{
     // If user is typing anywhere — skip re-render entirely to avoid losing focus/text
     const ae=document.activeElement;
@@ -1223,7 +1245,7 @@ async function apiSave(obj){
     setSyncStatus('ok','збережено ✓');
     saveSnapshot(); // keep cache fresh after every save
     return true;
-  }catch(e){setSyncStatus('err','помилка збереження');console.error(e);return false;}
+  }catch(e){setNotUpdated();console.error(e);return false;}
 }
 
 async function apiDelete(id){
@@ -1391,7 +1413,7 @@ function buildCard(o,i){
       const ri=objects.findIndex(x=>String(x.id)===String(o.id));
       if(ri<0)return;
       objects[ri].closed=false;
-      apiSave(objects[ri]).catch(err=>console.error(err));
+      apiSaveQueued(objects[ri]).catch(err=>console.error(err));
       render();
     };
     return card;
@@ -1880,7 +1902,7 @@ async function addObjNoteWithTime(objId,addRow){
   const dtBtn=addRow.querySelector('button');if(dtBtn)dtBtn.textContent='+ нагадати';
   // Optimistic: render immediately, save in background
   render();renderNotes();renderOverdueZone();
-  apiSave(objects[ri]).catch(e=>console.error(e));
+  apiSaveQueued(objects[ri]).catch(e=>console.error(e));
 }
 
 async function addObjNote(objId,inp){
@@ -1891,7 +1913,7 @@ async function addObjNote(objId,inp){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time:''});
   inp.value='';
-  try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+  try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
 }
 
@@ -1902,7 +1924,7 @@ async function deleteObjNote(objId,ni){
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
   _rebuildOneCard(objects[ri].id);renderNotes();renderOverdueZone();
-  apiSave(objects[ri]).catch(e=>console.error(e));
+  apiSaveQueued(objects[ri]).catch(e=>console.error(e));
 }
 
 // ── STICKY NOTE ACTIONS ──
@@ -1930,7 +1952,7 @@ async function addQuickNote(){
   if(document.getElementById('quickDtDate')) document.getElementById('quickDtDate').value='';
   document.getElementById('quickDtRow').style.display='none';
   document.getElementById('quickDtBtn').textContent='+ нагадати';
-  try{await apiSave(sn);}catch(e){console.error(e);}
+  try{await apiSaveQueued(sn);}catch(e){console.error(e);}
   renderNotes();
 }
 
@@ -1946,7 +1968,7 @@ async function addMobileNote(){
       objects[ri].notes.push({text,time:''});
       inp.value='';
       document.getElementById('mobileObjSelect').value='';
-      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+      try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
       render();renderNotes();renderOverdueZone();return;
     }
   }
@@ -1956,7 +1978,7 @@ async function addMobileNote(){
   stickyNotes.push(sn);
   inp.value='';
   renderNotes();renderOverdueZone();
-  apiSave(sn).catch(e=>console.error(e));
+  apiSaveQueued(sn).catch(e=>console.error(e));
 }
 
 async function addGlobalNote(){
@@ -1976,7 +1998,7 @@ async function addGlobalNote(){
       inp.value='';
       document.getElementById('noteObjSelect').value='';
       if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
-      try{await apiSave(objects[ri]);}catch(e){console.error(e);}
+      try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
       render();renderNotes();renderOverdueZone();return;
     }
   }
@@ -1991,7 +2013,7 @@ async function addGlobalNote(){
   document.getElementById('noteDtBtn').textContent='+ нагадати';
   // Optimistic: show immediately
   renderNotes();renderOverdueZone();
-  apiSave(sn).catch(e=>console.error(e));
+  apiSaveQueued(sn).catch(e=>console.error(e));
 }
 
 async function deleteStickyNote(idx){
@@ -2068,21 +2090,21 @@ async function saveNoteModal(){
         const delId=stickyNotes[noteCtx.idx].id;
         stickyNotes.splice(noteCtx.idx,1);
         closeNoteModal();
-        try{await apiSave(objects[ri]);await apiDelete(delId);}catch(e){console.error(e);}
+        try{await apiSaveQueued(objects[ri]);await apiDelete(delId);}catch(e){console.error(e);}
         render();renderNotes();return;
       }
     }
     const sn=stickyNotes[noteCtx.idx];
     sn.name=text;sn.notes=time?[{text,time}]:[];
     closeNoteModal();renderNotes();
-    apiSave(sn).catch(e=>console.error(e));
+    apiSaveQueued(sn).catch(e=>console.error(e));
   }else{
     const ri=objects.findIndex(o=>String(o.id)===String(noteCtx.objId));
     if(ri<0)return;
     objects[ri].notes[noteCtx.ni].text=text;
     objects[ri].notes[noteCtx.ni].time=time;
     closeNoteModal();render();renderNotes();
-    apiSave(objects[ri]).catch(e=>console.error(e));
+    apiSaveQueued(objects[ri]).catch(e=>console.error(e));
   }
 }
 
@@ -2232,13 +2254,13 @@ async function saveCard(){
       _closedFlagsCache[obj.id]=obj._closedFlags;
       saveClosedFlagsCache();
     }
-    apiSave(obj).catch(e=>console.error(e));
+    apiSaveQueued(obj).catch(e=>console.error(e));
     const realIdx=objects.findIndex(o=>String(o.id)===String(obj.id));
     if(realIdx>=0) objects[realIdx]=obj;
     else objects.push(obj);
     window._editObjId=null;
   } else {
-    apiSave(obj).catch(e=>console.error(e));
+    apiSaveQueued(obj).catch(e=>console.error(e));
     objects.push(obj);
   }
   btn.disabled=false;btn.textContent='Зберегти';
@@ -2345,12 +2367,12 @@ async function restoreHistory(idx){
   if(!_requireEdit()) return;
   const h=actionLog[idx];if(!h)return;
   if(h.type==='obj'){
-    const o={...h.data,id:''};await apiSave(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
+    const o={...h.data,id:''};await apiSaveQueued(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
   }else if(h.type==='note'){
     const ri=objects.findIndex(o=>String(o.id)===String(h.objId));
-    if(ri>=0){if(!objects[ri].notes)objects[ri].notes=[];objects[ri].notes.push(h.data);await apiSave(objects[ri]);render();renderNotes();}
+    if(ri>=0){if(!objects[ri].notes)objects[ri].notes=[];objects[ri].notes.push(h.data);await apiSaveQueued(objects[ri]);render();renderNotes();}
   }else if(h.type==='sticky'){
-    const sn={...h.data,id:'sticky_'+Date.now()};stickyNotes.push(sn);await apiSave(sn);renderNotes();
+    const sn={...h.data,id:'sticky_'+Date.now()};stickyNotes.push(sn);await apiSaveQueued(sn);renderNotes();
   }
   actionLog.splice(idx,1);
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
@@ -2557,6 +2579,118 @@ const _hadSnapshot=loadSnapshot();
 render();
 renderNotes();
 renderOverdueZone();
+
+// ── OFFLINE QUEUE ──
+// Зберігає зміни (save/delete) коли нема інтернету, відправляє коли з'являється
+const OFFLINE_Q_KEY='crm_offline_queue';
+let _offlineQueue=[];
+try{_offlineQueue=JSON.parse(localStorage.getItem(OFFLINE_Q_KEY)||'[]');}catch{}
+
+function _saveOfflineQueue(){
+  try{localStorage.setItem(OFFLINE_Q_KEY,JSON.stringify(_offlineQueue));}catch{}
+  const badge=document.getElementById('offline-badge');
+  if(badge){
+    if(_offlineQueue.length){badge.textContent=_offlineQueue.length+'↑';badge.style.display='inline';}
+    else{badge.style.display='none';}
+  }
+}
+
+// Замінюємо apiSave/apiDelete на версії з offline fallback
+const _origApiSave=apiSave;
+async function apiSaveQueued(obj){
+  if(!navigator.onLine){
+    // Зберігаємо в чергу — видаляємо стару версію того ж об'єкту якщо є
+    _offlineQueue=_offlineQueue.filter(q=>!(q.action==='save'&&String(q.obj.id)===String(obj.id)));
+    _offlineQueue.push({action:'save',obj,ts:Date.now()});
+    _saveOfflineQueue();
+    saveSnapshot();
+    setSyncStatus('not-updated','офлайн — збережено локально');
+    return true;
+  }
+  return _origApiSave(obj);
+}
+
+async function _flushOfflineQueue(){
+  if(!_offlineQueue.length) return;
+  setSyncStatus('syncing','синхронізація...');
+  const toSend=[..._offlineQueue];
+  _offlineQueue=[];
+  _saveOfflineQueue();
+  for(const item of toSend){
+    try{
+      if(item.action==='save') await _origApiSave(item.obj);
+      else if(item.action==='delete') await apiDelete(item.id);
+    }catch(e){
+      // Повертаємо назад якщо не вдалося
+      _offlineQueue.push(item);
+      _saveOfflineQueue();
+      setNotUpdated();
+      return;
+    }
+  }
+  setSyncStatus('ok','збережено ✓');
+  await apiGet();
+}
+
+window.addEventListener('online',()=>{
+  setSyncStatus('syncing','з\'єднання відновлено...');
+  setTimeout(_flushOfflineQueue,500);
+});
+window.addEventListener('offline',()=>{
+  setSyncStatus('not-updated','офлайн');
+});
+
+// Перевіряємо чергу одразу при старті (якщо є збережені офлайн зміни)
+if(_offlineQueue.length){
+  _saveOfflineQueue(); // показуємо badge
+  if(navigator.onLine) setTimeout(_flushOfflineQueue,2000);
+}
+
+// Патч: замінюємо apiSave на версію з queue
+// (після того як оригінальна функція вже оголошена вище)
+window.apiSave=apiSaveQueued;
+
+// ── PULL-TO-REFRESH ──
+(function(){
+  let startY=0,pulling=false,triggered=false;
+  const IND=document.getElementById('ptr-indicator');
+  const THRESHOLD=70;
+
+  document.addEventListener('touchstart',e=>{
+    if(window.scrollY>10) return; // тільки якщо вже вгорі
+    startY=e.touches[0].clientY;
+    pulling=true;triggered=false;
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    if(!pulling) return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy<10){pulling=false;return;}
+    if(IND){
+      if(dy>THRESHOLD&&!triggered){
+        IND.textContent='↑ відпустіть для оновлення';
+        IND.className='pulling';
+      } else if(dy>10){
+        IND.textContent='↓ потягніть для оновлення';
+        IND.className='pulling';
+      }
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',e=>{
+    if(!pulling){return;}
+    const dy=e.changedTouches[0].clientY-startY;
+    pulling=false;
+    if(dy>THRESHOLD){
+      if(IND){IND.textContent='⟳ оновлення...';IND.className='refreshing';}
+      Promise.allSettled([apiGet(),loadCalendar()]).then(()=>{
+        if(IND){IND.className='';setTimeout(()=>{IND.textContent='↓ оновити';},300);}
+      });
+    } else {
+      if(IND){IND.className='';}
+    }
+  },{passive:true});
+})();
 
 // ── Checkbox "В реалізації" — візуальний фідбек ──
 document.getElementById('f-inwork').addEventListener('change',function(){
