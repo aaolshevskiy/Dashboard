@@ -1103,8 +1103,11 @@ function parseObj(o){
   };
   // Restore cached progress value so flags show immediately on first render
   if(_progressCache[parsed.id||o.id]) parsed._progressValue=_progressCache[parsed.id||o.id];
-  // Restore closed flags state
-  if(_closedFlagsCache[parsed.id||o.id]) parsed._closedFlags=_closedFlagsCache[parsed.id||o.id];
+  // Restore closed flags — priority: server field > localStorage cache
+  let _serverFlags=null;
+  if(o.closedFlagsJson){try{_serverFlags=JSON.parse(o.closedFlagsJson);}catch{}}
+  if(_serverFlags&&typeof _serverFlags==='object') parsed._closedFlags=_serverFlags;
+  else if(_closedFlagsCache[parsed.id||o.id]) parsed._closedFlags=_closedFlagsCache[parsed.id||o.id];
   else parsed._closedFlags={};
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
@@ -1235,6 +1238,7 @@ async function apiSave(obj){
       paymentPct:obj.paymentPct||'',
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
+      closedFlagsJson:JSON.stringify(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -2432,20 +2436,17 @@ function toggleFlag(o,key,label){
   const closed=o._closedFlags||{};
   const isCurrentlyClosed=!!closed[key];
   if(isCurrentlyClosed){
-    // Reopen without confirmation
     closed[key]=false;
-    o._closedFlags=closed;
-    _closedFlagsCache[o.id]=closed;
-    saveClosedFlagsCache();
-    updateProgressFlags(o);
   } else {
     if(!confirm('Закрити прапорець "'+label+'"?\nВідновити можна в налаштуваннях картки.')){return;}
     closed[key]=true;
-    o._closedFlags=closed;
-    _closedFlagsCache[o.id]=closed;
-    saveClosedFlagsCache();
-    updateProgressFlags(o);
   }
+  o._closedFlags=closed;
+  _closedFlagsCache[o.id]=closed;
+  saveClosedFlagsCache();
+  updateProgressFlags(o);
+  // Sync to server so flags are shared across devices
+  apiSaveQueued(o).catch(e=>console.error(e));
 }
 
 // ── PROGRESS LOADING ──
