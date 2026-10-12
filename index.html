@@ -763,11 +763,6 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Дизайнер</label><input id="f-designer" placeholder="Ім'я дизайнера" autocomplete="off"></div>
     </div>
 
-    <div class="fsec">Статус проєкту</div>
-    <div class="form-group">
-      <div class="form-row"><label>Етап</label><input id="f-project-status" placeholder="напр. Чекаємо матеріали, Монтаж" autocomplete="off"></div>
-    </div>
-
     <div class="fsec">Посилання</div>
     <div class="form-group">
       <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..." autocomplete="off"></div>
@@ -1088,7 +1083,7 @@ function setNotUpdated(){
 function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 // localStorage cache for progress values (survives page reload)
 let _progressCache={};
-try{_progressCache=JSON.parse(localStorage.getItem('crm_progress')||'{}');}catch{}
+try{_progressCache=JSON.parse(localStorage.getItem('crm_progress_v2')||'{}');}catch{}
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
@@ -1680,12 +1675,54 @@ function buildCard(o,i){
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
-  // Project status — always visible if set, above dates
-  if(o.projectStatus){
-    const ps=document.createElement('div');
-    ps.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;margin-top:4px;font-style:italic;line-height:1.4';
-    ps.textContent='▸ '+o.projectStatus;
-    card.appendChild(ps);
+  // Project status — inline editable directly on card
+  {
+    const psWrap=document.createElement('div');
+    psWrap.style.cssText='margin-top:4px;';
+
+    const psView=document.createElement('div');
+    psView.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;font-style:italic;line-height:1.4;cursor:pointer;min-height:26px;display:flex;align-items:center;gap:4px;';
+    psView.innerHTML='<span style="opacity:.5">▸</span><span class="ps-text">'+(o.projectStatus||'<span style="opacity:.4">статус проєкту...</span>')+'</span>';
+
+    const psInput=document.createElement('input');
+    psInput.type='text';
+    psInput.placeholder='статус проєкту...';
+    psInput.value=o.projectStatus||'';
+    psInput.style.cssText='display:none;width:100%;font-size:12px;font-family:inherit;font-style:italic;color:var(--text2);background:var(--surface3);border:1.5px solid var(--blue);border-radius:6px;padding:3px 8px;outline:none;line-height:1.4;';
+
+    function _psStartEdit(e){
+      e.stopPropagation();
+      if(!canEdit()){return;}
+      if(!_requireEdit()){return;}
+      psView.style.display='none';
+      psInput.style.display='block';
+      psInput.focus();
+      psInput.select();
+    }
+    function _psSave(){
+      const val=psInput.value.trim();
+      psView.style.display='';
+      psInput.style.display='none';
+      psView.querySelector('.ps-text').innerHTML=val||'<span style="opacity:.4">статус проєкту...</span>';
+      if(val===o.projectStatus) return; // не змінилось
+      o.projectStatus=val;
+      // Зберігаємо в масив об'єктів і на сервер
+      const realIdx=objects.findIndex(x=>String(x.id)===String(o.id));
+      if(realIdx>=0) objects[realIdx].projectStatus=val;
+      apiSaveQueued(o).catch(e=>console.error(e));
+    }
+    psView.addEventListener('click',_psStartEdit);
+    psInput.addEventListener('blur',_psSave);
+    psInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();psInput.blur();}
+      if(e.key==='Escape'){psInput.value=o.projectStatus||'';psInput.blur();}
+      e.stopPropagation();
+    });
+    psInput.addEventListener('click',e=>e.stopPropagation());
+
+    psWrap.appendChild(psView);
+    psWrap.appendChild(psInput);
+    card.appendChild(psWrap);
   }
 
   // Flags + Dates — один рядок: прапорці зліва, дати справа
@@ -2147,7 +2184,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-status'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2194,7 +2231,6 @@ function openEditModal(objId){
   console.log('[DATE DEBUG] f-start value after set:', document.getElementById('f-start').value);
   document.getElementById('f-masters-name').value=o.mastersName||o.prorab||'';
   if(document.getElementById('f-designer')) document.getElementById('f-designer').value=o.designer||'';
-  if(document.getElementById('f-project-status')) document.getElementById('f-project-status').value=o.projectStatus||'';
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
@@ -2249,7 +2285,7 @@ async function saveCard(){
     dateEnd:document.getElementById('f-end').value,
     mastersName:document.getElementById('f-masters-name').value.trim(),
     designer:document.getElementById('f-designer')?.value.trim()||'',
-    projectStatus:document.getElementById('f-project-status')?.value.trim()||'',
+    projectStatus:(editIdx!==null&&objects[editIdx]?objects[editIdx].projectStatus||'':''),
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
@@ -2493,17 +2529,22 @@ async function loadProgress(){
         const raw=data.value;
         if(raw===null||raw===undefined||raw===''){return;}
         // Convert to %. If value is fraction (0..1) → multiply by 100
-        const num=parseFloat(String(raw).replace(',','.'));
+        const num=parseFloat(String(raw).replace(',','.').replace('%',''));
         let val;
         if(isNaN(num)){val=String(raw).trim();}
-        else if(num>=0&&num<=1){val=Math.round(num*100)+'%';}
+        // Google Sheets stores % as fraction: 1.03 = 103%, 0.5 = 50%
+        // If raw string already contains '%' sign — it's already a percentage string
+        else if(String(raw).includes('%')){val=Math.round(num)+'%';}
+        // If num looks like a fraction (0 < num < 2) → multiply by 100
+        else if(num>0&&num<2){val=Math.round(num*100)+'%';}
+        // Otherwise it's already a percentage number (e.g. 103 → 103%)
         else{val=Math.round(num)+'%';}
         // Cache in object so next render shows it immediately
         o._progressValue=val;
         // Persist to localStorage and in-memory cache so value survives page reload and re-render
         try{
           _progressCache[o.id]=val;
-          localStorage.setItem('crm_progress',JSON.stringify(_progressCache));
+          localStorage.setItem('crm_progress_v2',JSON.stringify(_progressCache));
         }catch{}
         // Update DOM if element exists
         const wrap=document.getElementById('progress-wrap-'+o.id);
