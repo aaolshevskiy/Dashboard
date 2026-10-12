@@ -1084,6 +1084,10 @@ function parseBool(v){return v===true||v==='true'||v==='TRUE'||v===1||v==='1';}
 // localStorage cache for progress values (survives page reload)
 let _progressCache={};
 try{_progressCache=JSON.parse(localStorage.getItem('crm_progress_v2')||'{}');}catch{}
+// Pending save tracker — ids of objects currently being saved to server
+// apiGet skips overwriting these objects until save completes
+const _pendingSaveIds=new Set();
+
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
@@ -1204,6 +1208,15 @@ async function apiGet(){
         st.push(sn);
       }else{ob.push(parseObj(o));}
     });
+    // Merge: keep in-memory version for objects currently being saved (avoid overwriting unsaved changes)
+    if(_pendingSaveIds.size>0){
+      const memById={};
+      objects.forEach(o=>{ memById[String(o.id)]=o; });
+      ob=ob.map(serverObj=>{
+        const sid=String(serverObj.id);
+        return _pendingSaveIds.has(sid) ? (memById[sid]||serverObj) : serverObj;
+      });
+    }
     objects=ob;stickyNotes=st;
 
     saveSnapshot(); // persist fresh data for next page open
@@ -1213,10 +1226,9 @@ async function apiGet(){
     // If user is typing anywhere — skip re-render entirely to avoid losing focus/text
     const ae=document.activeElement;
     const isTyping=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&ae.value.trim()!=='';
-    if(isTyping){
-      // Data updated in memory, but don't touch the DOM while user types
-      return;
-    }
+    if(isTyping) return; // data updated in memory, don't disturb active input
+    // If there are pending saves in flight — skip re-render to avoid overwriting optimistic UI
+    if(_pendingSaveIds.size>0) return;
     render();renderNotes();renderOverdueZone();
   }
 }
@@ -1224,6 +1236,8 @@ async function apiGet(){
 async function apiSave(obj){
   if(!_requireEdit()) return false;
   setSyncStatus('ok','збережено ✓'); // optimistic — show immediately
+  const _saveId=String(obj.id||'');
+  if(_saveId) _pendingSaveIds.add(_saveId);
   let full;
   if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
     full={id:obj.id||'sticky_'+Date.now(),name:obj.name||'',addr:String(obj.col||1),
@@ -1257,6 +1271,7 @@ async function apiSave(obj){
     saveSnapshot(); // keep cache fresh after every save
     return true;
   }catch(e){setNotUpdated();console.error(e);return false;}
+  finally{if(_saveId) _pendingSaveIds.delete(_saveId);}
 }
 
 async function apiDelete(id){
@@ -1977,7 +1992,7 @@ async function deleteObjNote(objId,ni){
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
   objects[ri].notes.splice(ni,1);
   _rebuildOneCard(objects[ri].id);renderNotes();renderOverdueZone();
-  apiSaveQueued(objects[ri]).catch(e=>console.error(e));
+  try{ await apiSaveQueued(objects[ri]); }catch(e){console.error(e);}
 }
 
 // ── STICKY NOTE ACTIONS ──
