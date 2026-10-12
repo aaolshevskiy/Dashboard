@@ -1087,25 +1087,8 @@ try{_progressCache=JSON.parse(localStorage.getItem('crm_progress_v2')||'{}');}ca
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
-function saveClosedFlagsCache(syncToServer){
+function saveClosedFlagsCache(){
   try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}
-  // syncToServer=true — зберегти прапорці на сервер як окремий рядок __flags__
-  if(syncToServer) _syncFlagsToServer();
-}
-
-// Зберігаємо прапорці в таблицю як окремий рядок id='__flags__'
-// Поле addr — рядок, Apps Script не парсить його автоматично
-async function _syncFlagsToServer(){
-  try{
-    const flagObj={
-      id:'__flags__',
-      status:'__flags__',
-      addr:JSON.stringify(_closedFlagsCache), // addr — рядковий, Apps Script не парсить
-      notes:[]
-    };
-    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',object:flagObj}),redirect:'follow'});
-  }catch(e){console.warn('[Flags] sync failed',e);}
 }
 
 function parseObj(o){
@@ -1117,12 +1100,21 @@ function parseObj(o){
   };
   // Restore cached progress value so flags show immediately on first render
   if(_progressCache[parsed.id||o.id]) parsed._progressValue=_progressCache[parsed.id||o.id];
-  // Restore closed flags — priority: server field > localStorage cache
+  // Restore closed flags — server field is authoritative when present (syncs between devices)
+  const _cfjRaw=String(o.closedFlagsJson||'').trim();
+  const _cfjHasData=_cfjRaw&&_cfjRaw!==''&&_cfjRaw!=='{}';
   let _serverFlags=null;
-  if(o.closedFlagsJson){try{_serverFlags=JSON.parse(o.closedFlagsJson);}catch{}}
-  if(_serverFlags&&typeof _serverFlags==='object') parsed._closedFlags=_serverFlags;
-  else if(_closedFlagsCache[parsed.id||o.id]) parsed._closedFlags=_closedFlagsCache[parsed.id||o.id];
-  else parsed._closedFlags={};
+  if(_cfjRaw){try{_serverFlags=JSON.parse(_cfjRaw);}catch{}}
+  if(_serverFlags&&typeof _serverFlags==='object'&&!Array.isArray(_serverFlags)){
+    // Server value present — always authoritative (even {} means all open)
+    parsed._closedFlags=_serverFlags;
+    // Sync to local cache for offline use
+    _closedFlagsCache[parsed.id||o.id]=_serverFlags;
+    saveClosedFlagsCache();
+  } else {
+    // No server value yet (field missing/empty) — fall back to local cache
+    parsed._closedFlags=_closedFlagsCache[parsed.id||o.id]||{};
+  }
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
@@ -1204,17 +1196,7 @@ async function apiGet(){
     const st=[],ob=[];
     rawObjects.forEach(o=>{
       if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
-      // Рядок __flags__ — синхронізація прапорців між пристроями
-      if(String(o.id)==='__flags__'){
-        try{
-          const flags=JSON.parse(o.addr||'{}');
-          if(flags&&typeof flags==='object'&&!Array.isArray(flags)){
-            _closedFlagsCache=flags;
-            saveClosedFlagsCache(); // localStorage без запиту на сервер
-          }
-        }catch(e){}
-        return;
-      }
+      if(String(o.id)==='__flags__') return;     // старий службовий рядок — ігноруємо
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
@@ -2504,12 +2486,18 @@ function toggleFlag(o,key,label){
   if(isCurrentlyClosed){
     closed[key]=false;
   } else {
-    if(!confirm('Закрити прапорець "'+label+'"?\nВідновити можна в налаштуваннях картки.')){return;}
     closed[key]=true;
   }
   o._closedFlags=closed;
+  // Оновлюємо масив objects — щоб стан не загубився після ре-рендеру
+  const ri=objects.findIndex(x=>String(x.id)===String(o.id));
+  if(ri>=0) objects[ri]._closedFlags=closed;
+  // Зберігаємо в localStorage
   _closedFlagsCache[o.id]=closed;
-  saveClosedFlagsCache(true); // true = синхронізувати на сервер
+  saveClosedFlagsCache();
+  // Зберігаємо на сервер — closedFlagsJson в полі об'єкта (надійна синхронізація між пристроями)
+  const objToSave=ri>=0?objects[ri]:o;
+  apiSaveQueued(objToSave).catch(e=>console.warn('[Flags] save failed',e));
   updateProgressFlags(o);
 }
 
