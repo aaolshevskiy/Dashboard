@@ -1096,9 +1096,15 @@ function saveClosedFlagsCache(){
 }
 
 function parseObj(o){
+  // Always deep-copy notes to prevent shared-reference bugs between objects
+  let _notes;
+  try{
+    if(Array.isArray(o.notes)) _notes=o.notes.map(n=>({...n}));
+    else _notes=JSON.parse(o.notes||'[]');
+  }catch{_notes=[];}
   const parsed={...o,
     inwork:parseBool(o.inwork),completed:parseBool(o.completed),masters:parseBool(o.masters),
-    notes:Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})(),
+    notes:_notes,
     progressUrl:o.progressUrl||'',
     progressCell:o.progressCell||''
   };
@@ -1165,8 +1171,13 @@ function loadSnapshot(){
     if(!raw)return false;
     const snap=JSON.parse(raw);
     if(!snap||!Array.isArray(snap.objects))return false;
-    objects=snap.objects;
-    stickyNotes=Array.isArray(snap.stickyNotes)?snap.stickyNotes:[];
+    // Run parseObj to ensure proper typing and deep-copy of notes arrays
+    objects=snap.objects.map(o=>parseObj(o));
+    stickyNotes=(Array.isArray(snap.stickyNotes)?snap.stickyNotes:[]).map(sn=>{
+      const s={...sn};
+      s.notes=Array.isArray(sn.notes)?sn.notes.map(n=>({...n})):[];
+      return s;
+    });
     // Restore checklist from snapshot (cross-device will be overwritten by server fetch)
     if(Array.isArray(snap.clItems))  _clItems=snap.clItems;
     if(snap.clChecks&&typeof snap.clChecks==='object') _clChecks=snap.clChecks;
@@ -1204,7 +1215,9 @@ async function apiGet(){
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
-        sn.notes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
+        // Deep-copy notes to prevent shared-reference between server object and local state
+        const _snNotes=Array.isArray(sn.notes)?sn.notes:(()=>{try{return JSON.parse(sn.notes||'[]');}catch{return[];}})();
+        sn.notes=_snNotes.map(n=>({...n}));
         st.push(sn);
       }else{ob.push(parseObj(o));}
     });
@@ -2087,7 +2100,7 @@ async function addGlobalNote(){
 async function deleteStickyNote(idx){
   if(!_requireEdit()) return;
   const sn=stickyNotes[idx];
-  addHistory({type:'sticky',label:sn.name,data:{...sn}});
+  addHistory({type:'sticky',label:sn.name,data:{...sn,notes:(sn.notes||[]).map(n=>({...n}))}});
   const id=sn.id;stickyNotes.splice(idx,1);
   renderNotes();renderOverdueZone();
   apiDelete(id).catch(e=>console.error(e));
@@ -2293,9 +2306,12 @@ async function saveCard(){
     progressCell:document.getElementById('f-progress-cell')?.value.trim()||'',
     paymentPct:document.getElementById('f-payment-pct')?.value.trim()||'',
     _closedFlags:(()=>{
-      const prev=(editIdx!==null&&objects[editIdx]?objects[editIdx]._closedFlags:null)||{};
+      // Always find by saved id — not by editIdx which may shift after apiGet/sort
+      const _eid=window._editObjId;
+      const _cur=_eid?objects.find(o=>String(o.id)===String(_eid)):null;
+      const prev=(_cur?_cur._closedFlags:null)||{};
       // Determine active kanban key from current progress
-      const cpv=editIdx!==null&&objects[editIdx]?objects[editIdx]._progressValue:null;
+      const cpv=_cur?_cur._progressValue:null;
       const cn=cpv?parseFloat(String(cpv).replace('%','').replace(',','.')):NaN;
       const cKey=!isNaN(cn)?(cn>=90?'kanban3':cn>=30?'kanban2':cn>=1?'kanban1':null):null;
       const kanbanClosed=document.getElementById('f-flag-kanban-closed')?.checked||false;
@@ -2308,7 +2324,14 @@ async function saveCard(){
     masters:false,
     completed:false,
     status:'active',stage:'',linkProject:'',
-    notes:editIdx!==null?(objects[editIdx].notes||[]):[]
+    // Find by id — not by editIdx which may be stale after apiGet/sortObjects
+    // Deep-copy notes to prevent shared-reference mutations
+    notes:(()=>{
+      const _eid=window._editObjId;
+      const _cur=_eid?objects.find(o=>String(o.id)===String(_eid)):null;
+      const src=_cur?(_cur.notes||[]):(editIdx!==null&&objects[editIdx]?objects[editIdx].notes||[]:[]);
+      return src.map(n=>({...n}));
+    })()
   };
   if(editIdx!==null){
     // Find by id (not index) because sortObjects() may have reordered array
@@ -2349,7 +2372,7 @@ async function deleteCard(objId){
   if(i<0)return;
   const o=objects[i];
   if(!confirm('Видалити "'+o.name+'"?'))return;
-  addHistory({type:'obj',label:o.name,data:{...o,notes:[...(o.notes||[])]}});
+  addHistory({type:'obj',label:o.name,data:{...o,notes:(o.notes||[]).map(n=>({...n}))}});
   const id=o.id;objects.splice(i,1);render();renderNotes();renderOverdueZone();
   try{await apiDelete(id);}catch(e){console.error(e);}
 }
@@ -2434,12 +2457,19 @@ async function restoreHistory(idx){
   if(!_requireEdit()) return;
   const h=actionLog[idx];if(!h)return;
   if(h.type==='obj'){
-    const o={...h.data,id:''};await apiSaveQueued(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
+    // Deep-copy notes to avoid shared-reference with actionLog entry
+    const o={...h.data,id:'',notes:(Array.isArray(h.data.notes)?h.data.notes.map(n=>({...n})):[])};
+    await apiSaveQueued(o);objects.push(parseObj(o));sortObjects();render();renderNotes();
   }else if(h.type==='note'){
     const ri=objects.findIndex(o=>String(o.id)===String(h.objId));
-    if(ri>=0){if(!objects[ri].notes)objects[ri].notes=[];objects[ri].notes.push(h.data);await apiSaveQueued(objects[ri]);render();renderNotes();}
+    if(ri>=0){
+      if(!objects[ri].notes)objects[ri].notes=[];
+      objects[ri].notes.push({...h.data}); // deep-copy note entry
+      await apiSaveQueued(objects[ri]);render();renderNotes();
+    }
   }else if(h.type==='sticky'){
-    const sn={...h.data,id:'sticky_'+Date.now()};stickyNotes.push(sn);await apiSaveQueued(sn);renderNotes();
+    const sn={...h.data,id:'sticky_'+Date.now(),notes:(Array.isArray(h.data.notes)?h.data.notes.map(n=>({...n})):[])};
+    stickyNotes.push(sn);await apiSaveQueued(sn);renderNotes();
   }
   actionLog.splice(idx,1);
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
