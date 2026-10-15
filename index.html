@@ -1214,12 +1214,6 @@ async function apiGet(){
     rawObjects.forEach(o=>{
       if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
       if(String(o.id)==='__flags__') return;     // старий службовий рядок — ігноруємо
-      if(String(o.id)==='__history__'||String(o.status)==='__history__'){
-        // Синхронізація actionLog з сервера
-        const serverLog=Array.isArray(o.notes)?o.notes:(()=>{try{return JSON.parse(o.notes||'[]');}catch{return[];}})();
-        _mergeHistory(serverLog);
-        return;
-      }
       if(String(o.id).startsWith('sticky_')||String(o.status)==='sticky'){
         const sn={...o};
         sn.col=parseInt(sn.col)||parseInt(sn.addr)||1;
@@ -2439,65 +2433,19 @@ async function loadCalendar(){
 
 // ── HISTORY ──
 const MAX_HIST=100;
-let _historySaveTimer=null;
-
-function _persistHistory(){
-  // Зберігаємо локально одразу
-  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
-  // На сервер — з debounce 2 сек (щоб не смітити при швидких діях)
-  clearTimeout(_historySaveTimer);
-  _historySaveTimer=setTimeout(()=>apiSaveHistory().catch(()=>{}),2000);
-}
-
-async function apiSaveHistory(){
-  // Зберігаємо як окремий рядок __history__ у Sheets через action:'save'
-  // Поле notes містить JSON масив actionLog
-  const obj={
-    id:'__history__',
-    name:'__history__',
-    status:'__history__',
-    notes:actionLog,   // Apps Script серіалізує notes як JSON
-    // Обов'язкові поля щоб saveObject не кидав помилок
-    client:'',addr:'',intercom:'',stage:'',pack:'',area:'',
-    inwork:false,completed:false,masters:false,mastersName:'',
-    linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
-    furniture:'',ofertaUrl:'',moneyUrl:'',ratyfikacjaUrl:'',
-    progressUrl:'',progressCell:'',paymentPct:'',designer:'',
-    projectStatus:'',closedFlagsJson:'{}'
-  };
-  try{
-    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',object:obj}),redirect:'follow'});
-  }catch(e){console.warn('[History] server save failed',e);}
-}
-
 function addHistory(entry){
   // action: 'deleted' (default) | 'added'
   if(!entry.action) entry.action='deleted';
   entry.time=new Date().toISOString();actionLog.unshift(entry);
   if(actionLog.length>MAX_HIST)actionLog.pop();
-  _persistHistory();
+  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
 }
 function addHistoryAdded(entry){
   entry.action='added';
   addHistory(entry);
 }
 function loadHistory(){
-  // Завантажуємо з localStorage як fallback; сервер підвантажується в apiGet
   try{actionLog=JSON.parse(localStorage.getItem('crm_history')||'[]');}catch{actionLog=[];}
-}
-function _mergeHistory(serverLog){
-  // Об'єднуємо серверну та локальну історії за часом (без дублів за time+label)
-  if(!Array.isArray(serverLog)||!serverLog.length) return;
-  const seen=new Set(actionLog.map(h=>h.time+'|'+(h.label||'')));
-  serverLog.forEach(h=>{
-    const key=h.time+'|'+(h.label||'');
-    if(!seen.has(key)){seen.add(key);actionLog.push(h);}
-  });
-  // Сортуємо новіші першими
-  actionLog.sort((a,b)=>new Date(b.time)-new Date(a.time));
-  if(actionLog.length>MAX_HIST) actionLog.length=MAX_HIST;
-  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
 }
 function openHistory(){
   const list=document.getElementById('historyList');
@@ -2553,7 +2501,7 @@ async function restoreHistory(idx){
     stickyNotes.push(sn);await apiSaveQueued(sn);renderNotes();
   }
   actionLog.splice(idx,1);
-  _persistHistory();
+  try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
   closeHistory();openHistory();
 }
 
@@ -2836,34 +2784,25 @@ window.apiSave=apiSaveQueued;
 
 // ── PULL-TO-REFRESH ──
 (function(){
-  let startY=0,startX=0,pulling=false,triggered=false;
+  let startY=0,pulling=false,triggered=false;
   const IND=document.getElementById('ptr-indicator');
   const THRESHOLD=70;
 
-  function isAtTop(){
-    // Перевіряємо обидва варіанти scrollTop (для iPad і iPhone)
-    return (window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0) < 10;
-  }
-
   document.addEventListener('touchstart',e=>{
-    if(!isAtTop()) return; // тільки якщо сторінка вгорі
+    if(window.scrollY>10) return; // тільки якщо вже вгорі
     startY=e.touches[0].clientY;
-    startX=e.touches[0].clientX;
     pulling=true;triggered=false;
   },{passive:true});
 
   document.addEventListener('touchmove',e=>{
     if(!pulling) return;
     const dy=e.touches[0].clientY-startY;
-    const dx=Math.abs(e.touches[0].clientX-startX);
-    // Скасовуємо якщо переважно горизонтальний рух (свайп між колонками)
-    if(dx>dy*1.5){pulling=false;if(IND)IND.className='';return;}
-    if(dy<10){return;}
+    if(dy<10){pulling=false;return;}
     if(IND){
-      if(dy>THRESHOLD){
+      if(dy>THRESHOLD&&!triggered){
         IND.textContent='↑ відпустіть для оновлення';
         IND.className='pulling';
-      } else {
+      } else if(dy>10){
         IND.textContent='↓ потягніть для оновлення';
         IND.className='pulling';
       }
