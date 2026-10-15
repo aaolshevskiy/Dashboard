@@ -1229,22 +1229,15 @@ async function apiGet(){
         st.push(sn);
       }else{ob.push(parseObj(o));}
     });
-    // Merge: якщо є незбережені зміни в пам'яті — пріоритет пам'яті
-    // Захист 1: _pendingSaveIds — об'єкти, save яких ще в польоті
-    // Захист 2: notes-merge — якщо в пам'яті більше нотаток, ніж на сервері → зберігаємо пам'ять
-    //   (покриває race condition: save завершився, але apiGet повернув стару версію)
-    const memById={};
-    objects.forEach(o=>{ memById[String(o.id)]=o; });
-    ob=ob.map(serverObj=>{
-      const sid=String(serverObj.id);
-      const memObj=memById[sid];
-      // Якщо save ще in-flight — завжди беремо пам'ять
-      if(_pendingSaveIds.has(sid)) return memObj||serverObj;
-      // Якщо в пам'яті більше нотаток — сервер ще не отримав свіжий save → беремо пам'ять
-      if(memObj&&Array.isArray(memObj.notes)&&Array.isArray(serverObj.notes)
-         &&memObj.notes.length>serverObj.notes.length) return memObj;
-      return serverObj;
-    });
+    // Merge: keep in-memory version for objects currently being saved (avoid overwriting unsaved changes)
+    if(_pendingSaveIds.size>0){
+      const memById={};
+      objects.forEach(o=>{ memById[String(o.id)]=o; });
+      ob=ob.map(serverObj=>{
+        const sid=String(serverObj.id);
+        return _pendingSaveIds.has(sid) ? (memById[sid]||serverObj) : serverObj;
+      });
+    }
     objects=ob;stickyNotes=st;
 
     saveSnapshot(); // persist fresh data for next page open
@@ -1993,7 +1986,6 @@ async function addObjNoteWithTime(objId,addRow){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time});
   addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
-  saveSnapshot(); // одразу зберігаємо в snapshot — захист від втрати при швидкому apiGet
   inp.value='';if(dtDate)dtDate.value='';
   const dtWrap=addRow.querySelector('div');
   if(dtWrap){dtWrap.style.display='none';}
@@ -2011,7 +2003,6 @@ async function addObjNote(objId,inp){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time:''});
   addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
-  saveSnapshot();
   inp.value='';
   try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
@@ -2067,7 +2058,6 @@ async function addMobileNote(){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time:''});
       addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
-      saveSnapshot();
       inp.value='';
       document.getElementById('mobileObjSelect').value='';
       try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
@@ -2099,7 +2089,6 @@ async function addGlobalNote(){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time});
       addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
-      saveSnapshot();
       inp.value='';
       document.getElementById('noteObjSelect').value='';
       if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
@@ -2455,26 +2444,20 @@ let _historySaveTimer=null;
 function _persistHistory(){
   // Зберігаємо локально одразу
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
-  // На сервер — з debounce 8 сек, і тільки коли немає активних saves
-  // (Apps Script має LockService — паралельні запити конкурують за lock)
+  // На сервер — з debounce 2 сек (щоб не смітити при швидких діях)
   clearTimeout(_historySaveTimer);
-  _historySaveTimer=setTimeout(()=>{
-    // Якщо ще є saves в польоті — чекаємо ще 5 сек
-    if(_pendingSaveIds.size>0){
-      _historySaveTimer=setTimeout(()=>apiSaveHistory().catch(()=>{}),5000);
-    } else {
-      apiSaveHistory().catch(()=>{});
-    }
-  },8000);
+  _historySaveTimer=setTimeout(()=>apiSaveHistory().catch(()=>{}),2000);
 }
 
 async function apiSaveHistory(){
-  // Зберігаємо як окремий рядок __history__ у Sheets через action:'save' напряму (без _requireEdit)
+  // Зберігаємо як окремий рядок __history__ у Sheets через action:'save'
+  // Поле notes містить JSON масив actionLog
   const obj={
     id:'__history__',
     name:'__history__',
     status:'__history__',
-    notes:actionLog,
+    notes:actionLog,   // Apps Script серіалізує notes як JSON
+    // Обов'язкові поля щоб saveObject не кидав помилок
     client:'',addr:'',intercom:'',stage:'',pack:'',area:'',
     inwork:false,completed:false,masters:false,mastersName:'',
     linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
@@ -2483,12 +2466,9 @@ async function apiSaveHistory(){
     projectStatus:'',closedFlagsJson:'{}'
   };
   try{
-    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',object:obj}),redirect:'follow'});
-    const data=await res.json();
-    if(data&&data.error) console.warn('[History] server error:',data.error);
   }catch(e){console.warn('[History] server save failed',e);}
-  // Ніколи не викликаємо setNotUpdated — history save не впливає на статус синхронізації
 }
 
 function addHistory(entry){
