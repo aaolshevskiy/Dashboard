@@ -397,8 +397,6 @@ body{
   background:var(--red-bg);color:var(--red);flex-shrink:0;margin-top:3px;
   letter-spacing:.03em;
 }
-.hist-badge--added{background:var(--green-bg);color:var(--green);}
-.hist-badge--obj{background:rgba(255,149,0,.12);color:var(--orange);}
 .hist-body{flex:1;min-width:0;}
 .hist-name{font-size:15px;font-weight:600;color:var(--text);}
 .hist-meta{font-size:12px;color:var(--text4);margin-top:2px;}
@@ -1979,7 +1977,6 @@ async function addObjNoteWithTime(objId,addRow){
   if(ri<0)return;
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time});
-  addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
   inp.value='';if(dtDate)dtDate.value='';
   const dtWrap=addRow.querySelector('div');
   if(dtWrap){dtWrap.style.display='none';}
@@ -1996,7 +1993,6 @@ async function addObjNote(objId,inp){
   if(ri<0)return;
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time:''});
-  addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
   inp.value='';
   try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
@@ -2051,7 +2047,6 @@ async function addMobileNote(){
     if(ri>=0){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time:''});
-      addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
       inp.value='';
       document.getElementById('mobileObjSelect').value='';
       try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
@@ -2062,7 +2057,6 @@ async function addMobileNote(){
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]};
   stickyNotes.push(sn);
-  addHistoryAdded({type:'sticky',label:text});
   inp.value='';
   renderNotes();renderOverdueZone();
   apiSaveQueued(sn).catch(e=>console.error(e));
@@ -2082,7 +2076,6 @@ async function addGlobalNote(){
     if(ri>=0){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time});
-      addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
       inp.value='';
       document.getElementById('noteObjSelect').value='';
       if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
@@ -2095,7 +2088,6 @@ async function addGlobalNote(){
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
     notes:time?[{text,time}]:[]};
   stickyNotes.push(sn);
-  addHistoryAdded({type:'sticky',label:text});
   inp.value='';
   if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
   document.getElementById('noteDtRow')?.classList.remove('vis');
@@ -2432,17 +2424,11 @@ async function loadCalendar(){
 }
 
 // ── HISTORY ──
-const MAX_HIST=100;
+const MAX_HIST=50;
 function addHistory(entry){
-  // action: 'deleted' (default) | 'added'
-  if(!entry.action) entry.action='deleted';
   entry.time=new Date().toISOString();actionLog.unshift(entry);
   if(actionLog.length>MAX_HIST)actionLog.pop();
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
-}
-function addHistoryAdded(entry){
-  entry.action='added';
-  addHistory(entry);
 }
 function loadHistory(){
   try{actionLog=JSON.parse(localStorage.getItem('crm_history')||'[]');}catch{actionLog=[];}
@@ -2457,26 +2443,11 @@ function openHistory(){
     actionLog.forEach((h,idx)=>{
       const d=new Date(h.time);
       const ts=d.getDate()+'.'+(d.getMonth()+1)+' '+d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
-      const isAdded=h.action==='added';
       const item=document.createElement('div');item.className='hist-item';
-      let badgeClass='hist-badge'+(isAdded?' hist-badge--added':'');
-      let badgeText=isAdded?'додано':'видалено';
-      // Визначаємо тип запису для meta
-      let typeIcon='';
-      if(h.type==='obj') typeIcon='📋 ';
-      else if(h.type==='sticky') typeIcon='📌 ';
-      else if(h.type==='note') typeIcon='💬 ';
-      item.innerHTML='<span class="'+badgeClass+'">'+badgeText+'</span>'
-        +'<div class="hist-body">'
-        +'<div class="hist-name">'+typeIcon+(h.label||'')+'</div>'
-        +'<div class="hist-meta">'+(h.parentName?h.parentName+' · ':'')+ts+'</div>'
-        +'</div>';
-      if(!isAdded){
-        const btn=document.createElement('button');btn.className='hist-restore';btn.textContent='↩ Відновити';
-        btn.onclick=()=>restoreHistory(idx);
-        item.appendChild(btn);
-      }
-      list.appendChild(item);
+      item.innerHTML='<span class="hist-badge">видалено</span><div class="hist-body"><div class="hist-name">'+h.label+'</div><div class="hist-meta">'+(h.parentName?h.parentName+' · ':'')+ts+'</div></div>';
+      const btn=document.createElement('button');btn.className='hist-restore';btn.textContent='↩ Відновити';
+      btn.onclick=()=>restoreHistory(idx);
+      item.appendChild(btn);list.appendChild(item);
     });
   }
   document.getElementById('historyModal').classList.add('open');
