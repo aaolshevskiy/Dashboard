@@ -1229,15 +1229,22 @@ async function apiGet(){
         st.push(sn);
       }else{ob.push(parseObj(o));}
     });
-    // Merge: keep in-memory version for objects currently being saved (avoid overwriting unsaved changes)
-    if(_pendingSaveIds.size>0){
-      const memById={};
-      objects.forEach(o=>{ memById[String(o.id)]=o; });
-      ob=ob.map(serverObj=>{
-        const sid=String(serverObj.id);
-        return _pendingSaveIds.has(sid) ? (memById[sid]||serverObj) : serverObj;
-      });
-    }
+    // Merge: якщо є незбережені зміни в пам'яті — пріоритет пам'яті
+    // Захист 1: _pendingSaveIds — об'єкти, save яких ще в польоті
+    // Захист 2: notes-merge — якщо в пам'яті більше нотаток, ніж на сервері → зберігаємо пам'ять
+    //   (покриває race condition: save завершився, але apiGet повернув стару версію)
+    const memById={};
+    objects.forEach(o=>{ memById[String(o.id)]=o; });
+    ob=ob.map(serverObj=>{
+      const sid=String(serverObj.id);
+      const memObj=memById[sid];
+      // Якщо save ще in-flight — завжди беремо пам'ять
+      if(_pendingSaveIds.has(sid)) return memObj||serverObj;
+      // Якщо в пам'яті більше нотаток — сервер ще не отримав свіжий save → беремо пам'ять
+      if(memObj&&Array.isArray(memObj.notes)&&Array.isArray(serverObj.notes)
+         &&memObj.notes.length>serverObj.notes.length) return memObj;
+      return serverObj;
+    });
     objects=ob;stickyNotes=st;
 
     saveSnapshot(); // persist fresh data for next page open
@@ -1986,6 +1993,7 @@ async function addObjNoteWithTime(objId,addRow){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time});
   addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
+  saveSnapshot(); // одразу зберігаємо в snapshot — захист від втрати при швидкому apiGet
   inp.value='';if(dtDate)dtDate.value='';
   const dtWrap=addRow.querySelector('div');
   if(dtWrap){dtWrap.style.display='none';}
@@ -2003,6 +2011,7 @@ async function addObjNote(objId,inp){
   if(!objects[ri].notes)objects[ri].notes=[];
   objects[ri].notes.push({text,time:''});
   addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId});
+  saveSnapshot();
   inp.value='';
   try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
@@ -2058,6 +2067,7 @@ async function addMobileNote(){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time:''});
       addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
+      saveSnapshot();
       inp.value='';
       document.getElementById('mobileObjSelect').value='';
       try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
@@ -2089,6 +2099,7 @@ async function addGlobalNote(){
       if(!objects[ri].notes)objects[ri].notes=[];
       objects[ri].notes.push({text,time});
       addHistoryAdded({type:'note',label:text,parentName:objects[ri].name,objId:selObjId});
+      saveSnapshot();
       inp.value='';
       document.getElementById('noteObjSelect').value='';
       if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
