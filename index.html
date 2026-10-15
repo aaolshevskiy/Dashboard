@@ -2455,20 +2455,26 @@ let _historySaveTimer=null;
 function _persistHistory(){
   // Зберігаємо локально одразу
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
-  // На сервер — з debounce 2 сек (щоб не смітити при швидких діях)
+  // На сервер — з debounce 8 сек, і тільки коли немає активних saves
+  // (Apps Script має LockService — паралельні запити конкурують за lock)
   clearTimeout(_historySaveTimer);
-  _historySaveTimer=setTimeout(()=>apiSaveHistory().catch(()=>{}),2000);
+  _historySaveTimer=setTimeout(()=>{
+    // Якщо ще є saves в польоті — чекаємо ще 5 сек
+    if(_pendingSaveIds.size>0){
+      _historySaveTimer=setTimeout(()=>apiSaveHistory().catch(()=>{}),5000);
+    } else {
+      apiSaveHistory().catch(()=>{});
+    }
+  },8000);
 }
 
 async function apiSaveHistory(){
-  // Зберігаємо як окремий рядок __history__ у Sheets через action:'save'
-  // Поле notes містить JSON масив actionLog
+  // Зберігаємо як окремий рядок __history__ у Sheets через action:'save' напряму (без _requireEdit)
   const obj={
     id:'__history__',
     name:'__history__',
     status:'__history__',
-    notes:actionLog,   // Apps Script серіалізує notes як JSON
-    // Обов'язкові поля щоб saveObject не кидав помилок
+    notes:actionLog,
     client:'',addr:'',intercom:'',stage:'',pack:'',area:'',
     inwork:false,completed:false,masters:false,mastersName:'',
     linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
@@ -2477,9 +2483,12 @@ async function apiSaveHistory(){
     projectStatus:'',closedFlagsJson:'{}'
   };
   try{
-    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',object:obj}),redirect:'follow'});
+    const data=await res.json();
+    if(data&&data.error) console.warn('[History] server error:',data.error);
   }catch(e){console.warn('[History] server save failed',e);}
+  // Ніколи не викликаємо setNotUpdated — history save не впливає на статус синхронізації
 }
 
 function addHistory(entry){
