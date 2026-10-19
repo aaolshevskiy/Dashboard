@@ -765,6 +765,7 @@ body.readonly .card-checklist-body { display: none !important; }
 
     <div class="fsec">Посилання</div>
     <div class="form-group">
+      <div class="form-row"><label>Проєкт</label><input id="f-project-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..." autocomplete="off"></div>
       <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..." autocomplete="off"></div>
       <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..." autocomplete="off"></div>
@@ -1091,6 +1092,12 @@ const _pendingSaveIds=new Set();
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
+// localStorage cache for project URLs {objId: url}
+let _projectUrlCache={};
+try{_projectUrlCache=JSON.parse(localStorage.getItem('crm_project_urls')||'{}');}catch{}
+function saveProjectUrlCache(){
+  try{localStorage.setItem('crm_project_urls',JSON.stringify(_projectUrlCache));}catch{}
+}
 function saveClosedFlagsCache(){
   try{localStorage.setItem('crm_closed_flags',JSON.stringify(_closedFlagsCache));}catch{}
 }
@@ -1128,6 +1135,7 @@ function parseObj(o){
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
+  if(!parsed.projectUrl) parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
@@ -1264,6 +1272,7 @@ async function apiSave(obj){
       mastersName:obj.mastersName||'',linkProject:obj.bitrix||'',linkFolder:obj.linkFolder||'',
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       furniture:obj.furniture||'',
+      projectUrl:obj.projectUrl||'',
       ofertaUrl:obj.ofertaUrl||'',
       moneyUrl:obj.moneyUrl||'',
       ratyfikacjaUrl:obj.ratyfikacjaUrl||'',
@@ -1280,6 +1289,7 @@ async function apiSave(obj){
       body:JSON.stringify({action:'save',object:full}),redirect:'follow'});
     const data=await res.json();
     if(data.id)obj.id=data.id;
+    if(obj.id){_projectUrlCache[obj.id]=obj.projectUrl||'';saveProjectUrlCache();}
     setSyncStatus('ok','збережено ✓');
     saveSnapshot(); // keep cache fresh after every save
     return true;
@@ -1650,6 +1660,11 @@ function buildCard(o,i){
   const meta=document.createElement('div');
   meta.className='obj-card-meta';
   meta.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:4px';
+  if(o.projectUrl){
+    const pu=String(o.projectUrl).replace(/"/g,'&quot;');
+    meta.innerHTML+='<a href="'+pu+'" target="_blank" rel="noopener" title="Проєкт" onclick="event.stopPropagation()" '
+      +'style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--text3);text-decoration:none;opacity:.6;flex-shrink:0">📐 Проєкт</a>';
+  }
   if(o.pack) meta.innerHTML+='<span class="obj-badge">'+o.pack+'</span>';
   if(o.area) meta.innerHTML+='<span class="obj-badge">'+o.area+'м²</span>';
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
@@ -2194,7 +2209,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2244,6 +2259,7 @@ function openEditModal(objId){
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
+  if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
@@ -2299,6 +2315,7 @@ async function saveCard(){
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
+    projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
     moneyUrl:document.getElementById('f-money-url')?.value.trim()||'',
