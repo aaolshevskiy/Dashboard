@@ -1135,7 +1135,12 @@ function parseObj(o){
   if(!parsed.bitrix&&parsed.linkProject) parsed.bitrix=parsed.linkProject;
   parsed.closed=parsed.closed===true||parsed.closed==='true'||parsed.closed==='TRUE';
   if(!parsed.furniture) parsed.furniture='';
-  if(!parsed.projectUrl) parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
+  // Посилання на проєкт: беремо з поля сервера, або з closedFlagsJson (ключ _projectUrl — синхронізується між пристроями), або з локального кешу
+  if(!parsed.projectUrl){
+    if(_serverFlags&&typeof _serverFlags==='object'&&Object.prototype.hasOwnProperty.call(_serverFlags,'_projectUrl'))
+      parsed.projectUrl=String(_serverFlags._projectUrl||'');
+    else parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
+  }
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
@@ -1281,7 +1286,7 @@ async function apiSave(obj){
       paymentPct:obj.paymentPct||'',
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
-      closedFlagsJson:JSON.stringify(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
