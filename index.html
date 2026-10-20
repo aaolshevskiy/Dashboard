@@ -397,6 +397,7 @@ body{
   background:var(--red-bg);color:var(--red);flex-shrink:0;margin-top:3px;
   letter-spacing:.03em;
 }
+.hist-badge.added{background:var(--green-bg);color:#1e8e3e;}
 .hist-body{flex:1;min-width:0;}
 .hist-name{font-size:15px;font-weight:600;color:var(--text);}
 .hist-meta{font-size:12px;color:var(--text4);margin-top:2px;}
@@ -842,6 +843,7 @@ body.readonly .card-checklist-body { display: none !important; }
           </select>
         </div>
       </div>
+      <div class="form-row"><label>Створено</label><span id="nm-created" style="flex:1;text-align:right;font-size:15px;color:var(--text3)">—</span></div>
       <div class="form-row" id="nm-obj-row" style="display:none">
         <label>Об'єкт</label>
         <select id="nm-obj-select"></select>
@@ -1997,7 +1999,7 @@ async function addObjNoteWithTime(objId,addRow){
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
   if(!objects[ri].notes)objects[ri].notes=[];
-  objects[ri].notes.push({text,time});
+  _pushNote(objects[ri],{text,time});
   inp.value='';if(dtDate)dtDate.value='';
   const dtWrap=addRow.querySelector('div');
   if(dtWrap){dtWrap.style.display='none';}
@@ -2013,7 +2015,7 @@ async function addObjNote(objId,inp){
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
   if(!objects[ri].notes)objects[ri].notes=[];
-  objects[ri].notes.push({text,time:''});
+  _pushNote(objects[ri],{text,time:''});
   inp.value='';
   try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
   render();renderNotes();renderOverdueZone();
@@ -2049,7 +2051,7 @@ async function addQuickNote(){
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
     notes:time?[{text,time}]:[]};
-  stickyNotes.push(sn);
+  stickyNotes.push(sn);logStickyAdded(sn);
   inp.value='';
   if(document.getElementById('quickDtDate')) document.getElementById('quickDtDate').value='';
   document.getElementById('quickDtRow').style.display='none';
@@ -2067,7 +2069,7 @@ async function addMobileNote(){
     const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
     if(ri>=0){
       if(!objects[ri].notes)objects[ri].notes=[];
-      objects[ri].notes.push({text,time:''});
+      _pushNote(objects[ri],{text,time:''});
       inp.value='';
       document.getElementById('mobileObjSelect').value='';
       try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
@@ -2077,7 +2079,7 @@ async function addMobileNote(){
   const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',notes:[]};
-  stickyNotes.push(sn);
+  stickyNotes.push(sn);logStickyAdded(sn);
   inp.value='';
   renderNotes();renderOverdueZone();
   apiSaveQueued(sn).catch(e=>console.error(e));
@@ -2096,7 +2098,7 @@ async function addGlobalNote(){
     const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
     if(ri>=0){
       if(!objects[ri].notes)objects[ri].notes=[];
-      objects[ri].notes.push({text,time});
+      _pushNote(objects[ri],{text,time});
       inp.value='';
       document.getElementById('noteObjSelect').value='';
       if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
@@ -2108,7 +2110,7 @@ async function addGlobalNote(){
     stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
     mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
     notes:time?[{text,time}]:[]};
-  stickyNotes.push(sn);
+  stickyNotes.push(sn);logStickyAdded(sn);
   inp.value='';
   if(document.getElementById('noteDtDate')) document.getElementById('noteDtDate').value='';
   document.getElementById('noteDtRow')?.classList.remove('vis');
@@ -2138,16 +2140,18 @@ function toggleNoteDt(){
 // ── NOTE MODAL ──
 function openNoteModal(ctx){
   noteCtx=ctx;
-  let text='',time='';
+  let text='',time='',created='';
   if(ctx.type==='sticky'){
     const sn=stickyNotes[ctx.idx];text=sn.name||'';
     const note=sn.notes&&sn.notes.length?sn.notes[0]:null;
     time=note&&note.time?note.time:'';
+    created=stickyCreated(sn);
   }else{
     const ri=objects.findIndex(o=>String(o.id)===String(ctx.objId));
     if(ri<0)return;
-    const n=objects[ri].notes[ctx.ni];text=n.text||'';time=n.time||'';
+    const n=objects[ri].notes[ctx.ni];text=n.text||'';time=n.time||'';created=n.created||'';
   }
+  document.getElementById('nm-created').textContent=fmtFull(created)||'невідомо';
   document.getElementById('nm-text').value=text;
   document.getElementById('nm-date').value=time?time.slice(0,10):'';
   const h=document.getElementById('nm-hour');
@@ -2188,7 +2192,7 @@ async function saveNoteModal(){
       const ri=objects.findIndex(o=>String(o.id)===String(selObjId));
       if(ri>=0){
         if(!objects[ri].notes)objects[ri].notes=[];
-        objects[ri].notes.push({text,time});
+        objects[ri].notes.push({text,time,created:stickyCreated(stickyNotes[noteCtx.idx])||nowIso()});
         const delId=stickyNotes[noteCtx.idx].id;
         stickyNotes.splice(noteCtx.idx,1);
         closeNoteModal();
@@ -2197,7 +2201,7 @@ async function saveNoteModal(){
       }
     }
     const sn=stickyNotes[noteCtx.idx];
-    sn.name=text;sn.notes=time?[{text,time}]:[];
+    sn.name=text;sn.notes=time?[{text,time,created:stickyCreated(sn)}]:[];
     closeNoteModal();renderNotes();
     apiSaveQueued(sn).catch(e=>console.error(e));
   }else{
@@ -2447,8 +2451,34 @@ async function loadCalendar(){
 }
 
 // ── HISTORY ──
-const MAX_HIST=50;
+const MAX_HIST=200;
+function nowIso(){return new Date().toISOString();}
+// Дата створення стікера: з нотатки, або з id виду sticky_<мс>
+function stickyCreated(sn){
+  if(!sn)return'';
+  const n=sn.notes&&sn.notes[0];
+  if(n&&n.created)return n.created;
+  const m=String(sn.id||'').match(/^sticky_(\d{10,})$/);
+  return m?new Date(parseInt(m[1],10)).toISOString():'';
+}
+function fmtFull(iso){
+  if(!iso)return'';
+  const d=new Date(iso);if(isNaN(d))return'';
+  const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+  return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+// Додає замітку до об'єкта: ставить дату створення і пише в історію
+function _pushNote(o,n){
+  n.created=n.created||nowIso();
+  if(!o.notes)o.notes=[];
+  o.notes.push(n);
+  addHistory({action:'added',type:'note',label:n.text,parentName:o.name,objId:o.id,data:{...n}});
+}
+function logStickyAdded(sn){
+  addHistory({action:'added',type:'sticky',label:sn.name,data:{...sn,notes:(sn.notes||[]).map(n=>({...n}))}});
+}
 function addHistory(entry){
+  if(!entry.action)entry.action='deleted';
   entry.time=new Date().toISOString();actionLog.unshift(entry);
   if(actionLog.length>MAX_HIST)actionLog.pop();
   try{localStorage.setItem('crm_history',JSON.stringify(actionLog));}catch{}
@@ -2467,10 +2497,12 @@ function openHistory(){
       const d=new Date(h.time);
       const ts=d.getDate()+'.'+(d.getMonth()+1)+' '+d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
       const item=document.createElement('div');item.className='hist-item';
-      item.innerHTML='<span class="hist-badge">видалено</span><div class="hist-body"><div class="hist-name">'+h.label+'</div><div class="hist-meta">'+(h.parentName?h.parentName+' · ':'')+ts+'</div></div>';
+      const isAdded=h.action==='added';
+      item.innerHTML='<span class="hist-badge'+(isAdded?' added':'')+'">'+(isAdded?'додано':'видалено')+'</span><div class="hist-body"><div class="hist-name">'+h.label+'</div><div class="hist-meta">'+(h.parentName?h.parentName+' · ':'')+ts+'</div></div>';
       const btn=document.createElement('button');btn.className='hist-restore';btn.textContent='↩ Відновити';
       btn.onclick=()=>restoreHistory(idx);
-      item.appendChild(btn);list.appendChild(item);
+      if(!isAdded)item.appendChild(btn);
+      list.appendChild(item);
     });
   }
   document.getElementById('historyModal').classList.add('open');
@@ -2479,6 +2511,7 @@ function closeHistory(){document.getElementById('historyModal').classList.remove
 async function restoreHistory(idx){
   if(!_requireEdit()) return;
   const h=actionLog[idx];if(!h)return;
+  if(h.action==='added')return;
   if(h.type==='obj'){
     // Deep-copy notes to avoid shared-reference with actionLog entry
     const o={...h.data,id:'',notes:(Array.isArray(h.data.notes)?h.data.notes.map(n=>({...n})):[])};
