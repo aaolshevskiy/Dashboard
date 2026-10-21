@@ -2735,53 +2735,33 @@ function _focusOverlay(){
   }
   return ov;
 }
-function buildLegendHtml(o){
-  const rows=[];
-  const add=(chip,txt)=>rows.push('<div class="fl-row"><div class="fl-chip">'+chip+'</div><div class="fl-text">'+txt+'</div></div>');
-  if(o.client) add('<span style="color:var(--blue);font-weight:500">'+_esc(o.client)+'</span>','Клієнт.');
-  if(o.inwork) add('★','Об\'єкт у реалізації (відмічено в налаштуваннях картки).');
-  if(_clItems.length>0){
-    const checks=clGetChecks(o.id);
-    const done=_clItems.filter(it=>checks[it.id]).length;
-    add('<b style="color:'+(done===_clItems.length?'var(--green)':'var(--text3)')+'">'+done+'/'+_clItems.length+'</b>',
-      'Чеклист: скільки пунктів виконано. Стає зеленим, коли виконано всі. Стрілка поруч розгортає список.');
-  }
-  const hasLinks=o.projectUrl||o.linkFolder||o.bitrix||o.ofertaUrl||o.ratyfikacjaUrl||o.moneyUrl||o.furniture;
-  if(hasLinks) add('🔗','Швидкі посилання: Проєкт, Диск, Bitrix, Oferta, Zakup, Money, Меблі.');
-  if(o.addr) add('<span style="color:var(--text3)">адреса</span>','Натисніть, щоб відкрити в Google Maps.');
-  if(o.intercom) add('📞 '+_esc(o.intercom),'Код домофону.');
-  if(o.pack) add('<span class="obj-badge">'+_esc(o.pack)+'</span>','Пакет послуг об\'єкта.');
-  if(o.area) add('<span class="obj-badge">'+_esc(o.area)+'м²</span>','Площа об\'єкта.');
-  if(o.mastersName) add('<span style="color:#999">'+_esc(o.mastersName)+'</span>','Прораб.');
-  if(o.designer) add('<span style="color:var(--blue);opacity:.75">✏ '+_esc(o.designer)+'</span>','Дизайнер.');
-  if(o.dateStart&&o.dateEnd){
-    const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),total=de2-ds2;
-    if(total>0){
-      const pct=Math.round(Math.max(new Date()-ds2,0)/total*100);
-      add('<span class="obj-progress-time"'+(pct>=100?' style="color:var(--red);font-weight:700"':'')+'>'+pct+'%</span>',
-        'Час проєкту: скільки відсотків терміну між стартом і фінішем уже минуло. Від 100% — червоним (термін вийшов).');
-    }
-  }
-  if(o.progressUrl&&o.progressCell){
-    const v=o._progressValue!=null?o._progressValue:'0%';
-    add('<span class="obj-progress-pct">'+_esc(v)+'</span>',
-      'Прогрес робіт: значення клітинки з Google-таблиці, вказаної в налаштуваннях картки.');
-  }
-  const pv=o._progressValue;
-  const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
-  if(!isNaN(num)){
-    const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-    if(kanbanKey) add('<span style="color:var(--blue)">🚩 канбан</span>',
-      'Нагадування за прогресом: з\'являється при 1%, 30% і 90% виконання. Натисніть, щоб закрити (🏳️).');
-    if(o.paymentPct){
-      const th=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-      if(!isNaN(th)&&num>=th) add('<span style="color:#c0392b">🚩 платіж</span>',
-        'Нагадування про платіж: прогрес досяг '+_esc(o.paymentPct)+'% (поріг із налаштувань картки). Натисніть, щоб закрити.');
-    }
-  }
-  if(o.dateStart||o.dateEnd) add('<span style="font-size:11px">→ '+_esc(fmtDate(o.dateStart))+'<br>🏁 '+_esc(fmtDate(o.dateEnd))+'</span>','Дата старту (→) і дата фінішу (🏁).');
-  add('<span style="opacity:.5">▸</span>','Статус проєкту: коротка примітка, натисніть на неї, щоб змінити.');
-  return '<div class="fl-title">Що означають показники</div>'+rows.join('');
+// Історія заміток цього об'єкта: що додавалося і що видалялося, і коли
+function buildHistoryHtml(o){
+  const id=String(o.id);
+  const ev=[];
+  const knownCreated=new Set();
+  actionLog.forEach(h=>{
+    if(h.type!=='note'||String(h.objId)!==id)return;
+    const isAdd=h.action==='added';
+    if(isAdd&&h.data&&h.data.created) knownCreated.add(h.data.created);
+    ev.push({kind:isAdd?'added':'deleted',text:h.label||'',time:h.time,
+      created:(!isAdd&&h.data&&h.data.created)?h.data.created:''});
+  });
+  // Поточні замітки, які мають дату створення, але яких немає в журналі цього пристрою
+  (o.notes||[]).forEach(n=>{
+    if(n.created&&!knownCreated.has(n.created)) ev.push({kind:'added',text:n.text||'',time:n.created,created:''});
+  });
+  ev.sort((a,b)=>new Date(b.time)-new Date(a.time));
+  let html='<div class="fl-title">Історія заміток</div>';
+  if(!ev.length) return html+'<div class="fl-row"><div class="fl-text" style="color:var(--text4);font-style:italic">Поки що порожньо</div></div>';
+  ev.forEach(e=>{
+    const badge='<span class="hist-badge'+(e.kind==='added'?' added':'')+'" style="margin-top:0">'+(e.kind==='added'?'додано':'видалено')+'</span>';
+    const sub=fmtFull(e.time)+(e.created?' · була додана '+fmtFull(e.created):'');
+    html+='<div class="fl-row"><div class="fl-chip">'+badge+'</div><div class="fl-text">'
+      +'<div style="color:var(--text);word-break:break-word">'+_esc(e.text)+'</div>'
+      +'<div style="font-size:11px;color:var(--text4);margin-top:1px">'+_esc(sub)+'</div></div></div>';
+  });
+  return html;
 }
 function showLegend(animate){
   const o=objects.find(x=>String(x.id)===String(_focusId));
@@ -2789,7 +2769,7 @@ function showLegend(animate){
   let lg=document.getElementById('focusLegend');
   const isNew=!lg;
   if(!lg){lg=document.createElement('div');lg.id='focusLegend';lg.className='focus-legend';document.body.appendChild(lg);}
-  lg.innerHTML=buildLegendHtml(o);
+  lg.innerHTML=buildHistoryHtml(o);
   const half=_focusW*_focusS/2;
   const leftPos=window.innerWidth/2+half+24;
   if(leftPos+300<=window.innerWidth-12){lg.style.left=leftPos+'px';lg.style.right='auto';}
