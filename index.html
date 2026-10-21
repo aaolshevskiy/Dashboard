@@ -1047,6 +1047,7 @@ function clRenderSettingsList(){
     row.dataset.idx=i;
 
     row.addEventListener('dragstart',e=>{
+      if(e.target!==row){e.preventDefault();return;}
       _clDragSrc=i;
       setTimeout(()=>row.classList.add('dragging'),0);
       e.dataTransfer.effectAllowed='move';
@@ -1079,7 +1080,12 @@ function clRenderSettingsList(){
       clSaveItems();
       render();
     };
-    inp.addEventListener('mousedown',e=>e.stopPropagation());
+    inp.addEventListener('mousedown',e=>{
+      e.stopPropagation();
+      row.draggable=false;
+      const restore=()=>{document.removeEventListener('mouseup',restore,true);row.draggable=true;};
+      document.addEventListener('mouseup',restore,true);
+    });
 
     const del=document.createElement('button');
     del.className='cl-item-del';
@@ -1455,8 +1461,20 @@ function buildCard(o,i){
   card.dataset.objid=o.id;
   card.draggable=canEdit(); // drag-and-drop only in edit mode
 
+  // Натискання на поле вводу: тимчасово вимикаємо перетягування, щоб виділення тексту не зрушувало картку
+  card.addEventListener('mousedown',e=>{
+    if(e.target.closest&&e.target.closest('input,textarea,select')){
+      card.draggable=false;
+      const restore=()=>{
+        document.removeEventListener('mouseup',restore,true);
+        card.draggable=canEdit()&&!card.classList.contains('focused');
+      };
+      document.addEventListener('mouseup',restore,true);
+    }
+  },true);
   card.addEventListener('dragstart',e=>{
     if(!canEdit()){e.preventDefault();return;}
+    if(e.target!==card){e.preventDefault();return;} // перетягування виділеного тексту/поля — не картки
     e.dataTransfer.effectAllowed='move';
     e.dataTransfer.setData('text/plain',String(o.id));
     setTimeout(()=>card.classList.add('dragging'),0);
@@ -2851,10 +2869,22 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('resize',()=>{ if(_focusId!==null&&!focusAvail()) exitFocus(false); });
 
 // ── STARTUP ──
-document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
-document.getElementById('noteModal').addEventListener('click',function(e){if(e.target===this)closeNoteModal();});
-document.getElementById('historyModal').addEventListener('click',function(e){if(e.target===this)closeHistory();});
-document.getElementById('checklistModal').addEventListener('click',function(e){if(e.target===this)closeChecklistSettings();});
+// Закриття модалки кліком по затемненню — тільки якщо мишу і натиснули, і відпустили на затемненні.
+// Інакше виділення тексту в полі з відпусканням кнопки за межами вікна закривало модалку.
+function _bindOverlayClose(id,closeFn){
+  const ov=document.getElementById(id);
+  let downOnOverlay=false;
+  ov.addEventListener('mousedown',e=>{downOnOverlay=(e.target===ov);});
+  ov.addEventListener('touchstart',e=>{downOnOverlay=(e.target===ov);},{passive:true});
+  ov.addEventListener('click',e=>{
+    if(e.target===ov&&downOnOverlay)closeFn();
+    downOnOverlay=false;
+  });
+}
+_bindOverlayClose('addModal',closeAddModal);
+_bindOverlayClose('noteModal',closeNoteModal);
+_bindOverlayClose('historyModal',closeHistory);
+_bindOverlayClose('checklistModal',closeChecklistSettings);
 document.querySelector('#addModal .modal').addEventListener('click',e=>e.stopPropagation());
 document.querySelector('#noteModal .modal').addEventListener('click',e=>e.stopPropagation());
 
