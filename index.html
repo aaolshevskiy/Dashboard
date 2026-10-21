@@ -642,12 +642,27 @@ body.focus-open{overflow:hidden;}
 .obj-card.focused .obj-card-name{
   white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
 }
-.card-legend{display:none;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border-strong);}
-.obj-card.focused .card-legend{display:block;animation:lg-in .35s ease .2s both;}
-@keyframes lg-in{from{opacity:0}to{opacity:1}}
-.lg-row{display:flex;align-items:center;gap:8px;padding:2px 0;}
-.lg-chip{flex:0 0 76px;font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.lg-txt{font-size:12px;color:var(--text3);line-height:1.35;}
+.focus-legend{
+  position:fixed;top:50%;z-index:96;width:300px;max-height:88vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-modal);padding:14px 16px 8px;
+  opacity:0;transform:translateY(-50%) translateX(-8px);
+  transition:opacity .28s ease,transform .28s ease;pointer-events:none;
+}
+.focus-legend.on{opacity:1;transform:translateY(-50%);pointer-events:auto;}
+.fl-title{
+  font-size:11px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;
+}
+.fl-row{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:8px 0;border-top:1px solid var(--border);
+}
+.fl-chip{
+  flex:0 0 76px;display:flex;align-items:center;flex-wrap:wrap;gap:3px;
+  font-size:12px;color:var(--text3);min-height:18px;
+}
+.fl-text{font-size:12.5px;color:var(--text2);line-height:1.4;flex:1;min-width:0;}
 @media (min-width:1101px) and (hover:hover) and (pointer:fine){
   .obj-card:not(.closed) .obj-card-name{cursor:pointer;}
   .obj-card:not(.closed):not(.focused) .obj-card-name:hover{color:var(--blue);}
@@ -1836,9 +1851,6 @@ function buildCard(o,i){
     card.appendChild(row);
   }
 
-  // Пояснення показників (видно лише у фокусі)
-  { const _lg=buildCardLegend(o); if(_lg) card.appendChild(_lg); }
-
   // Notes — always visible
   if(hasNotes){
     const nl=document.createElement('div');nl.className='obj-notes-list';
@@ -2676,7 +2688,7 @@ async function loadProgress(){
         if(wrap) wrap.textContent=val;
         // Update progress flags
         updateProgressFlags(o);
-        const _lgp=document.getElementById('lg-pct-'+o.id); if(_lgp&&_lgp.firstChild) _lgp.firstChild.textContent=val;
+        if(_focusId!==null&&String(o.id)===_focusId) showLegend(false);
       }catch(e){
         console.error('[progress] error for',o.name,e);
       }
@@ -2705,65 +2717,97 @@ function _focusOverlay(){
   }
   return ov;
 }
-// Пояснення показників — один компактний блок усередині картки (видно лише в режимі фокусу)
-function buildCardLegend(o){
+function buildLegendHtml(o){
   const rows=[];
-  const add=(chip,txt,id)=>rows.push('<div class="lg-row"><span class="lg-chip"'+(id?' id="'+id+'"':'')+'>'+chip+'</span><span class="lg-txt">'+txt+'</span></div>');
+  const add=(chip,txt)=>rows.push('<div class="fl-row"><div class="fl-chip">'+chip+'</div><div class="fl-text">'+txt+'</div></div>');
+  if(o.client) add('<span style="color:var(--blue);font-weight:500">'+_esc(o.client)+'</span>','Клієнт.');
+  if(o.inwork) add('★','Об\'єкт у реалізації (відмічено в налаштуваннях картки).');
   if(_clItems.length>0){
     const checks=clGetChecks(o.id);
     const done=_clItems.filter(it=>checks[it.id]).length;
-    add('<b style="color:'+(done===_clItems.length?'var(--green)':'var(--text3)')+'">'+done+'/'+_clItems.length+'</b>','пунктів чеклиста виконано');
+    add('<b style="color:'+(done===_clItems.length?'var(--green)':'var(--text3)')+'">'+done+'/'+_clItems.length+'</b>',
+      'Чеклист: скільки пунктів виконано. Стає зеленим, коли виконано всі. Стрілка поруч розгортає список.');
   }
+  const hasLinks=o.projectUrl||o.linkFolder||o.bitrix||o.ofertaUrl||o.ratyfikacjaUrl||o.moneyUrl||o.furniture;
+  if(hasLinks) add('🔗','Швидкі посилання: Проєкт, Диск, Bitrix, Oferta, Zakup, Money, Меблі.');
+  if(o.addr) add('<span style="color:var(--text3)">адреса</span>','Натисніть, щоб відкрити в Google Maps.');
+  if(o.intercom) add('📞 '+_esc(o.intercom),'Код домофону.');
+  if(o.pack) add('<span class="obj-badge">'+_esc(o.pack)+'</span>','Пакет послуг об\'єкта.');
+  if(o.area) add('<span class="obj-badge">'+_esc(o.area)+'м²</span>','Площа об\'єкта.');
+  if(o.mastersName) add('<span style="color:#999">'+_esc(o.mastersName)+'</span>','Прораб.');
+  if(o.designer) add('<span style="color:var(--blue);opacity:.75">✏ '+_esc(o.designer)+'</span>','Дизайнер.');
   if(o.dateStart&&o.dateEnd){
     const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),total=de2-ds2;
     if(total>0){
       const pct=Math.round(Math.max(new Date()-ds2,0)/total*100);
-      add('<span class="obj-progress-time"'+(pct>=100?' style="color:var(--red);font-weight:700"':'')+'>'+pct+'%</span>','минуло часу проєкту');
+      add('<span class="obj-progress-time"'+(pct>=100?' style="color:var(--red);font-weight:700"':'')+'>'+pct+'%</span>',
+        'Час проєкту: скільки відсотків терміну між стартом і фінішем уже минуло. Від 100% — червоним (термін вийшов).');
     }
   }
   if(o.progressUrl&&o.progressCell){
-    add('<span class="obj-progress-pct">'+_esc(o._progressValue!=null?o._progressValue:'0%')+'</span>','виконання робіт','lg-pct-'+o.id);
+    const v=o._progressValue!=null?o._progressValue:'0%';
+    add('<span class="obj-progress-pct">'+_esc(v)+'</span>',
+      'Прогрес робіт: значення клітинки з Google-таблиці, вказаної в налаштуваннях картки.');
   }
-  if(o.dateStart||o.dateEnd) add('→ · 🏁','дата старту · дата фінішу');
-  if(o.mastersName) add('<span style="color:#999">'+_esc(o.mastersName)+'</span>','прораб');
-  if(o.designer) add('<span style="color:var(--blue);opacity:.75">✏ '+_esc(o.designer)+'</span>','дизайнер');
-  if(o.intercom) add('📞 '+_esc(o.intercom),'код домофону');
-  if(!rows.length) return null;
-  const el=document.createElement('div');
-  el.className='card-legend';
-  el.innerHTML=rows.join('');
-  return el;
+  const pv=o._progressValue;
+  const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+  if(!isNaN(num)){
+    const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
+    if(kanbanKey) add('<span style="color:var(--blue)">🚩 канбан</span>',
+      'Нагадування за прогресом: з\'являється при 1%, 30% і 90% виконання. Натисніть, щоб закрити (🏳️).');
+    if(o.paymentPct){
+      const th=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
+      if(!isNaN(th)&&num>=th) add('<span style="color:#c0392b">🚩 платіж</span>',
+        'Нагадування про платіж: прогрес досяг '+_esc(o.paymentPct)+'% (поріг із налаштувань картки). Натисніть, щоб закрити.');
+    }
+  }
+  if(o.dateStart||o.dateEnd) add('<span style="font-size:11px">→ '+_esc(fmtDate(o.dateStart))+'<br>🏁 '+_esc(fmtDate(o.dateEnd))+'</span>','Дата старту (→) і дата фінішу (🏁).');
+  add('<span style="opacity:.5">▸</span>','Статус проєкту: коротка примітка, натисніть на неї, щоб змінити.');
+  return '<div class="fl-title">Що означають показники</div>'+rows.join('');
+}
+function showLegend(animate){
+  const o=objects.find(x=>String(x.id)===String(_focusId));
+  if(!o)return;
+  let lg=document.getElementById('focusLegend');
+  const isNew=!lg;
+  if(!lg){lg=document.createElement('div');lg.id='focusLegend';lg.className='focus-legend';document.body.appendChild(lg);}
+  lg.innerHTML=buildLegendHtml(o);
+  const half=_focusW*_focusS/2;
+  const leftPos=window.innerWidth/2+half+24;
+  if(leftPos+300<=window.innerWidth-12){lg.style.left=leftPos+'px';lg.style.right='auto';}
+  else{lg.style.left='auto';lg.style.right=(window.innerWidth/2+half+24)+'px';}
+  if(isNew){
+    setTimeout(()=>{if(_focusId!==null)lg.classList.add('on');},animate?350:20);
+  }
 }
 function enterFocus(card,animate){
   if(!card)return;
   const r=card.getBoundingClientRect();
-  card.classList.add('focused');                       // показує блок пояснень
-  const h1=card.getBoundingClientRect().height;        // висота з поясненнями
-  const s=Math.max(.6,Math.min(FOCUS_SCALE,(window.innerHeight*.9)/h1));
+  const s=Math.max(.6,Math.min(FOCUS_SCALE,(window.innerHeight*.9)/r.height));
   _focusId=String(card.dataset.objid);_focusS=s;_focusW=r.width;
   const ph=document.createElement('div');
   ph.className='focus-ph';ph.style.height=r.height+'px';
   card.parentNode.insertBefore(ph,card);
   card.draggable=false;
+  card.classList.add('focused');
   const st=card.style;
-  const maxH=Math.floor(window.innerHeight*.92/s);
-  st.position='fixed';st.margin='0';st.width=r.width+'px';st.zIndex='95';st.maxHeight=maxH+'px';
+  st.position='fixed';st.margin='0';st.width=r.width+'px';st.minHeight=r.height+'px';
+  st.zIndex='95';st.maxHeight=Math.floor(window.innerHeight*.92/s)+'px';st.overflowY='auto';
   const centered='translate(-50%,-50%) scale('+s+')';
   const ov=_focusOverlay();
   document.body.classList.add('focus-open');
   if(animate){
-    st.overflowY='hidden';st.transition='none';
-    st.top=r.top+'px';st.left=r.left+'px';st.transform='translate(0px,0px) scale(1)';st.height=r.height+'px';
+    st.transition='none';st.top=r.top+'px';st.left=r.left+'px';st.transform='translate(0px,0px) scale(1)';
     void card.offsetWidth;
     const ease='.5s cubic-bezier(.22,1,.36,1)';
-    st.transition='top '+ease+',left '+ease+',transform '+ease+',height '+ease+',box-shadow .3s';
-    requestAnimationFrame(()=>{st.top='50%';st.left='50%';st.transform=centered;st.height=Math.min(h1,maxH)+'px';});
+    st.transition='top '+ease+',left '+ease+',transform '+ease+',box-shadow .3s';
+    requestAnimationFrame(()=>{st.top='50%';st.left='50%';st.transform=centered;});
     ov.classList.add('on');
-    setTimeout(()=>{ if(_focusId!==null&&card.classList.contains('focused')){st.height='';st.overflowY='auto';} },540);
   }else{
-    st.transition='none';st.top='50%';st.left='50%';st.transform=centered;st.overflowY='auto';
+    st.transition='none';st.top='50%';st.left='50%';st.transform=centered;
     ov.classList.add('on');
   }
+  showLegend(animate);
 }
 function exitFocus(animate){
   if(animate===undefined)animate=true;
@@ -2772,6 +2816,8 @@ function exitFocus(animate){
   const card=document.querySelector('.obj-card.focused');
   const ph=document.querySelector('.focus-ph');
   const ov=document.getElementById('focusOverlay');
+  const lg=document.getElementById('focusLegend');
+  if(lg){lg.classList.remove('on');setTimeout(()=>lg.remove(),300);}
   if(ov)ov.classList.remove('on');
   document.body.classList.remove('focus-open');
   const cleanup=()=>{
@@ -2781,12 +2827,8 @@ function exitFocus(animate){
   if(animate&&card&&ph&&card.isConnected){
     const pr=ph.getBoundingClientRect();
     const st=card.style;
-    const hc=card.offsetHeight;
-    st.transition='none';st.maxHeight='';st.overflowY='hidden';st.height=hc+'px';
-    void card.offsetWidth;
-    const ease='.5s cubic-bezier(.22,1,.36,1)';
-    st.transition='top '+ease+',left '+ease+',transform '+ease+',height '+ease+',box-shadow .3s';
-    st.top=pr.top+'px';st.left=pr.left+'px';st.transform='translate(0px,0px) scale(1)';st.height=pr.height+'px';
+    st.maxHeight='';st.overflowY='hidden';
+    st.top=pr.top+'px';st.left=pr.left+'px';st.transform='translate(0px,0px) scale(1)';
     setTimeout(cleanup,520);
   }else cleanup();
 }
