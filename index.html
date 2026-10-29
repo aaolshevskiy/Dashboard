@@ -1774,56 +1774,6 @@ function buildCard(o,i){
   }
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
-  // Project status — inline editable directly on card
-  {
-    const psWrap=document.createElement('div');
-    psWrap.style.cssText='margin-top:4px;';
-
-    const psView=document.createElement('div');
-    psView.style.cssText='font-size:12px;color:var(--text2);background:var(--surface3);border-radius:6px;padding:4px 8px;font-style:italic;line-height:1.4;cursor:pointer;min-height:26px;display:flex;align-items:center;gap:4px;';
-    psView.innerHTML='<span style="opacity:.5">▸</span><span class="ps-text">'+(o.projectStatus||'<span style="opacity:.4">статус проєкту...</span>')+'</span>';
-
-    const psInput=document.createElement('input');
-    psInput.type='text';
-    psInput.placeholder='статус проєкту...';
-    psInput.value=o.projectStatus||'';
-    psInput.style.cssText='display:none;width:100%;font-size:12px;font-family:inherit;font-style:italic;color:var(--text2);background:var(--surface3);border:1.5px solid var(--blue);border-radius:6px;padding:3px 8px;outline:none;line-height:1.4;';
-
-    function _psStartEdit(e){
-      e.stopPropagation();
-      if(!canEdit()){return;}
-      if(!_requireEdit()){return;}
-      psView.style.display='none';
-      psInput.style.display='block';
-      psInput.focus();
-      psInput.select();
-    }
-    function _psSave(){
-      const val=psInput.value.trim();
-      psView.style.display='';
-      psInput.style.display='none';
-      psView.querySelector('.ps-text').innerHTML=val||'<span style="opacity:.4">статус проєкту...</span>';
-      if(val===o.projectStatus) return; // не змінилось
-      o.projectStatus=val;
-      // Зберігаємо в масив об'єктів і на сервер
-      const realIdx=objects.findIndex(x=>String(x.id)===String(o.id));
-      if(realIdx>=0) objects[realIdx].projectStatus=val;
-      apiSaveQueued(o).catch(e=>console.error(e));
-    }
-    psView.addEventListener('click',_psStartEdit);
-    psInput.addEventListener('blur',_psSave);
-    psInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){e.preventDefault();psInput.blur();}
-      if(e.key==='Escape'){psInput.value=o.projectStatus||'';psInput.blur();}
-      e.stopPropagation();
-    });
-    psInput.addEventListener('click',e=>e.stopPropagation());
-
-    psWrap.appendChild(psView);
-    psWrap.appendChild(psInput);
-    card.appendChild(psWrap);
-  }
-
   // Flags + Dates — один рядок: прапорці зліва, дати справа
   {
     const pv=o._progressValue;
