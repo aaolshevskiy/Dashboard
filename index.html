@@ -70,6 +70,8 @@ body{
 .board-date{font-size:16px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text4,#8e8e93);}
 .topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
 .topbar-right{flex-direction:column;align-items:flex-end;}
+.auth-btn{border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text4,#8e8e93);cursor:pointer;padding:2px 0;}
+.auth-btn:hover{color:var(--text);}
 .weather{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;color:var(--text);font-size:22px;font-weight:600;letter-spacing:-.02em;}
 .wx-ico{display:flex;width:40px;height:40px;}
 .wx-ico svg{width:40px;height:40px;}
@@ -821,6 +823,8 @@ body.purch-mode{padding-bottom:12px;}
 /* ── READ-ONLY MODE ── */
 /* When body.readonly — hide all editing controls, keep everything else visible */
 body.readonly .edit-only { display: none !important; }
+body.readonly .cal-strip.edit-only{display:flex!important;}
+body.readonly .cal-strip-events,body.readonly #calStripDate{display:none!important;}
 body.readonly .obj-card { cursor: default !important; }
 body.readonly .obj-note-del { display: none !important; }
 body.readonly .note-del { display: none !important; }
@@ -852,6 +856,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <span class="ms-lbl ms-r">Закупи</span>
   </div>
   <div class="topbar-right">
+    <button class="auth-btn" id="authBtn" onclick="authClick()">🔒 Увійти</button>
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span><span id="offline-badge"></span></div>
     <div class="sync-status" id="pvStatus" style="display:none"><span class="sync-text" id="pvStatusText"></span></div>
   </div>
@@ -1062,12 +1067,60 @@ body.readonly .card-checklist-body { display: none !important; }
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbx-v-yIRbWSaGms_8F2DES4DXXPRutoWoSItR9SmK33ytvolCF3kFnoozaYwdnYTpMb/exec";
 
-// ── ACCESS CONTROL — відкритий режим (без PIN) ──
-function canEdit(){ return true; }
-function _requireEdit(){ return true; }
+// ── ACCESS CONTROL — пароль редактора; без нього лише перегляд ──
+const KEY_LS='crm_edit_key';
+let _editKey='';try{_editKey=localStorage.getItem(KEY_LS)||'';}catch{}
+let _isEditor=!!_editKey; // з ключем — редактор (ключ перевіряється у фоні)
+// Ключ додається до кожного запиту до скрипта
+const _origFetch=window.fetch.bind(window);
+window.fetch=function(url,opts){
+  if(_editKey&&url===API_URL&&opts&&typeof opts.body==='string'){
+    try{const b=JSON.parse(opts.body);b.key=_editKey;opts=Object.assign({},opts,{body:JSON.stringify(b)});}catch{}
+  }
+  return _origFetch(url,opts);
+};
+function canEdit(){ return _isEditor; }
+function _requireEdit(){ return _isEditor; }
 function _applyAccessState(triggerRender){
-  document.body.classList.remove('readonly');
+  document.body.classList.toggle('readonly',!_isEditor);
+  const b=document.getElementById('authBtn');
+  if(b)b.textContent=_isEditor?'Вийти':'🔒 Увійти';
   if(triggerRender){ render(); renderNotes(); renderOverdueZone(); }
+}
+async function _checkKey(key){
+  const r=await _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:key}),redirect:'follow'});
+  const d=await r.json();return !!(d&&d.ok);
+}
+function authClick(){
+  if(_isEditor){ // вийти: прибрати ключ і локальні копії даних
+    try{localStorage.removeItem(KEY_LS);localStorage.removeItem('crm_snapshot_v3');localStorage.removeItem('crm_cl_items');localStorage.removeItem('crm_cl_checks');}catch{}
+    location.reload();return;
+  }
+  if(document.getElementById('loginBox'))return;
+  const ov=document.createElement('div');ov.id='loginBox';
+  ov.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--surface);border-radius:18px;padding:22px 22px 18px;width:min(320px,100%);box-shadow:0 12px 40px rgba(0,0,0,.25)">'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:4px">Вхід для редагування</div>'
+    +'<div style="font-size:12px;color:var(--text4);margin-bottom:14px">Без входу доступний лише перегляд.</div>'
+    +'<input id="loginPass" type="password" placeholder="Пароль" autocomplete="current-password" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;outline:none;background:var(--surface);color:var(--text)">'
+    +'<div id="loginErr" style="font-size:12px;color:var(--red);min-height:16px;margin-top:6px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px"><button class="btn" id="loginCancel">Скасувати</button><button class="btn btn-primary" id="loginOk">Увійти</button></div></div>';
+  document.body.appendChild(ov);
+  const inp=ov.querySelector('#loginPass'),err=ov.querySelector('#loginErr'),ok=ov.querySelector('#loginOk');
+  const close=()=>ov.remove();
+  ov.addEventListener('click',e=>{if(e.target===ov)close();});
+  ov.querySelector('#loginCancel').onclick=close;
+  const go=async()=>{
+    const v=inp.value;if(!v)return;
+    ok.disabled=true;err.textContent='Перевірка…';err.style.color='var(--text4)';
+    try{
+      if(await _checkKey(v)){try{localStorage.setItem(KEY_LS,v);}catch{}location.reload();return;}
+      err.style.color='var(--red)';err.textContent='Невірний пароль';
+    }catch(e){err.style.color='var(--red)';err.textContent='Не вдалося перевірити. Перевірте інтернет.';}
+    ok.disabled=false;
+  };
+  ok.onclick=go;inp.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  setTimeout(()=>inp.focus(),50);
 }
 
 // ── STATE ──
@@ -2573,6 +2626,7 @@ function setBoardDate(){
 setBoardDate();setInterval(setBoardDate,60000);
 async function loadCalendar(){
   setBoardDate();
+  if(!_isEditor)return;
   const dateEl=document.getElementById('calStripDate');
   const evEl=document.getElementById('calStripEvents');
   if(!dateEl||!evEl)return;
@@ -2865,6 +2919,7 @@ function buildHistoryHtml(o){
   return html;
 }
 function showLegend(animate){
+  if(!_isEditor)return; // історія заміток — лише для редактора
   const o=objects.find(x=>String(x.id)===String(_focusId));
   if(!o)return;
   let lg=document.getElementById('focusLegend');
@@ -3460,6 +3515,13 @@ function stopMic(){
 }
 
 _applyAccessState(false); // знімає readonly одразу
+// Перевірка збереженого ключа у фоні: скасовуємо вхід лише якщо скрипт явно відповів «ні»
+if(_editKey){
+  _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:_editKey}),redirect:'follow'})
+    .then(r=>r.json()).then(d=>{
+      if(d&&d.ok===false){try{localStorage.removeItem(KEY_LS);}catch{}_editKey='';_isEditor=false;_applyAccessState(true);}
+    }).catch(()=>{});
+}
 
 clLoad();       // локальний кеш — миттєво
 loadHistory();
