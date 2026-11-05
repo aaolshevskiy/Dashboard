@@ -63,10 +63,31 @@ body{
   margin-left:-4px;margin-right:-4px;
 }
 .board-title{
-  font-size:22px;font-weight:700;color:var(--text);
-  letter-spacing:-.03em;line-height:1.1;
+  font-size:32px;font-weight:700;letter-spacing:-.045em;line-height:1.1;text-transform:lowercase;
+  display:flex;align-items:baseline;gap:16px;white-space:nowrap;
 }
+.board-title b{font-weight:inherit;}
+.board-title .bt-txt{background:linear-gradient(90deg,#1c1c1e,#6e6e73);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em;}
+.board-date{font-size:16px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text4,#8e8e93);}
 .topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar{position:relative;}
+/* рубільник Дашборд / Закупи (стиль Apple) */
+.mode-switch{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
+  display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;outline:none;border-radius:999px;}
+.mode-switch:focus-visible{box-shadow:0 0 0 3px rgba(0,122,255,.35);}
+.ms-lbl{font-size:13px;font-weight:600;letter-spacing:-.01em;color:var(--text4,#8e8e93);transition:color .3s ease;}
+.mode-switch:not(.on) .ms-l,.mode-switch.on .ms-r{color:var(--text);}
+.ms-track{position:relative;display:block;width:51px;height:31px;border-radius:999px;
+  background:rgba(52,199,89,.32);transition:background .3s ease;flex-shrink:0;}
+.mode-switch.on .ms-track{background:rgba(255,59,48,.32);}
+.ms-knob{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16),0 3px 1px rgba(0,0,0,.06);
+  transition:transform .32s cubic-bezier(.3,1.3,.4,1),width .2s ease;}
+.mode-switch.on .ms-knob{transform:translateX(20px);}
+.mode-switch:active .ms-knob{width:34px;}
+.mode-switch.on:active .ms-knob{transform:translateX(13px);}
+
 .sync-status{font-size:12px;color:var(--text4);font-weight:400;}
 .sync-status.ok .sync-text{color:var(--green);}
 .sync-status.err .sync-text{color:var(--red);}
@@ -243,7 +264,9 @@ body{
 .obj-add-note button:hover{color:var(--blue);}
 
 /* ── NOTES ZONE (bottom) ── */
-.notes-zone{margin-top:24px;padding-top:14px;border-top:1px solid var(--border);}
+.obj-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:18px;flex-wrap:wrap;}
+body.purch-mode .obj-actions{display:none!important;}
+.notes-zone{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0;}
 .note-text{
@@ -596,13 +619,15 @@ body{
 @media(max-width:768px){
   body{padding:0 0 32px;min-width:unset;}
   .board-inner{padding:0 8px;}
+  .mode-switch{position:relative;left:auto;top:auto;transform:none;order:2;margin:0 auto;}
   .topbar{
     padding:8px 10px 8px;
     flex-wrap:wrap;
     gap:6px;
     margin-left:0;margin-right:0;
   }
-  .board-title{font-size:18px!important;flex-shrink:0;}
+  .board-title{font-size:24px!important;flex-shrink:0;gap:10px;flex-wrap:wrap;}
+  .board-date{font-size:13px;}
   .topbar-right{
     width:100%;
     flex-wrap:wrap;
@@ -741,9 +766,10 @@ body.purch-mode{padding-bottom:12px;}
 .pv-panel.on{opacity:1;}
 .pv-panel .pv-label{opacity:1;transform:none;transition:none;}
 .pv-panel .pv-task{opacity:1;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));transition:none;
-  animation:pv-pop .38s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(var(--n,0)*22ms);}
+  animation:pv-pop .38s cubic-bezier(.2,.9,.3,1.15) backwards;animation-delay:calc(var(--n,0)*22ms);}
 @keyframes pv-pop{from{opacity:0;transform:translate(0,22px) scale(.94);}}
 .pv-task .pv-tt{color:var(--pv-fg,var(--text));}
+.pv-task,.pv-label,.pv-panel{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 .pv-panel .pv-label{align-self:center;}
 .pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
 .pv-cols .pv-task{justify-self:center;}
@@ -805,14 +831,15 @@ body.readonly .card-checklist-body { display: none !important; }
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="board-title">Мій дашборд</div>
+  <div class="board-title"><span class="bt-txt">мій дашборд</span><span class="board-date" id="boardDate"></span></div>
+  <div class="mode-switch" id="btnPurch" role="switch" aria-checked="false" tabindex="0" onclick="togglePurchases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePurchases();}">
+    <span class="ms-lbl ms-l">Дашборд</span>
+    <span class="ms-track"><span class="ms-knob"></span></span>
+    <span class="ms-lbl ms-r">Закупи</span>
+  </div>
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span><span id="offline-badge"></span></div>
     <div class="sync-status" id="pvStatus" style="display:none"><span class="sync-text" id="pvStatusText"></span></div>
-    <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
-    <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
-    <button class="btn" id="btnPurch" onclick="togglePurchases()">🛒 Закупи</button>
-    <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
 
@@ -829,6 +856,13 @@ body.readonly .card-checklist-body { display: none !important; }
 <!-- OBJECTS -->
 <div class="section-label">Об'єкти в роботі</div>
 <div class="objects-grid" id="objectsGrid"></div>
+
+<!-- ACTIONS (внизу справа, над нотатками) -->
+<div class="obj-actions edit-only">
+  <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
+  <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
+  <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
+</div>
 
 <!-- NOTES ZONE -->
 <div class="notes-zone edit-only">
@@ -2539,14 +2573,23 @@ async function deleteCard(objId){
 }
 
 // ── CALENDAR ──
+function setBoardDate(){
+  const el=document.getElementById('boardDate');if(!el)return;
+  const n=new Date();
+  const D=['неділя','понеділок','вівторок','середа','четвер','пʼятниця','субота'];
+  const M=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  el.textContent=D[n.getDay()]+', '+n.getDate()+' '+M[n.getMonth()];
+}
+setBoardDate();setInterval(setBoardDate,60000);
 async function loadCalendar(){
+  setBoardDate();
   const dateEl=document.getElementById('calStripDate');
   const evEl=document.getElementById('calStripEvents');
   if(!dateEl||!evEl)return;
   const now=new Date();
   const DAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
   const MONTHS=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-  dateEl.innerHTML='<span style="font-size:15px">📅</span> '+DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+  dateEl.style.display='none';
   try{
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getCalendar'}),redirect:'follow'});
     const data=await res.json();
@@ -2925,8 +2968,8 @@ const PV_FLAT='perspective(800px) rotateX(0deg)';
 const PV_TASKS=['Задача 1','Задача 2','Задача 3']; // поки порожні заглушки
 function _pvSetBtn(txt){
   const b=document.getElementById('btnPurch');if(!b)return;
-  b.style.opacity='0';
-  setTimeout(()=>{b.textContent=txt;b.style.opacity='1';},160);
+  const on=txt.indexOf('Дашборд')>=0;
+  b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
 }
 function _pvCards(){return Array.from(document.querySelectorAll('#objectsGrid .obj-card:not(.closed)'));}
 function _pvCols(n){
@@ -3031,8 +3074,8 @@ function pvBend(box){
     let hsh=0;const str=String(el.dataset.t||'')+k;
     for(let c=0;c<str.length;c++)hsh=(hsh*31+str.charCodeAt(c))>>>0;
     const rnd=a=>{const x=Math.sin(hsh*0.0001+a*37.719)*43758.5453;return x-Math.floor(x);};
-    el.style.setProperty('--r',((rnd(1)-.5)*2.4).toFixed(2)+'deg');
-    el.style.setProperty('--x',((rnd(2)-.5)*6).toFixed(1)+'px');
+    el.style.setProperty('--r','0deg');
+    el.style.setProperty('--x',Math.round((rnd(2)-.5)*6)+'px');
     el.style.setProperty('--n',Math.min(n-1-k,14));
     el.style.width=(94+rnd(3)*6).toFixed(1)+'%';el.style.alignSelf='center';
   });
@@ -3284,7 +3327,6 @@ function pvEnter(){
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
   pvClosePanel();
-  pvSetStatus('','');
   _pvBusy=true;_pvExiting=true;
   const view=_pvView,flies=_pvFlies;
   _pvSetBtn('🛒 Закупи');
@@ -3641,6 +3683,46 @@ setInterval(()=>{
       },800);
     }
   });
+})();
+
+// ── Фонове підвантаження закупів: коли відкрито дашборд, задачі вже оновлені ──
+let _pvPrefetching=false;
+async function pvPrefetchAll(){
+  if(_pvPrefetching||_pvActive||_pvBusy||document.visibilityState!=='visible')return;
+  const list=(typeof objects!=='undefined'&&Array.isArray(objects)?objects:[]).filter(o=>o&&o.ratyfikacjaUrl&&_pvColOf(o)&&!o.closed);
+  if(!list.length)return;
+  _pvPrefetching=true;
+  pvSetStatus('syncing','закупи: завантаження…');
+  try{
+    let k=0,changed=false,errs=[];
+    const worker=async()=>{
+      while(k<list.length){
+        const o=list[k++];
+        const r=await pvLoadTasks(o);
+        if(r.state==='err'){errs.push({name:o.name||'?',msg:pvErrHint(r.msg)});continue;}
+        const id=String(o.id);
+        if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
+      }
+    };
+    await Promise.all([worker(),worker(),worker()]);
+    if(changed)_pvSaveCache();
+    if(!_pvActive&&!_pvBusy){
+      if(errs.length){
+        pvSetStatus('not-updated','закупи: не оновлено ✗ ('+errs.length+' з '+list.length+')');
+        const el=document.getElementById('pvStatus');if(el)el.title=errs.map(e=>e.name+': '+e.msg).join('\n');
+      }else pvSetStatus('ok','закупи: оновлено ✓');
+    }
+  }catch(e){console.warn('[pvPrefetch]',e);pvSetStatus('not-updated','закупи: не оновлено ✗');}
+  finally{_pvPrefetching=false;}
+}
+(function(){
+  let tries=0;
+  const first=setInterval(()=>{
+    tries++;
+    if((typeof objects!=='undefined'&&objects&&objects.length)||tries>40){clearInterval(first);pvPrefetchAll();}
+  },1500);
+  setInterval(pvPrefetchAll,2*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pvPrefetchAll,1200);});
 })();
 
 // Refresh progress from server every 5 minutes
