@@ -751,6 +751,12 @@ body.purch-mode{padding-bottom:12px;}
 .pv-tasks>.pv-errline{grid-column:1/-1;justify-self:start;max-width:100%;font-size:11px;line-height:1.25;color:var(--red);background:rgba(255,255,255,.88);border-radius:6px;padding:1px 8px;}
 .pv-task.pv-link{cursor:pointer;}
 .pv-task.pv-link:hover{filter:brightness(.96);}
+/* вирівнювання: усі назви об'єктів у ряду на одному рівні (вгорі клітинки), по центру; задачі під назвою, картка внизу */
+.pv-grid{align-items:stretch;}
+.pv-grid .pv-cell{display:flex;flex-direction:column;justify-content:flex-end;}
+.pv-grid .pv-cell .pv-tasks{top:0;bottom:auto;}
+.pv-grid .pv-tasks>.pv-label{justify-self:center;}
+.pv-grid .pv-tasks>.pv-empty,.pv-grid .pv-tasks>.pv-errline{justify-self:center;text-align:center;}
 /* стос на головному вікні: по дві задачі в ряд (10 одразу) */
 .pv-tasks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 6px;left:3%;right:3%;}
 .pv-tasks>.pv-label{grid-column:1/-1;justify-self:start;}
