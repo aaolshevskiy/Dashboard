@@ -758,7 +758,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-grid .pv-cell .pv-tasks{top:0;bottom:auto;}
 .pv-grid .pv-tasks>.pv-label{justify-self:center;}
 /* легке розмиття карток після того, як вони «лягли»; при виході плавно знімається */
-.purch-view.blurred .pv-fly .obj-card{animation:pv-blur .6s ease both;}
+.purch-view.blurred .pv-fly .obj-card{animation:pv-blur .55s ease both;}
 .purch-view.unblur .pv-fly .obj-card{animation:pv-unblur .45s ease both;}
 @keyframes pv-blur{from{filter:blur(0)}to{filter:blur(4px)}}
 @keyframes pv-unblur{from{filter:blur(4px)}to{filter:blur(0)}}
@@ -3000,7 +3000,7 @@ function pvFillCell(cell,i,cols,res){
   for(let k=keep;k<shown.length;k++){
     const d=pvTaskEl(list[k],dates[k],url,ords[k]);
     d.dataset.k=key(k);
-    d.style.setProperty('--d',((i%cols)*35+Math.min(k,5)*55)+'ms');
+    d.style.setProperty('--d',((i%cols)*20+Math.min(k,5)*30)+'ms');
     if(late)d.classList.add('pv-new');
     box.appendChild(d);
     if(late)requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.remove('pv-new')));
@@ -3210,7 +3210,7 @@ function pvEnter(){
     const labName=document.createElement('span');labName.className='pv-label-name';labName.textContent=(_o&&_o.name)||'—';
     const labMore=document.createElement('span');labMore.className='pv-more';
     lab.appendChild(labName);lab.appendChild(labMore);
-    lab.style.setProperty('--d',((i%cols)*35)+'ms');
+    lab.style.setProperty('--d',((i%cols)*20)+'ms');
     lab.addEventListener('click',()=>pvOpenPanel(cell));
     tasks.appendChild(lab);
     const slot=document.createElement('div');slot.className='pv-slot';
@@ -3259,8 +3259,8 @@ function pvEnter(){
   void view.offsetWidth;
   const rows=Math.ceil(n/cols);
   flies.forEach((f,i)=>{
-    const d=(i%cols)*70+Math.floor(i/cols)*140;
-    const tr='transform .9s '+PV_EASE+' '+d+'ms';
+    const d=(i%cols)*35+Math.floor(i/cols)*70;
+    const tr='transform .55s '+PV_EASE+' '+d+'ms';
     f.outer.style.transition=tr;f.inner.style.transition=tr;
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -3271,11 +3271,11 @@ function pvEnter(){
   }));
   _pvView=view;_pvFlies=flies;
   _pvSetBtn('← Дашборд');
-  const total=900+(cols-1)*70+(rows-1)*140;
-  // порядок: картки лягли → розмиваються → з'являються задачі
-  setTimeout(()=>view.classList.add('blurred'),total);
-  setTimeout(()=>view.classList.add('in'),total+550);
-  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+950);
+  const total=550+(cols-1)*35+(rows-1)*70;
+  // картки лягають і розмиваються одночасно, потім з'являються задачі
+  view.classList.add('blurred');                       // розмиття — одночасно з укладанням карток
+  setTimeout(()=>view.classList.add('in'),total-80);   // задачі — щойно картки лягли
+  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+420);
 }
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
