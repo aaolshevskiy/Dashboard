@@ -680,7 +680,7 @@ body.purch-return .cal-strip,body.purch-return .section-label,body.purch-return 
 body.purch-mode{padding-bottom:12px;}
 .purch-view.live{display:block;}
 .purch-view.pinned{position:absolute;left:0;right:0;}
-.pv-grid{display:grid;gap:26px 28px;align-items:end;}
+.pv-grid{display:grid;gap:34px 28px;align-items:end;}
 .pv-cell{position:relative;}
 .pv-slot{width:100%;}
 .pv-tasks{
@@ -759,8 +759,8 @@ body.purch-mode{padding-bottom:12px;}
 /* легке розмиття карток після того, як вони «лягли»; при виході плавно знімається */
 .purch-view.settled .pv-fly .obj-card{animation:pv-blur .6s ease both;}
 .purch-view.unblur .pv-fly .obj-card{animation:pv-unblur .45s ease both;}
-@keyframes pv-blur{from{filter:blur(0)}to{filter:blur(1.6px)}}
-@keyframes pv-unblur{from{filter:blur(1.6px)}to{filter:blur(0)}}
+@keyframes pv-blur{from{filter:blur(0)}to{filter:blur(4px)}}
+@keyframes pv-unblur{from{filter:blur(4px)}to{filter:blur(0)}}
 .pv-grid .pv-tasks>.pv-empty,.pv-grid .pv-tasks>.pv-errline{justify-self:center;text-align:center;}
 /* стос на головному вікні: по дві задачі в ряд (10 одразу) */
 .pv-tasks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 6px;left:3%;right:3%;}
@@ -1843,7 +1843,7 @@ function buildCard(o,i){
     if(o.intercom){
       const ic=document.createElement('span');
       ic.style.cssText='font-size:12px;color:var(--text2);white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px';
-      ic.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6.31 6.31l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'+o.intercom;
+      ic.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21"/><path d="M3 21h18"/><circle cx="14.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/></svg>'+o.intercom;
       addrRow.appendChild(ic);
     }
     card.appendChild(addrRow);
@@ -3038,10 +3038,6 @@ function pvTaskEl(t,date,url,ordered){
   const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
   d.appendChild(tt);
   pvApplyAge(d,date);
-  if(ordered){ // «Zamowione» — замовлено: легко-зелена, без червоного відтінку
-    d.style.background='rgb(222,246,228)';d.style.borderColor='rgba(52,199,89,.5)';d.style.removeProperty('--pv-fg');
-    d.title=t+' · замовлено';
-  }
   if(url&&/^https?:\/\//i.test(url)){
     d.classList.add('pv-link');
     d.addEventListener('click',e=>{e.stopPropagation();window.open(url,'_blank','noopener');});
@@ -3072,7 +3068,7 @@ function pvSorted(res){
   const dates=(res&&res.dates)||[],ords=(res&&res.ordered)||[];
   return tasks.map((t,i)=>{
     const d=dates[i]||'',o=!!ords[i],days=pvDays(d);
-    const grp=o?1:((days!=null&&days>=PV_STEP)?0:2);
+    const grp=(days!=null&&days>=PV_STEP)?0:1;
     return {t:t,d:d,o:o,i:i,grp:grp,days:days==null?-1:days};
   }).sort((a,b)=>a.grp-b.grp||b.days-a.days||a.i-b.i);
 }
@@ -3170,13 +3166,13 @@ function pvPlace(view,flies){
   const cw=cells[0].getBoundingClientRect().width;
   const rows=Math.ceil(flies.length/cols);
   const avail=window.innerHeight-view.getBoundingClientRect().top-18;
-  const rowH=(avail-26*(rows-1))/rows;
+  const rowH=(avail-34*(Math.min(rows,2)-1))/Math.min(rows,2); // висота ряду: рівно два ряди на екран
   const hMax=Math.max(...flies.map(f=>f.h));
   flies.forEach((f,i)=>{
     // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
     f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.64)));
     const tb=cells[i].querySelector('.pv-tasks');
-    cells[i].querySelector('.pv-slot').style.height=Math.max(138,Math.round(f.h*f.sc*.64),(tb?tb.offsetHeight+14:0))+'px';
+    cells[i].querySelector('.pv-slot').style.height=Math.max(138,Math.round(f.h*f.sc*.64),(tb?tb.offsetHeight+14:0),rows>2?Math.floor(rowH):0)+'px';
   });
   const vr=view.getBoundingClientRect();
   flies.forEach((f,i)=>{
