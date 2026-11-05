@@ -729,6 +729,20 @@ body.purch-mode{padding-bottom:12px;}
 .purch-view.in .pv-ghost{opacity:1;}
 .pv-cell.open .pv-tasks{max-height:70vh;overflow-y:auto;scrollbar-width:none;padding:0 6px;margin:0 -6px;z-index:30;}
 .pv-cell.open .pv-tasks::-webkit-scrollbar{display:none;}
+.pv-tasks{gap:3px;}
+/* розгорнутий список — поверх усього, фон розмитий, картки під ним не рухаються */
+.pv-ov{position:fixed;inset:0;z-index:90;background:rgba(242,242,247,.38);
+  backdrop-filter:blur(10px) saturate(115%);-webkit-backdrop-filter:blur(10px) saturate(115%);
+  opacity:0;transition:opacity .3s ease;}
+.pv-ov.on{opacity:1;}
+.pv-panel{position:fixed;z-index:95;display:flex;flex-direction:column;gap:3px;padding:2px 4px;
+  scrollbar-width:none;opacity:0;transition:opacity .25s ease;}
+.pv-panel::-webkit-scrollbar{display:none;}
+.pv-panel.on{opacity:1;}
+.pv-panel .pv-label{opacity:1;transform:none;transition:none;}
+.pv-panel .pv-task{opacity:1;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));transition:none;
+  animation:pv-pop .38s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(var(--n,0)*22ms);}
+@keyframes pv-pop{from{opacity:0;transform:translate(0,22px) scale(.94);}}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12px;font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -2916,15 +2930,14 @@ function pvFillCell(cell,i,cols,res){
   const lab=box.querySelector('.pv-label');
   const late=!!(_pvView&&_pvView.classList.contains('in'));
   const list=(res.state==='ok'&&res.tasks)?res.tasks:[];
-  const open=cell.dataset.open==='1'&&list.length>PV_MAX;
-  if(!open&&cell.dataset.open==='1'){cell.dataset.open='';cell.classList.remove('open');}
-  const shown=open?list:list.slice(0,PV_MAX);
+  const open=false;
+  const shown=list.slice(0,PV_MAX);
   const extra=list.length-shown.length;
   // індикатор «+N» / «▴» на назві
   const more=box.querySelector('.pv-more');
   if(lab&&more){
     lab.classList.toggle('clickable',list.length>PV_MAX);
-    more.textContent=open?'▴':'+'+(list.length-PV_MAX);
+    more.textContent='+'+(list.length-PV_MAX);
   }
   box.querySelectorAll('.pv-empty,.pv-ghost').forEach(e=>e.remove());
   // лишаємо незмінні задачі з початку списку, решту перебудовуємо
@@ -2936,10 +2949,6 @@ function pvFillCell(cell,i,cols,res){
     const k=keep+j;
     const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
     d.style.setProperty('--d',((i%cols)*35+Math.min(k,5)*55)+'ms');
-    const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
-    d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
-    d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
-    d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
     const dot=document.createElement('span');dot.className='pv-dot';
     const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
     d.appendChild(dot);d.appendChild(tt);
@@ -2959,7 +2968,74 @@ function pvFillCell(cell,i,cols,res){
     e.textContent={loading:'завантаження…',none:'немає задач',cfg:'вкажіть Zakup і колонку в налаштуваннях',err:'не вдалося завантажити'}[res.state]||'';
     box.appendChild(e);
   }
+  pvBend(box);
+  if(_pvPanel&&_pvPanel.cell===cell)pvBuildPanel();
 }
+// «Стос» як у Dock на Mac: нижня задача рівна, чим вище — тим більше вигин убік і легкий нахил
+function pvBend(box){
+  const items=Array.from(box.querySelectorAll('.pv-task'));
+  const n=items.length;
+  items.forEach((el,k)=>{
+    const h=n-1-k; // 0 — найнижча
+    el.style.setProperty('--x',Math.min(h*h*1.3,30).toFixed(1)+'px');
+    el.style.setProperty('--r',Math.min(h*1.2,7).toFixed(1)+'deg');
+    el.style.setProperty('--n',Math.min(h,14));
+    el.style.width='88%';el.style.alignSelf='flex-start';
+  });
+}
+function pvTaskEl(t){
+  const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
+  const dot=document.createElement('span');dot.className='pv-dot';
+  const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
+  d.appendChild(dot);d.appendChild(tt);
+  return d;
+}
+let _pvPanel=null;
+function pvOpenPanel(cell){
+  const list=(cell._res&&cell._res.tasks)||[];
+  if(list.length<=PV_MAX)return;
+  if(_pvPanel){const same=_pvPanel.cell===cell;pvClosePanel();if(same)return;}
+  const ov=document.createElement('div');ov.className='pv-ov';
+  ov.addEventListener('click',pvClosePanel);
+  const panel=document.createElement('div');panel.className='pv-panel';
+  document.body.appendChild(ov);document.body.appendChild(panel);
+  _pvPanel={cell,ov,panel};
+  pvBuildPanel();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ov.classList.add('on');panel.classList.add('on');}));
+}
+function pvBuildPanel(){
+  if(!_pvPanel)return;
+  const {cell,panel}=_pvPanel;
+  const list=(cell._res&&cell._res.tasks)||[];
+  if(list.length<=PV_MAX){pvClosePanel();return;}
+  const o=objects.find(x=>String(x.id)===String(cell.dataset.oid));
+  panel.innerHTML='';
+  const lab=document.createElement('div');lab.className='pv-label clickable';
+  const nm=document.createElement('span');nm.className='pv-label-name';nm.textContent=(o&&o.name)||'—';
+  const mr=document.createElement('span');mr.className='pv-more';mr.textContent='▴';
+  lab.appendChild(nm);lab.appendChild(mr);lab.addEventListener('click',pvClosePanel);
+  panel.appendChild(lab);
+  list.forEach(t=>panel.appendChild(pvTaskEl(t)));
+  pvBend(panel);
+  // позиція: над своєю карткою; зсуваємо/обмежуємо лише якщо не вміщується у вікно
+  const br=cell.querySelector('.pv-tasks').getBoundingClientRect();
+  const W=Math.max(260,br.width);
+  panel.style.width=W+'px';
+  panel.style.left=Math.max(12,Math.min(br.left,window.innerWidth-W-12))+'px';
+  panel.style.maxHeight='';panel.style.overflowY='';
+  let h=panel.offsetHeight;
+  const maxH=window.innerHeight-24;
+  if(h>maxH){panel.style.maxHeight=maxH+'px';panel.style.overflowY='auto';h=maxH;}
+  panel.style.top=Math.max(12,Math.min(br.bottom-h,window.innerHeight-12-h))+'px';
+}
+function pvClosePanel(){
+  if(!_pvPanel)return;
+  const {ov,panel}=_pvPanel;_pvPanel=null;
+  ov.classList.remove('on');panel.classList.remove('on');
+  setTimeout(()=>{ov.remove();panel.remove();},320);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_pvPanel)pvClosePanel();});
+window.addEventListener('resize',()=>{if(_pvPanel)pvClosePanel();});
 function pvRelayout(){
   if(!_pvView||_pvExiting||!_pvFlies.length)return;
   pvPlace(_pvView,_pvFlies);
@@ -3010,13 +3086,7 @@ function pvEnter(){
     const labMore=document.createElement('span');labMore.className='pv-more';
     lab.appendChild(labName);lab.appendChild(labMore);
     lab.style.setProperty('--d',((i%cols)*35)+'ms');
-    lab.addEventListener('click',()=>{
-      const list=(cell._res&&cell._res.tasks)||[];
-      if(list.length<=PV_MAX)return;
-      const open=cell.dataset.open!=='1';
-      cell.dataset.open=open?'1':'';cell.classList.toggle('open',open);
-      pvFillCell(cell,i,cols,cell._res);pvRelayout();
-    });
+    lab.addEventListener('click',()=>pvOpenPanel(cell));
     tasks.appendChild(lab);
     const slot=document.createElement('div');slot.className='pv-slot';
     cell.appendChild(tasks);cell.appendChild(slot);grid.appendChild(cell);pvCells.push(cell);
@@ -3076,6 +3146,7 @@ function pvEnter(){
 }
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
+  pvClosePanel();
   _pvBusy=true;_pvExiting=true;
   const view=_pvView,flies=_pvFlies;
   _pvSetBtn('🛒 Закупи');
