@@ -1478,7 +1478,12 @@ async function apiGet(){
       });
     }
     objects=ob;stickyNotes=st;
-    // Постійна картка «Свої задачі»: створюється один раз (редактор), лише після успішного завантаження даних
+    // Стара назва «Свої задачі» → «Мої задачі» (один раз, редактор)
+    if(_isEditor){
+      const _old=objects.find(o=>isOwnCard(o)&&String(o.name||'').trim()!==OWN_CARD_NAME);
+      if(_old){_old.name=OWN_CARD_NAME;setTimeout(()=>apiSaveQueued(_old).catch(e=>console.error(e)),300);}
+    }
+    // Постійна картка «Мої задачі»: створюється один раз (редактор), лише після успішного завантаження даних
     if(_isEditor&&!payload.error&&rawObjects.length>0&&!objects.some(isOwnCard)){
       const _own=parseObj({id:OWN_CARD_ID,name:OWN_CARD_NAME,inwork:true,notes:[]});
       objects.push(_own);
@@ -1561,9 +1566,9 @@ function saveCardOrder(){
   localStorage.setItem('crm_card_order', JSON.stringify(order));
 }
 
-// ── Постійна картка «Свої задачі» ──
-const OWN_CARD_ID='own_tasks', OWN_CARD_NAME='Свої задачі';
-function isOwnCard(o){ return !!o&&(String(o.id)===OWN_CARD_ID||String(o.name||'').trim().toLowerCase()===OWN_CARD_NAME.toLowerCase()); }
+// ── Постійна картка «Мої задачі» ──
+const OWN_CARD_ID='own_tasks', OWN_CARD_NAME='Мої задачі', OWN_CARD_OLD_NAME='Свої задачі';
+function isOwnCard(o){ if(!o)return false; const n=String(o.name||'').trim().toLowerCase(); return String(o.id)===OWN_CARD_ID||n===OWN_CARD_NAME.toLowerCase()||n===OWN_CARD_OLD_NAME.toLowerCase(); }
 function sortObjects(){
   const order=loadCardOrder();
   if(order.length){
@@ -1597,7 +1602,7 @@ function sortObjects(){
       return 0;
     });
   }
-  // «Свої задачі» — завжди остання
+  // «Мої задачі» — завжди остання
   const _own=objects.filter(isOwnCard);
   if(_own.length){ const rest=objects.filter(o=>!isOwnCard(o)); objects.length=0; rest.concat(_own).forEach(o=>objects.push(o)); }
 }
@@ -1647,7 +1652,7 @@ function buildCard(o,i){
   const isOwn=isOwnCard(o);
   const isClosed=!!o.closed&&!isOwn;
   const hasOverdueNote=!isClosed&&Array.isArray(o.notes)&&o.notes.some(n=>isNoteActive(n));
-  const notInWork=!isClosed&&!o.inwork&&!o.completed&&!isOwn; // «Свої задачі» — завжди білий фон, як у реалізації
+  const notInWork=!isClosed&&!o.inwork&&!o.completed&&!isOwn; // «Мої задачі» — завжди білий фон, як у реалізації
   card.className='obj-card'+(isOwn?' own-card':'')
     +(o.completed?' completed':'')
     +(isClosed?' closed':'')
@@ -2632,7 +2637,7 @@ async function deleteCard(objId){
   const i=objects.findIndex(o=>String(o.id)===String(objId));
   if(i<0)return;
   const o=objects[i];
-  if(isOwnCard(o)){alert('Картку «Свої задачі» видалити не можна.');return;}
+  if(isOwnCard(o)){alert('Картку «Мої задачі» видалити не можна.');return;}
   if(!confirm('Видалити "'+o.name+'"?'))return;
   addHistory({type:'obj',label:o.name,data:{...o,notes:(o.notes||[]).map(n=>({...n}))}});
   const id=o.id;objects.splice(i,1);render();renderNotes();renderOverdueZone();
