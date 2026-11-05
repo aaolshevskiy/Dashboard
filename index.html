@@ -749,6 +749,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-cols .pv-task{justify-self:center;}
 .pv-label.pv-failed .pv-label-name::after{content:' ⚠';color:var(--red);}
 .pv-tasks>.pv-errline{grid-column:1/-1;justify-self:start;max-width:100%;font-size:11px;line-height:1.25;color:var(--red);background:rgba(255,255,255,.88);border-radius:6px;padding:1px 8px;}
+.pv-date{margin-left:auto;flex-shrink:0;font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--pv-fg,var(--text3));opacity:.8;white-space:nowrap;}
 .pv-task.pv-link{cursor:pointer;}
 .pv-task.pv-link:hover{filter:brightness(.96);}
 /* вирівнювання: усі назви об'єктів у ряду на одному рівні (вгорі клітинки), по центру; задачі під назвою, картка внизу */
@@ -3033,10 +3034,18 @@ function pvBend(box){
     el.style.width=(94+rnd(3)*6).toFixed(1)+'%';el.style.alignSelf='center';
   });
 }
-function pvTaskEl(t,date,url,ordered){
+function pvFmtDate(iso){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
+  return m?(m[3]+'.'+m[2]+'.'+m[1]):'';
+}
+function pvTaskEl(t,date,url,ordered,withDate){
   const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
   const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
   d.appendChild(tt);
+  if(withDate&&pvFmtDate(date)){ // у режимі фокусування — дата створення заявки (колонка A) праворуч
+    const dt=document.createElement('span');dt.className='pv-date';dt.textContent=pvFmtDate(date);
+    d.appendChild(dt);
+  }
   pvApplyAge(d,date);
   if(url&&/^https?:\/\//i.test(url)){
     d.classList.add('pv-link');
@@ -3135,7 +3144,7 @@ function pvBuildPanel(){
   grid.style.gap='3px '+GAPX+'px';
   const _zurl=(o&&o.ratyfikacjaUrl)||'';
   const _ords=S.map(x=>x.o);
-  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k],_zurl,_ords[k])));
+  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k],_zurl,_ords[k],true)));
   pvBend(grid);
   Array.from(grid.children).forEach((el,k)=>el.style.setProperty('--n',(Math.min(k,30)*.6).toFixed(1)));
   const pw=Math.min(Wv,cols*colW+(cols-1)*GAPX+8);
