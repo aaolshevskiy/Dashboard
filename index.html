@@ -1469,6 +1469,12 @@ async function apiGet(){
       });
     }
     objects=ob;stickyNotes=st;
+    // Постійна картка «Свої задачі»: створюється один раз (редактор), лише після успішного завантаження даних
+    if(_isEditor&&!payload.error&&rawObjects.length>0&&!objects.some(isOwnCard)){
+      const _own=parseObj({id:OWN_CARD_ID,name:OWN_CARD_NAME,inwork:true,notes:[]});
+      objects.push(_own);
+      apiSaveQueued(_own).catch(e=>console.error(e));
+    }
 
     saveSnapshot(); // persist fresh data for next page open
     setSyncStatus('ok','збережено ✓');
@@ -1546,6 +1552,9 @@ function saveCardOrder(){
   localStorage.setItem('crm_card_order', JSON.stringify(order));
 }
 
+// ── Постійна картка «Свої задачі» ──
+const OWN_CARD_ID='own_tasks', OWN_CARD_NAME='Свої задачі';
+function isOwnCard(o){ return !!o&&(String(o.id)===OWN_CARD_ID||String(o.name||'').trim().toLowerCase()===OWN_CARD_NAME.toLowerCase()); }
 function sortObjects(){
   const order=loadCardOrder();
   if(order.length){
@@ -1579,6 +1588,9 @@ function sortObjects(){
       return 0;
     });
   }
+  // «Свої задачі» — завжди остання
+  const _own=objects.filter(isOwnCard);
+  if(_own.length){ const rest=objects.filter(o=>!isOwnCard(o)); objects.length=0; rest.concat(_own).forEach(o=>objects.push(o)); }
 }
 
 // ── RENDER OBJECTS ──
@@ -1612,6 +1624,7 @@ function _renderObjects(){
   }
   sortObjects();
   objects.forEach((o,i)=>{
+    if(isOwnCard(o)&&!_isEditor)return; // глядачі цю картку не бачать
     try{grid.appendChild(buildCard(o,i));}catch(e){
       console.error('buildCard error:',e,o);
       const d=document.createElement('div');d.className='obj-card';d.textContent=o.name||'?';grid.appendChild(d);
@@ -1622,10 +1635,11 @@ function _renderObjects(){
 
 function buildCard(o,i){
   const card=document.createElement('div');
-  const isClosed=!!o.closed;
+  const isOwn=isOwnCard(o);
+  const isClosed=!!o.closed&&!isOwn;
   const hasOverdueNote=!isClosed&&Array.isArray(o.notes)&&o.notes.some(n=>isNoteActive(n));
-  const notInWork=!isClosed&&!o.inwork&&!o.completed;
-  card.className='obj-card'
+  const notInWork=!isClosed&&!o.inwork&&!o.completed&&!isOwn; // «Свої задачі» — завжди білий фон, як у реалізації
+  card.className='obj-card'+(isOwn?' own-card':'')
     +(o.completed?' completed':'')
     +(isClosed?' closed':'')
     +(notInWork?' not-inwork':'')
@@ -1752,7 +1766,7 @@ function buildCard(o,i){
 
   // ── Checklist toggle (top-right of name row) ──
   let clBodyElem=null;
-  if(_clItems.length>0){
+  if(_clItems.length>0&&!isOwn){
     const clKey='cl_open_'+o.id;
     let clOpen=false;
     try{clOpen=sessionStorage.getItem(clKey)==='1';}catch{}
@@ -1918,7 +1932,7 @@ function buildCard(o,i){
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
   if(o.designer) meta.innerHTML+='<span style="font-size:12px;color:var(--blue);opacity:.75">✏ '+o.designer+'</span>';
   // Time progress (yellow): % of days elapsed between dateStart and dateEnd
-  if(o.dateStart&&o.dateEnd){
+  if(!isOwn&&o.dateStart&&o.dateEnd){
     const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),now2=new Date();
     const total=de2-ds2;
     if(total>0){
@@ -1934,7 +1948,7 @@ function buildCard(o,i){
       meta.appendChild(tspan);
     }
   }
-  if(o.progressUrl&&o.progressCell){
+  if(!isOwn&&o.progressUrl&&o.progressCell){
     const pct=document.createElement('span');
     pct.className='obj-progress-pct';
     pct.id='progress-wrap-'+o.id;
@@ -1948,7 +1962,7 @@ function buildCard(o,i){
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
   // Flags + Dates — один рядок: прапорці зліва, дати справа
-  {
+  if(!isOwn){
     const pv=o._progressValue;
     const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
     const closed=o._closedFlags||{};
@@ -2609,6 +2623,7 @@ async function deleteCard(objId){
   const i=objects.findIndex(o=>String(o.id)===String(objId));
   if(i<0)return;
   const o=objects[i];
+  if(isOwnCard(o)){alert('Картку «Свої задачі» видалити не можна.');return;}
   if(!confirm('Видалити "'+o.name+'"?'))return;
   addHistory({type:'obj',label:o.name,data:{...o,notes:(o.notes||[]).map(n=>({...n}))}});
   const id=o.id;objects.splice(i,1);render();renderNotes();renderOverdueZone();
@@ -3016,7 +3031,7 @@ function _pvSetBtn(txt){
   const on=txt.indexOf('Дашборд')>=0;
   b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
 }
-function _pvCards(){return Array.from(document.querySelectorAll('#objectsGrid .obj-card:not(.closed)'));}
+function _pvCards(){return Array.from(document.querySelectorAll('#objectsGrid .obj-card:not(.closed):not(.own-card)'));}
 function _pvCols(n){
   const w=window.innerWidth;
   return Math.min(n,w>1100?4:2); // як у дашборді: 4 в ряд на комп'ютері
