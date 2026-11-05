@@ -743,6 +743,10 @@ body.purch-mode{padding-bottom:12px;}
 .pv-panel .pv-task{opacity:1;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));transition:none;
   animation:pv-pop .38s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(var(--n,0)*22ms);}
 @keyframes pv-pop{from{opacity:0;transform:translate(0,22px) scale(.94);}}
+.pv-task .pv-tt{color:var(--pv-fg,var(--text));}
+.pv-panel .pv-label{align-self:center;}
+.pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
+.pv-cols .pv-task{justify-self:center;}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12px;font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -903,7 +907,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Oferta</label><input id="f-oferta-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
-      <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="D (за замовчуванням)" autocomplete="off"></div>
+      <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="E (за замовчуванням)" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -2330,7 +2334,7 @@ function openAddModal(){
     const el=document.getElementById(id);if(el)el.checked=false;
   });
   document.getElementById('f-pack').value='';
-  { const _pc=document.getElementById('f-purch-col'); if(_pc) _pc.value='D'; }
+  { const _pc=document.getElementById('f-purch-col'); if(_pc) _pc.value='E'; }
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-name').focus(),50);
@@ -2375,7 +2379,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
-  if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
+  if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'E';
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
@@ -2911,7 +2915,7 @@ const PV_MAX=5; // скільки задач видно одразу; решта
 let _pvTasksCache={};
 try{_pvTasksCache=JSON.parse(localStorage.getItem('crm_pv_tasks')||'{}')||{};}catch{_pvTasksCache={};}
 function _pvSaveCache(){try{localStorage.setItem('crm_pv_tasks',JSON.stringify(_pvTasksCache));}catch{}}
-function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'')||'D';} // за замовчуванням колонка D
+function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'')||'E';} // за замовчуванням колонка E
 async function pvLoadTasks(o){
   try{
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
@@ -2919,10 +2923,33 @@ async function pvLoadTasks(o){
     const data=await res.json();
     if(data&&Array.isArray(data.tasks)){
       const t=data.tasks.map(String);
-      return {state:t.length?'ok':'none',tasks:t};
+      const d=Array.isArray(data.dates)?data.dates.map(String):[];
+      return {state:t.length?'ok':'none',tasks:t,dates:d};
     }
     return {state:'err'};
   }catch(e){return {state:'err'};}
+}
+// Колір заявки за віком: до 5 днів — без кольору, далі плавний градієнт до яскраво-червоного на 15+ днів
+const PV_AGE_FROM=5, PV_AGE_MAX=15;
+function pvDays(iso){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
+  if(!m)return null;
+  const d=new Date(+m[1],+m[2]-1,+m[3]);
+  const n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  return Math.round((today-d)/86400000);
+}
+function pvApplyAge(el,iso){
+  el.style.background='';el.style.borderColor='';el.style.removeProperty('--pv-fg');
+  const days=pvDays(iso);
+  if(days==null)return;
+  el.title=(el.dataset.t||'')+' · '+days+' дн.';
+  if(days<=PV_AGE_FROM)return;
+  const t=Math.min(1,(days-PV_AGE_FROM)/(PV_AGE_MAX-PV_AGE_FROM));
+  const a=.10+.90*t;
+  const mix=(w,r)=>Math.round(w+(r-w)*a);
+  el.style.background='rgb('+mix(255,255)+','+mix(255,59)+','+mix(255,48)+')';
+  el.style.borderColor='rgba(255,59,48,'+(.25+.6*t).toFixed(2)+')';
+  if(t>=.7)el.style.setProperty('--pv-fg','#fff');
 }
 function pvFillCell(cell,i,cols,res){
   cell._res=res;
@@ -2930,34 +2957,29 @@ function pvFillCell(cell,i,cols,res){
   const lab=box.querySelector('.pv-label');
   const late=!!(_pvView&&_pvView.classList.contains('in'));
   const list=(res.state==='ok'&&res.tasks)?res.tasks:[];
-  const open=false;
+  const dates=res.dates||[];
   const shown=list.slice(0,PV_MAX);
   const extra=list.length-shown.length;
-  // індикатор «+N» / «▴» на назві
   const more=box.querySelector('.pv-more');
   if(lab&&more){
     lab.classList.toggle('clickable',list.length>PV_MAX);
     more.textContent='+'+(list.length-PV_MAX);
   }
   box.querySelectorAll('.pv-empty,.pv-ghost').forEach(e=>e.remove());
-  // лишаємо незмінні задачі з початку списку, решту перебудовуємо
+  const key=k=>list[k]+'\u0001'+(dates[k]||'');
   const existing=Array.from(box.querySelectorAll('.pv-task'));
   let keep=0;
-  while(keep<existing.length&&keep<shown.length&&existing[keep].dataset.t===shown[keep])keep++;
+  while(keep<existing.length&&keep<shown.length&&existing[keep].dataset.k===key(keep))keep++;
   existing.slice(keep).forEach(e=>e.remove());
-  shown.slice(keep).forEach((t,j)=>{
-    const k=keep+j;
-    const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
+  for(let k=keep;k<shown.length;k++){
+    const d=pvTaskEl(list[k],dates[k]);
+    d.dataset.k=key(k);
     d.style.setProperty('--d',((i%cols)*35+Math.min(k,5)*55)+'ms');
-    const dot=document.createElement('span');dot.className='pv-dot';
-    const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
-    d.appendChild(dot);d.appendChild(tt);
     if(late)d.classList.add('pv-new');
     box.appendChild(d);
     if(late)requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.remove('pv-new')));
-  });
+  }
   if(list.length){
-    // решта задач — «позаду» останньої видимої
     for(let g=0;g<Math.min(2,extra);g++){
       const gh=document.createElement('div');gh.className='pv-ghost';
       gh.style.setProperty('--g',g);gh.style.setProperty('--r',(g===0?1.6:-1.8)+'deg');
@@ -2985,11 +3007,11 @@ function pvBend(box){
     el.style.width=(94+rnd(3)*6).toFixed(1)+'%';el.style.alignSelf='center';
   });
 }
-function pvTaskEl(t){
+function pvTaskEl(t,date){
   const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
-  const dot=document.createElement('span');dot.className='pv-dot';
   const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
-  d.appendChild(dot);d.appendChild(tt);
+  d.appendChild(tt);
+  pvApplyAge(d,date);
   return d;
 }
 let _pvPanel=null;
@@ -3008,25 +3030,40 @@ function pvOpenPanel(cell){
 function pvBuildPanel(){
   if(!_pvPanel)return;
   const {cell,panel}=_pvPanel;
-  const list=(cell._res&&cell._res.tasks)||[];
+  const res=cell._res||{};
+  const list=res.tasks||[],dates=res.dates||[];
   if(list.length<=PV_MAX){pvClosePanel();return;}
   const o=objects.find(x=>String(x.id)===String(cell.dataset.oid));
   panel.innerHTML='';
+  panel.style.width='';panel.style.maxHeight='';panel.style.overflowY='';
   const lab=document.createElement('div');lab.className='pv-label clickable';
   const nm=document.createElement('span');nm.className='pv-label-name';nm.textContent=(o&&o.name)||'—';
   const mr=document.createElement('span');mr.className='pv-more';mr.textContent='▴';
   lab.appendChild(nm);lab.appendChild(mr);lab.addEventListener('click',pvClosePanel);
-  panel.appendChild(lab);
-  list.forEach(t=>panel.appendChild(pvTaskEl(t)));
-  pvBend(panel);
-  // позиція: по центру екрана; обмежуємо висоту (і вмикаємо прокрутку) лише якщо список не вміщується
-  const W=Math.min(420,window.innerWidth-24);
-  panel.style.width=W+'px';
-  panel.style.left=Math.round((window.innerWidth-W)/2)+'px';
-  panel.style.maxHeight='';panel.style.overflowY='';
+  const grid=document.createElement('div');grid.className='pv-cols';
+  panel.appendChild(lab);panel.appendChild(grid);
+  // розкладка: повний стовпчик на всю висоту екрана, решта — у наступний стовпчик; усе по центру
+  const STEP=33,GAPX=10,COLW=280;
+  const H=window.innerHeight-24,Wv=window.innerWidth-24;
+  const headH=lab.offsetHeight+9;
+  const n=list.length;
+  let rows=Math.max(1,Math.floor((H-headH)/STEP));
+  const maxCols=Math.max(1,Math.floor((Wv+GAPX)/(COLW+GAPX)));
+  let cols=Math.ceil(n/rows);
+  if(cols>maxCols){cols=maxCols;rows=Math.ceil(n/cols);}
+  rows=Math.min(rows,n);
+  const colW=cols===1?Math.min(360,Wv):Math.min(320,Math.floor((Wv-(cols-1)*GAPX)/cols));
+  grid.style.gridTemplateRows='repeat('+rows+',30px)';
+  grid.style.gridAutoColumns=colW+'px';
+  grid.style.gap='3px '+GAPX+'px';
+  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k])));
+  pvBend(grid);
+  Array.from(grid.children).forEach((el,k)=>el.style.setProperty('--n',(Math.min(k,30)*.6).toFixed(1)));
+  const pw=Math.min(Wv,cols*colW+(cols-1)*GAPX+8);
+  panel.style.width=pw+'px';
+  panel.style.left=Math.round((window.innerWidth-pw)/2)+'px';
   let h=panel.offsetHeight;
-  const maxH=window.innerHeight-24;
-  if(h>maxH){panel.style.maxHeight=maxH+'px';panel.style.overflowY='auto';h=maxH;}
+  if(h>H){panel.style.maxHeight=H+'px';panel.style.overflowY='auto';h=H;} // запасний варіант, лише якщо зовсім не вміщується
   panel.style.top=Math.round((window.innerHeight-h)/2)+'px';
 }
 function pvClosePanel(){
