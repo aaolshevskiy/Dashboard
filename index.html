@@ -1473,7 +1473,7 @@ async function apiGet(){
     if(_isEditor&&!payload.error&&rawObjects.length>0&&!objects.some(isOwnCard)){
       const _own=parseObj({id:OWN_CARD_ID,name:OWN_CARD_NAME,inwork:true,notes:[]});
       objects.push(_own);
-      apiSaveQueued(_own).catch(e=>console.error(e));
+      setTimeout(()=>apiSaveQueued(_own).catch(e=>console.error(e)),300); // після малювання, щоб не блокувати перший рендер
     }
 
     saveSnapshot(); // persist fresh data for next page open
@@ -3334,7 +3334,7 @@ function pvEnter(){
     pvFillCell(pvCells[i],i,cols,_pvTasksCache[id]||{state:configured?'loading':'cfg'});
     if(!configured)return;
     if(_pvTasksCache[id]&&_pvTs[id]&&Date.now()-_pvTs[id]<90000){pvStatusDone(false,o.name,'');return;} // свіжі дані з фону — без повторного запиту
-    pvLoadTasks(o).then(r=>{
+    pvGetOne(o).then(r=>{
       _pvTs[id]=Date.now();
       if(_pvView!==view||_pvExiting)return;
       pvStatusDone(r.state==='err',o.name,pvErrHint(r.msg));
@@ -3758,31 +3758,83 @@ setInterval(()=>{
 
 // ── Фонове підвантаження закупів: коли відкрито дашборд, задачі вже оновлені ──
 let _pvPrefetching=false;
+// Усі закупи одним запитом (відповідь із кешу сервера — майже миттєво)
+async function pvLoadAll(fresh){
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getPurchasesAll',fresh:!!fresh}),redirect:'follow'});
+    const d=await res.json();
+    if(!d||!d.results||typeof d.results!=='object')return null; // старий скрипт — повернемось до запитів по одному
+    const m={};
+    Object.keys(d.results).forEach(id=>{
+      const e=d.results[id]||{};
+      if(e.error)m[id]={state:'err',msg:String(e.error)};
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[]};}
+    });
+    return m;
+  }catch(e){return null;}
+}
+let _pvBatchP=null;
+function pvBatch(){
+  if(_pvBatchP)return _pvBatchP;
+  const p=pvLoadAll(false);_pvBatchP=p;
+  const clr=()=>{if(_pvBatchP===p)_pvBatchP=null;};
+  p.then(clr,clr);
+  return p;
+}
+async function pvGetOne(o){
+  const m=await pvBatch();
+  const r=m&&m[String(o.id)];
+  if(r){_pvTs[String(o.id)]=Date.now();return r;}
+  return pvLoadTasks(o); // запасний шлях
+}
+// Записує результати в кеш; повертає список помилок
+function pvApplyMap(m,list){
+  const errs=[];let changed=false;
+  list.forEach(o=>{
+    const id=String(o.id),r=m[id];
+    if(!r)return;
+    if(r.state==='err'){errs.push({name:o.name||'?',msg:pvErrHint(r.msg)});return;}
+    _pvTs[id]=Date.now();
+    if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
+  });
+  if(changed)_pvSaveCache();
+  return errs;
+}
+function pvFinalStatus(errs,total){
+  if(_pvActive||_pvBusy)return;
+  if(errs.length){
+    pvSetStatus('not-updated','закупи: не оновлено ✗ ('+errs.length+' з '+total+')');
+    const el=document.getElementById('pvStatus');if(el)el.title=errs.map(e=>e.name+': '+e.msg).join('\n');
+  }else pvSetStatus('ok','закупи: оновлено ✓');
+}
 async function pvPrefetchAll(){
   if(_pvPrefetching||_pvActive||_pvBusy||document.visibilityState!=='visible')return;
-  const list=(typeof objects!=='undefined'&&Array.isArray(objects)?objects:[]).filter(o=>o&&o.ratyfikacjaUrl&&_pvColOf(o)&&!o.closed);
+  const list=(typeof objects!=='undefined'&&Array.isArray(objects)?objects:[]).filter(o=>o&&o.ratyfikacjaUrl&&_pvColOf(o)&&!o.closed&&!isOwnCard(o));
   if(!list.length)return;
   _pvPrefetching=true;
-  const _allCached=list.every(o=>_pvTasksCache[String(o.id)]);
   pvSetStatus('syncing','закупи: завантаження…'); // статус завжди видно
   try{
-    let k=0,changed=false,errs=[];
-    const worker=async()=>{
-      while(k<list.length){
-        const o=list[k++];
-        const r=await pvLoadTasks(o);
-        if(r.state==='err'){errs.push({name:o.name||'?',msg:pvErrHint(r.msg)});continue;}
-        const id=String(o.id);_pvTs[id]=Date.now();
-        if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
-      }
-    };
-    await Promise.all(Array.from({length:Math.min(6,list.length)},worker));
-    if(changed)_pvSaveCache();
-    if(!_pvActive&&!_pvBusy){
-      if(errs.length){
-        pvSetStatus('not-updated','закупи: не оновлено ✗ ('+errs.length+' з '+list.length+')');
-        const el=document.getElementById('pvStatus');if(el)el.title=errs.map(e=>e.name+': '+e.msg).join('\n');
-      }else pvSetStatus('ok','закупи: оновлено ✓');
+    const m=await pvBatch();
+    if(m){
+      // 1) швидка відповідь із кешу сервера → статус одразу «оновлено»
+      pvFinalStatus(pvApplyMap(m,list),list.length);
+      // 2) у фоні просимо сервер перерахувати застаріле і тихо оновлюємо кеш
+      pvLoadAll(true).then(m2=>{if(m2&&!_pvActive&&!_pvBusy)pvFinalStatus(pvApplyMap(m2,list),list.length);});
+    }else{
+      // старий скрипт без пакетного запиту — по одному, до 6 паралельно
+      let k=0,changed=false,errs=[];
+      const worker=async()=>{
+        while(k<list.length){
+          const o=list[k++];
+          const r=await pvLoadTasks(o);
+          if(r.state==='err'){errs.push({name:o.name||'?',msg:pvErrHint(r.msg)});continue;}
+          const id=String(o.id);_pvTs[id]=Date.now();
+          if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
+        }
+      };
+      await Promise.all(Array.from({length:Math.min(6,list.length)},worker));
+      if(changed)_pvSaveCache();
+      pvFinalStatus(errs,list.length);
     }
   }catch(e){console.warn('[pvPrefetch]',e);pvSetStatus('not-updated','закупи: не оновлено ✗');}
   finally{_pvPrefetching=false;}
