@@ -2971,16 +2971,18 @@ function pvFillCell(cell,i,cols,res){
   pvBend(box);
   if(_pvPanel&&_pvPanel.cell===cell)pvBuildPanel();
 }
-// «Стос» як у Dock на Mac: нижня задача рівна, чим вище — тим більше вигин убік і легкий нахил
+// Задачі лежать одна над одною трохи неакуратно: ледь помітний нахил і зсув (стабільний для кожної задачі, без вигину)
 function pvBend(box){
   const items=Array.from(box.querySelectorAll('.pv-task'));
   const n=items.length;
   items.forEach((el,k)=>{
-    const h=n-1-k; // 0 — найнижча
-    el.style.setProperty('--x',Math.min(h*h*1.3,30).toFixed(1)+'px');
-    el.style.setProperty('--r',Math.min(h*1.2,7).toFixed(1)+'deg');
-    el.style.setProperty('--n',Math.min(h,14));
-    el.style.width='88%';el.style.alignSelf='flex-start';
+    let hsh=0;const str=String(el.dataset.t||'')+k;
+    for(let c=0;c<str.length;c++)hsh=(hsh*31+str.charCodeAt(c))>>>0;
+    const rnd=a=>{const x=Math.sin(hsh*0.0001+a*37.719)*43758.5453;return x-Math.floor(x);};
+    el.style.setProperty('--r',((rnd(1)-.5)*2.4).toFixed(2)+'deg');
+    el.style.setProperty('--x',((rnd(2)-.5)*6).toFixed(1)+'px');
+    el.style.setProperty('--n',Math.min(n-1-k,14));
+    el.style.width=(94+rnd(3)*6).toFixed(1)+'%';el.style.alignSelf='center';
   });
 }
 function pvTaskEl(t){
