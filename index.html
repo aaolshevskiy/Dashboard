@@ -747,6 +747,12 @@ body.purch-mode{padding-bottom:12px;}
 .pv-panel .pv-label{align-self:center;}
 .pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
 .pv-cols .pv-task{justify-self:center;}
+/* стос на головному вікні: по дві задачі в ряд (10 одразу) */
+.pv-tasks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 6px;left:3%;right:3%;}
+.pv-tasks>.pv-label{grid-column:1/-1;justify-self:start;}
+.pv-tasks>.pv-empty{grid-column:1/-1;justify-self:start;}
+.pv-tasks>.pv-task{height:auto;min-height:30px;padding:4px 8px;}
+.pv-tasks .pv-tt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2;font-size:11.5px;}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12px;font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -2911,7 +2917,7 @@ function _pvCols(n){
   return Math.min(n,w>1100?4:2); // як у дашборді: 4 в ряд на комп'ютері
 }
 let _pvExiting=false;
-const PV_MAX=5; // скільки задач видно одразу; решта — позаду, розгортаються кліком по назві
+const PV_MAX=10; // скільки задач видно одразу; решта — позаду, розгортаються кліком по назві
 let _pvTasksCache={};
 try{_pvTasksCache=JSON.parse(localStorage.getItem('crm_pv_tasks')||'{}')||{};}catch{_pvTasksCache={};}
 function _pvSaveCache(){try{localStorage.setItem('crm_pv_tasks',JSON.stringify(_pvTasksCache));}catch{}}
