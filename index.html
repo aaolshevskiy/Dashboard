@@ -3013,7 +3013,11 @@ function pvFillCell(cell,i,cols,res){
     }
   }else{
     const e=document.createElement('div');e.className='pv-empty';
-    e.textContent={loading:'завантаження…',none:'немає задач',cfg:'вкажіть Zakup і колонку в налаштуваннях',err:'не вдалося завантажити'}[res.state]||'';
+    if(res.state==='none'){ // задач немає: чорний напис і зелена галочка
+      const w=document.createElement('span');w.textContent='Все заєбісь';w.style.color='var(--text)';w.style.fontWeight='600';
+      const ck=document.createElement('span');ck.textContent=' ✓';ck.style.color='var(--green)';ck.style.fontWeight='700';
+      e.appendChild(w);e.appendChild(ck);
+    }else e.textContent={loading:'завантаження…',cfg:'вкажіть Zakup і колонку в налаштуваннях',err:'не вдалося завантажити'}[res.state]||'';
     box.appendChild(e);
   }
   pvBend(box);
