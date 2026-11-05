@@ -680,7 +680,7 @@ body.purch-return .cal-strip,body.purch-return .section-label,body.purch-return 
 body.purch-mode{padding-bottom:12px;}
 .purch-view.live{display:block;}
 .purch-view.pinned{position:absolute;left:0;right:0;}
-.pv-grid{display:grid;gap:12px 10px;align-items:end;}
+.pv-grid{display:grid;gap:26px 28px;align-items:end;}
 .pv-cell{position:relative;}
 .pv-slot{width:100%;}
 .pv-tasks{
@@ -756,6 +756,11 @@ body.purch-mode{padding-bottom:12px;}
 .pv-grid .pv-cell{display:flex;flex-direction:column;justify-content:flex-end;}
 .pv-grid .pv-cell .pv-tasks{top:0;bottom:auto;}
 .pv-grid .pv-tasks>.pv-label{justify-self:center;}
+/* легке розмиття карток після того, як вони «лягли»; при виході плавно знімається */
+.purch-view.settled .pv-fly .obj-card{animation:pv-blur .6s ease both;}
+.purch-view.unblur .pv-fly .obj-card{animation:pv-unblur .45s ease both;}
+@keyframes pv-blur{from{filter:blur(0)}to{filter:blur(1.6px)}}
+@keyframes pv-unblur{from{filter:blur(1.6px)}to{filter:blur(0)}}
 .pv-grid .pv-tasks>.pv-empty,.pv-grid .pv-tasks>.pv-errline{justify-self:center;text-align:center;}
 /* стос на головному вікні: по дві задачі в ряд (10 одразу) */
 .pv-tasks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 6px;left:3%;right:3%;}
@@ -3165,7 +3170,7 @@ function pvPlace(view,flies){
   const cw=cells[0].getBoundingClientRect().width;
   const rows=Math.ceil(flies.length/cols);
   const avail=window.innerHeight-view.getBoundingClientRect().top-18;
-  const rowH=(avail-12*(rows-1))/rows;
+  const rowH=(avail-26*(rows-1))/rows;
   const hMax=Math.max(...flies.map(f=>f.h));
   flies.forEach((f,i)=>{
     // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
@@ -3273,7 +3278,7 @@ function pvExit(){
   _pvBusy=true;_pvExiting=true;
   const view=_pvView,flies=_pvFlies;
   _pvSetBtn('🛒 Закупи');
-  view.classList.remove('settled');view.classList.remove('in');
+  view.classList.add('unblur');view.classList.remove('settled');view.classList.remove('in');
   setTimeout(()=>{
     window.scrollTo(0,0);
     const inner=document.querySelector('.board-inner');
