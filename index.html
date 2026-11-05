@@ -2970,6 +2970,7 @@ let _pvExiting=false;
 const PV_MAX=10; // скільки задач видно одразу; решта — позаду, розгортаються кліком по назві
 let _pvTasksCache={};
 try{_pvTasksCache=JSON.parse(localStorage.getItem('crm_pv_tasks')||'{}')||{};}catch{_pvTasksCache={};}
+const _pvTs={}; // коли останній раз успішно оновлено задачі об'єкта (мс)
 function _pvSaveCache(){try{localStorage.setItem('crm_pv_tasks',JSON.stringify(_pvTasksCache));}catch{}}
 function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'')||'D';} // за замовчуванням колонка D
 async function pvLoadTasks(o){
@@ -3262,7 +3263,9 @@ function pvEnter(){
     const id=String(o.id),configured=!!(o.ratyfikacjaUrl&&_pvColOf(o));
     pvFillCell(pvCells[i],i,cols,_pvTasksCache[id]||{state:configured?'loading':'cfg'});
     if(!configured)return;
+    if(_pvTasksCache[id]&&_pvTs[id]&&Date.now()-_pvTs[id]<90000){pvStatusDone(false,o.name,'');return;} // свіжі дані з фону — без повторного запиту
     pvLoadTasks(o).then(r=>{
+      _pvTs[id]=Date.now();
       if(_pvView!==view||_pvExiting)return;
       pvStatusDone(r.state==='err',o.name,pvErrHint(r.msg));
       { const _lb=pvCells[i].querySelector('.pv-label'); if(_lb){_lb.classList.toggle('pv-failed',r.state==='err');_lb.title=r.state==='err'?('Не вдалося оновити: '+pvErrHint(r.msg)):'';}
@@ -3683,7 +3686,8 @@ async function pvPrefetchAll(){
   const list=(typeof objects!=='undefined'&&Array.isArray(objects)?objects:[]).filter(o=>o&&o.ratyfikacjaUrl&&_pvColOf(o)&&!o.closed);
   if(!list.length)return;
   _pvPrefetching=true;
-  pvSetStatus('syncing','закупи: завантаження…');
+  const _allCached=list.every(o=>_pvTasksCache[String(o.id)]);
+  if(!_allCached)pvSetStatus('syncing','закупи: завантаження…'); // є кеш — оновлюємо тихо, без «завантаження»
   try{
     let k=0,changed=false,errs=[];
     const worker=async()=>{
@@ -3691,11 +3695,11 @@ async function pvPrefetchAll(){
         const o=list[k++];
         const r=await pvLoadTasks(o);
         if(r.state==='err'){errs.push({name:o.name||'?',msg:pvErrHint(r.msg)});continue;}
-        const id=String(o.id);
+        const id=String(o.id);_pvTs[id]=Date.now();
         if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
       }
     };
-    await Promise.all([worker(),worker(),worker()]);
+    await Promise.all(Array.from({length:Math.min(6,list.length)},worker));
     if(changed)_pvSaveCache();
     if(!_pvActive&&!_pvBusy){
       if(errs.length){
