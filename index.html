@@ -697,6 +697,17 @@ body.purch-mode{padding-bottom:12px;}
 }
 .purch-view.in .pv-task{opacity:1;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));}
 .purch-view:not(.in) .pv-task{transition-delay:0ms;transition-duration:.25s;}
+.pv-label{
+  align-self:flex-start;max-width:100%;margin-bottom:2px;padding:2px 9px;
+  font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.01em;
+  background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:8px;
+  box-shadow:var(--shadow-card);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .3s ease,transform .42s cubic-bezier(.2,.9,.3,1.15);
+  transition-delay:var(--d,0ms);
+}
+.purch-view.in .pv-label{opacity:1;transform:none;}
+.purch-view:not(.in) .pv-label{transition-delay:0ms;transition-duration:.25s;}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -2867,7 +2878,7 @@ function pvPlace(view,flies){
   flies.forEach((f,i)=>{
     // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
     f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.64)));
-    cells[i].querySelector('.pv-slot').style.height=Math.max(116,Math.round(f.h*f.sc*.64))+'px';
+    cells[i].querySelector('.pv-slot').style.height=Math.max(138,Math.round(f.h*f.sc*.64))+'px';
   });
   const vr=view.getBoundingClientRect();
   flies.forEach((f,i)=>{
@@ -2891,6 +2902,11 @@ function pvEnter(){
   for(let i=0;i<n;i++){
     const cell=document.createElement('div');cell.className='pv-cell';
     const tasks=document.createElement('div');tasks.className='pv-tasks';
+    const _o=objects.find(x=>String(x.id)===String(cards[i].dataset.objid));
+    const lab=document.createElement('div');lab.className='pv-label';
+    lab.textContent=(_o&&_o.name)||'—';
+    lab.style.setProperty('--d',((i%cols)*35)+'ms');
+    tasks.appendChild(lab);
     PV_TASKS.forEach((t,k)=>{
       const d=document.createElement('div');d.className='pv-task';
       d.style.setProperty('--d',((i%cols)*35+k*55)+'ms');
