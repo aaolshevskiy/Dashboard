@@ -713,6 +713,21 @@ body.purch-mode{padding-bottom:12px;}
   align-self:flex-start;max-width:100%;padding:2px 9px;font-size:12px;color:var(--text3);
   background:rgba(255,255,255,.85);border-radius:8px;
 }
+.pv-label{display:flex;align-items:center;gap:6px;position:relative;z-index:1;}
+.pv-label.clickable{cursor:pointer;}
+.pv-label-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pv-more{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:10px;padding:0 6px;}
+.pv-label.clickable .pv-more{display:inline-block;}
+.pv-task{position:relative;z-index:1;}
+.pv-ghost{
+  position:absolute;height:30px;left:calc(var(--g)*3% + 3%);right:calc(var(--g)*3% + 3%);
+  bottom:calc(-5px*(var(--g) + 1));background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;box-shadow:var(--shadow-card);z-index:0;opacity:0;transform:rotate(var(--r,0deg));
+  transition:opacity .35s ease .15s;
+}
+.purch-view.in .pv-ghost{opacity:1;}
+.pv-cell.open .pv-tasks{max-height:70vh;overflow-y:auto;scrollbar-width:none;padding:0 6px;margin:0 -6px;z-index:30;}
+.pv-cell.open .pv-tasks::-webkit-scrollbar{display:none;}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -2877,7 +2892,10 @@ function _pvCols(n){
   return Math.min(n,w>1100?4:2); // як у дашборді: 4 в ряд на комп'ютері
 }
 let _pvExiting=false;
-const _pvTasksCache={};
+const PV_MAX=5; // скільки задач видно одразу; решта — позаду, розгортаються кліком по назві
+let _pvTasksCache={};
+try{_pvTasksCache=JSON.parse(localStorage.getItem('crm_pv_tasks')||'{}')||{};}catch{_pvTasksCache={};}
+function _pvSaveCache(){try{localStorage.setItem('crm_pv_tasks',JSON.stringify(_pvTasksCache));}catch{}}
 function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'')||'D';} // за замовчуванням колонка D
 async function pvLoadTasks(o){
   try{
@@ -2892,24 +2910,49 @@ async function pvLoadTasks(o){
   }catch(e){return {state:'err'};}
 }
 function pvFillCell(cell,i,cols,res){
+  cell._res=res;
   const box=cell.querySelector('.pv-tasks');
-  box.querySelectorAll('.pv-task,.pv-empty').forEach(e=>e.remove());
+  const lab=box.querySelector('.pv-label');
   const late=!!(_pvView&&_pvView.classList.contains('in'));
-  if(res.state==='ok'&&res.tasks&&res.tasks.length){
-    res.tasks.forEach((t,k)=>{
-      const d=document.createElement('div');d.className='pv-task';d.title=t;
-      d.style.setProperty('--d',((i%cols)*35+k*55)+'ms');
-      const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
-      d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
-      d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
-      d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
-      const dot=document.createElement('span');dot.className='pv-dot';
-      const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
-      d.appendChild(dot);d.appendChild(tt);
-      if(late)d.classList.add('pv-new');
-      box.appendChild(d);
-      if(late)requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.remove('pv-new')));
-    });
+  const list=(res.state==='ok'&&res.tasks)?res.tasks:[];
+  const open=cell.dataset.open==='1'&&list.length>PV_MAX;
+  if(!open&&cell.dataset.open==='1'){cell.dataset.open='';cell.classList.remove('open');}
+  const shown=open?list:list.slice(0,PV_MAX);
+  const extra=list.length-shown.length;
+  // індикатор «+N» / «▴» на назві
+  const more=box.querySelector('.pv-more');
+  if(lab&&more){
+    lab.classList.toggle('clickable',list.length>PV_MAX);
+    more.textContent=open?'▴':'+'+(list.length-PV_MAX);
+  }
+  box.querySelectorAll('.pv-empty,.pv-ghost').forEach(e=>e.remove());
+  // лишаємо незмінні задачі з початку списку, решту перебудовуємо
+  const existing=Array.from(box.querySelectorAll('.pv-task'));
+  let keep=0;
+  while(keep<existing.length&&keep<shown.length&&existing[keep].dataset.t===shown[keep])keep++;
+  existing.slice(keep).forEach(e=>e.remove());
+  shown.slice(keep).forEach((t,j)=>{
+    const k=keep+j;
+    const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
+    d.style.setProperty('--d',((i%cols)*35+Math.min(k,5)*55)+'ms');
+    const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
+    d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
+    d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
+    d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
+    const dot=document.createElement('span');dot.className='pv-dot';
+    const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
+    d.appendChild(dot);d.appendChild(tt);
+    if(late)d.classList.add('pv-new');
+    box.appendChild(d);
+    if(late)requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.remove('pv-new')));
+  });
+  if(list.length){
+    // решта задач — «позаду» останньої видимої
+    for(let g=0;g<Math.min(2,extra);g++){
+      const gh=document.createElement('div');gh.className='pv-ghost';
+      gh.style.setProperty('--g',g);gh.style.setProperty('--r',(g===0?1.6:-1.8)+'deg');
+      box.appendChild(gh);
+    }
   }else{
     const e=document.createElement('div');e.className='pv-empty';
     e.textContent={loading:'завантаження…',none:'немає задач',cfg:'вкажіть Zakup і колонку в налаштуваннях',err:'не вдалося завантажити'}[res.state]||'';
@@ -2962,8 +3005,17 @@ function pvEnter(){
     const tasks=document.createElement('div');tasks.className='pv-tasks';
     const _o=objects.find(x=>String(x.id)===String(cards[i].dataset.objid));
     const lab=document.createElement('div');lab.className='pv-label';
-    lab.textContent=(_o&&_o.name)||'—';
+    const labName=document.createElement('span');labName.className='pv-label-name';labName.textContent=(_o&&_o.name)||'—';
+    const labMore=document.createElement('span');labMore.className='pv-more';
+    lab.appendChild(labName);lab.appendChild(labMore);
     lab.style.setProperty('--d',((i%cols)*35)+'ms');
+    lab.addEventListener('click',()=>{
+      const list=(cell._res&&cell._res.tasks)||[];
+      if(list.length<=PV_MAX)return;
+      const open=cell.dataset.open!=='1';
+      cell.dataset.open=open?'1':'';cell.classList.toggle('open',open);
+      pvFillCell(cell,i,cols,cell._res);pvRelayout();
+    });
     tasks.appendChild(lab);
     const slot=document.createElement('div');slot.className='pv-slot';
     cell.appendChild(tasks);cell.appendChild(slot);grid.appendChild(cell);pvCells.push(cell);
@@ -2981,7 +3033,7 @@ function pvEnter(){
       const prev=_pvTasksCache[id];
       if(r.state==='err'&&prev)return;
       if(JSON.stringify(r)===JSON.stringify(prev))return;
-      if(r.state!=='err')_pvTasksCache[id]=r;
+      if(r.state!=='err'){_pvTasksCache[id]=r;_pvSaveCache();}
       pvFillCell(pvCells[i],i,cols,r);
       pvRelayout();
     });
