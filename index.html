@@ -5,9 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Дашборд">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f2f7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Мій дашборд</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗒️</text></svg>">
 <style>
+html{background:#f2f2f7;}
 /* ── TOKENS ── */
 :root{
   --bg:#f2f2f7;
@@ -1067,6 +1072,10 @@ body.readonly .card-checklist-body { display: none !important; }
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbx-v-yIRbWSaGms_8F2DES4DXXPRutoWoSItR9SmK33ytvolCF3kFnoozaYwdnYTpMb/exec";
 
+// ── Офлайн: service worker зберігає саму сторінку на пристрої (потрібен HTTPS і файл sw.js поруч) ──
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(reg=>{if(reg&&reg.active)reg.active.postMessage({type:'cache-page',url:location.href.split('#')[0]});}).catch(e=>console.warn('[SW]',e));});
+}
 // ── ACCESS CONTROL — пароль редактора; без нього лише перегляд ──
 const KEY_LS='crm_edit_key';
 let _editKey='';try{_editKey=localStorage.getItem(KEY_LS)||'';}catch{}
