@@ -2953,9 +2953,8 @@ async function pvLoadTasks(o){
     return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
   }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
 }
-// Колір заявки за віком: крок 5 днів, кожен крок — червоніше; <5 днів — без кольору, 20+ днів — максимально червона
-const PV_STEP=5, PV_LVL_MAX=4;
-const PV_LEVELS=[0,.18,.40,.66,1];
+// Колір заявки за віком: крок 3 дні, кожен крок — червоніше; перші 3 дні — білий, з 4-го дня ледь червоний, 30+ днів — максимально червона
+const PV_STEP=3, PV_LVL_MAX=10;
 function pvDays(iso){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
   if(!m)return null;
@@ -2970,11 +2969,11 @@ function pvApplyAge(el,iso){
   el.title=(el.dataset.t||'')+' · '+days+' дн.';
   const lvl=Math.min(PV_LVL_MAX,Math.floor(days/PV_STEP));
   if(lvl<1)return;
-  const a=PV_LEVELS[lvl];
+  const a=.08+.92*(lvl-1)/(PV_LVL_MAX-1);
   const mix=(w,r)=>Math.round(w+(r-w)*a);
   el.style.background='rgb('+mix(255,255)+','+mix(255,59)+','+mix(255,48)+')';
   el.style.borderColor='rgba(255,59,48,'+(.25+.6*lvl/PV_LVL_MAX).toFixed(2)+')';
-  if(lvl>=PV_LVL_MAX)el.style.setProperty('--pv-fg','#fff');
+  if(a>=.8)el.style.setProperty('--pv-fg','#fff');
 }
 function pvFillCell(cell,i,cols,res){
   cell._res=res;
