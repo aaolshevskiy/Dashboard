@@ -3019,16 +3019,15 @@ function pvBuildPanel(){
   panel.appendChild(lab);
   list.forEach(t=>panel.appendChild(pvTaskEl(t)));
   pvBend(panel);
-  // позиція: над своєю карткою; зсуваємо/обмежуємо лише якщо не вміщується у вікно
-  const br=cell.querySelector('.pv-tasks').getBoundingClientRect();
-  const W=Math.max(260,br.width);
+  // позиція: по центру екрана; обмежуємо висоту (і вмикаємо прокрутку) лише якщо список не вміщується
+  const W=Math.min(420,window.innerWidth-24);
   panel.style.width=W+'px';
-  panel.style.left=Math.max(12,Math.min(br.left,window.innerWidth-W-12))+'px';
+  panel.style.left=Math.round((window.innerWidth-W)/2)+'px';
   panel.style.maxHeight='';panel.style.overflowY='';
   let h=panel.offsetHeight;
   const maxH=window.innerHeight-24;
   if(h>maxH){panel.style.maxHeight=maxH+'px';panel.style.overflowY='auto';h=maxH;}
-  panel.style.top=Math.max(12,Math.min(br.bottom-h,window.innerHeight-12-h))+'px';
+  panel.style.top=Math.round((window.innerHeight-h)/2)+'px';
 }
 function pvClosePanel(){
   if(!_pvPanel)return;
