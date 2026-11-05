@@ -668,6 +668,44 @@ body.focus-open{overflow:hidden;}
   .obj-card:not(.closed):not(.focused) .obj-card-name:hover{color:var(--blue);}
 }
 
+
+/* ── ЗАКУПИ ── */
+.board-inner{position:relative;}
+body.purch-mode .cal-strip,body.purch-mode .section-label,body.purch-mode .objects-grid,
+body.purch-mode .notes-zone,body.purch-mode #overdueZone{display:none!important;}
+body.purch-return .obj-card{visibility:hidden;}
+body.purch-return .cal-strip,body.purch-return .section-label,body.purch-return .notes-zone{animation:pv-fade .6s ease both;}
+@keyframes pv-fade{from{opacity:0}to{opacity:1}}
+.purch-view{position:relative;display:none;padding:6px 2px 60px;}
+.purch-view.live{display:block;}
+.purch-view.pinned{position:absolute;left:0;right:0;}
+.pv-grid{display:grid;gap:30px 14px;align-items:end;}
+.pv-cell{position:relative;}
+.pv-slot{width:100%;}
+.pv-tasks{position:relative;height:104px;margin-bottom:-12px;z-index:3;}
+.pv-task{
+  position:absolute;left:5%;right:5%;bottom:calc(var(--i)*11px);height:50px;
+  display:flex;align-items:center;gap:9px;padding:0 12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:var(--shadow-card);z-index:calc(10 - var(--i));
+  opacity:0;transform:translateY(34px) scale(.9);
+  transition:opacity .4s ease,transform .6s cubic-bezier(.2,.9,.3,1.15),bottom .3s ease;
+  transition-delay:var(--d,0ms);
+}
+.purch-view.in .pv-task{opacity:1;transform:translateY(0) rotate(var(--r)) scale(calc(1 - var(--i)*.035));}
+.purch-view:not(.in) .pv-task{transition-delay:0ms;transition-duration:.25s;}
+.purch-view.settled .pv-task{transition-delay:0ms;}
+.pv-cell:hover .pv-task{bottom:calc(var(--i)*30px);}
+.pv-dot{width:16px;height:16px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
+.pv-tt{font-size:13px;font-weight:600;color:var(--text);}
+.pv-sk{height:6px;width:70%;background:var(--surface3);border-radius:3px;margin-top:5px;}
+.pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
+.pv-fly .obj-card{
+  width:100%;height:100%;min-height:0;margin:0;position:relative;
+  transform-origin:50% 100%;will-change:transform;
+  box-shadow:0 12px 26px rgba(0,0,0,.18);
+}
+
 /* ── READ-ONLY MODE ── */
 /* When body.readonly — hide all editing controls, keep everything else visible */
 body.readonly .edit-only { display: none !important; }
@@ -700,6 +738,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span><span id="offline-badge"></span></div>
     <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
     <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
+    <button class="btn" id="btnPurch" onclick="togglePurchases()">🛒 Закупи</button>
     <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
   </div>
 </div>
@@ -2797,6 +2836,146 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&_focusId!==null&&!document.querySelector('.overlay.open')) exitFocus();
 });
 window.addEventListener('resize',()=>{ if(_focusId!==null&&!focusAvail()) exitFocus(false); });
+
+
+// ── ЗАКУПИ: макет (картки «лягають» в ряди, над ними — стоси задач) ──
+let _pvActive=false,_pvBusy=false,_pvView=null,_pvFlies=[];
+const PV_EASE='cubic-bezier(.22,1,.36,1)';
+const PV_TILT='perspective(800px) rotateX(48deg)';
+const PV_FLAT='perspective(800px) rotateX(0deg)';
+const PV_TASKS=['Задача 1','Задача 2','Задача 3']; // поки порожні заглушки
+function _pvSetBtn(txt){
+  const b=document.getElementById('btnPurch');if(!b)return;
+  b.style.opacity='0';
+  setTimeout(()=>{b.textContent=txt;b.style.opacity='1';},160);
+}
+function _pvCards(){return Array.from(document.querySelectorAll('#objectsGrid .obj-card:not(.closed)'));}
+function _pvCols(n){
+  const w=window.innerWidth,max=w<769?2:w<1101?3:5;
+  const rows=Math.ceil(n/max);
+  return Math.ceil(n/rows);
+}
+function pvPlace(view,flies){
+  const grid=view.querySelector('.pv-grid');
+  const cols=_pvCols(flies.length);
+  grid.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';
+  const cells=Array.from(grid.children);
+  const cw=cells[0].getBoundingClientRect().width;
+  flies.forEach((f,i)=>{
+    f.sc=Math.min(1,cw/f.w);
+    cells[i].querySelector('.pv-slot').style.height=Math.round(f.h*f.sc*.8)+'px';
+  });
+  const vr=view.getBoundingClientRect();
+  flies.forEach((f,i)=>{
+    const sr=cells[i].querySelector('.pv-slot').getBoundingClientRect();
+    f.tx=sr.left-vr.left;
+    f.ty=sr.bottom-vr.top-f.h*f.sc;
+  });
+  return cols;
+}
+function pvEnter(){
+  if(_pvActive||_pvBusy)return;
+  const cards=_pvCards();
+  if(!cards.length)return;
+  _pvBusy=true;
+  if(typeof exitFocus==='function')exitFocus(false);
+  window.scrollTo(0,0);
+  const rects=cards.map(c=>c.getBoundingClientRect());
+  const n=cards.length,cols=_pvCols(n);
+  const view=document.createElement('div');view.id='purchView';view.className='purch-view live';
+  const grid=document.createElement('div');grid.className='pv-grid';
+  for(let i=0;i<n;i++){
+    const cell=document.createElement('div');cell.className='pv-cell';
+    const tasks=document.createElement('div');tasks.className='pv-tasks';
+    PV_TASKS.forEach((t,k)=>{
+      const d=document.createElement('div');d.className='pv-task';
+      d.style.setProperty('--i',k);
+      d.style.setProperty('--r',[0,-3,2.5][k]+'deg');
+      d.style.setProperty('--d',((i%cols)*70+k*90)+'ms');
+      d.innerHTML='<span class="pv-dot"></span><div style="min-width:0;flex:1"><div class="pv-tt">'+t+'</div><div class="pv-sk"></div></div>';
+      tasks.appendChild(d);
+    });
+    const slot=document.createElement('div');slot.className='pv-slot';
+    cell.appendChild(tasks);cell.appendChild(slot);grid.appendChild(cell);
+  }
+  view.appendChild(grid);
+  document.querySelector('.board-inner').appendChild(view);
+  document.body.classList.add('purch-mode');
+  const vr=view.getBoundingClientRect();
+  const flies=cards.map((c,i)=>{
+    const r=rects[i];
+    const outer=document.createElement('div');outer.className='pv-fly';
+    outer.style.width=r.width+'px';outer.style.height=r.height+'px';
+    outer.style.transform='translate('+(r.left-vr.left)+'px,'+(r.top-vr.top)+'px) scale(1)';
+    const cl=c.cloneNode(true);
+    cl.removeAttribute('id');cl.removeAttribute('draggable');
+    cl.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
+    outer.appendChild(cl);view.appendChild(outer);
+    return {outer,inner:cl,w:r.width,h:r.height,id:String(c.dataset.objid)};
+  });
+  pvPlace(view,flies);
+  void view.offsetWidth;
+  const rows=Math.ceil(n/cols);
+  flies.forEach((f,i)=>{
+    const d=(i%cols)*70+Math.floor(i/cols)*140;
+    const tr='transform .9s '+PV_EASE+' '+d+'ms';
+    f.outer.style.transition=tr;f.inner.style.transition=tr;
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    flies.forEach(f=>{
+      f.outer.style.transform='translate('+f.tx+'px,'+f.ty+'px) scale('+f.sc+')';
+      f.inner.style.transform=PV_TILT;
+    });
+  }));
+  _pvView=view;_pvFlies=flies;
+  _pvSetBtn('← Дашборд');
+  const total=900+(cols-1)*70+(rows-1)*140;
+  setTimeout(()=>view.classList.add('in'),total-150);
+  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+800);
+}
+function pvExit(){
+  if(!_pvActive||_pvBusy)return;
+  _pvBusy=true;
+  const view=_pvView,flies=_pvFlies;
+  _pvSetBtn('🛒 Закупи');
+  view.classList.remove('settled');view.classList.remove('in');
+  setTimeout(()=>{
+    window.scrollTo(0,0);
+    const inner=document.querySelector('.board-inner');
+    const ir=inner.getBoundingClientRect(),vr=view.getBoundingClientRect();
+    view.classList.add('pinned');view.style.top=(vr.top-ir.top)+'px';
+    document.body.classList.remove('purch-mode');
+    document.body.classList.add('purch-return');
+    const vr2=view.getBoundingClientRect();
+    const byId={};_pvCards().forEach(c=>{byId[String(c.dataset.objid)]=c;});
+    const cols=_pvCols(flies.length);
+    flies.forEach((f,i)=>{
+      const rc=byId[f.id];
+      const d=(cols-1-(i%cols))*60;
+      const tr='transform .85s '+PV_EASE+' '+d+'ms, opacity .5s ease '+d+'ms';
+      f.outer.style.transition=tr;f.inner.style.transition=tr;
+      if(rc){
+        const r=rc.getBoundingClientRect();
+        f.outer.style.transform='translate('+(r.left-vr2.left)+'px,'+(r.top-vr2.top)+'px) scale(1)';
+        f.inner.style.transform=PV_FLAT;
+      }else{f.outer.style.opacity='0';}
+    });
+    setTimeout(()=>{
+      view.remove();
+      document.body.classList.remove('purch-return');
+      _pvActive=false;_pvBusy=false;_pvView=null;_pvFlies=[];
+    },850+(cols-1)*60+120);
+  },300);
+}
+function togglePurchases(){ if(_pvActive)pvExit(); else pvEnter(); }
+window.addEventListener('resize',()=>{
+  if(!_pvActive||_pvBusy||!_pvView)return;
+  pvPlace(_pvView,_pvFlies);
+  _pvFlies.forEach(f=>{
+    f.outer.style.transition='none';
+    f.outer.style.transform='translate('+f.tx+'px,'+f.ty+'px) scale('+f.sc+')';
+  });
+});
 
 // ── STARTUP ──
 // Закриття модалки кліком по затемненню — тільки якщо мишу і натиснули, і відпустили на затемненні.
