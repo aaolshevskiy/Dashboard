@@ -858,7 +858,7 @@ body.readonly .card-checklist-body { display: none !important; }
   <div class="topbar-right">
     <button class="auth-btn" id="authBtn" onclick="authClick()">🔒 Увійти</button>
     <div class="sync-status" id="syncStatus"><span class="sync-text" id="syncText">завантаження...</span><span id="offline-badge"></span></div>
-    <div class="sync-status" id="pvStatus" style="display:none"><span class="sync-text" id="pvStatusText"></span></div>
+    <div class="sync-status" id="pvStatus"><span class="sync-text" id="pvStatusText">закупи: очікування…</span></div>
   </div>
 </div>
 
@@ -3171,8 +3171,8 @@ function pvSetStatus(state,text){
   if(!el||!tx)return;
   el.className='sync-status '+state;
   el.title='';
-  el.style.display=text?'':'none';
-  tx.textContent=text;
+  el.style.display='';
+  tx.textContent=text||'закупи: —';
 }
 function pvStatusStart(n){
   _pvPending=n;_pvErr=false;_pvTotal=n;_pvErrs=[];
@@ -3764,7 +3764,7 @@ async function pvPrefetchAll(){
   if(!list.length)return;
   _pvPrefetching=true;
   const _allCached=list.every(o=>_pvTasksCache[String(o.id)]);
-  if(!_allCached)pvSetStatus('syncing','закупи: завантаження…'); // є кеш — оновлюємо тихо, без «завантаження»
+  pvSetStatus('syncing','закупи: завантаження…'); // статус завжди видно
   try{
     let k=0,changed=false,errs=[];
     const worker=async()=>{
