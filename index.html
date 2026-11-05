@@ -708,6 +708,11 @@ body.purch-mode{padding-bottom:12px;}
 }
 .purch-view.in .pv-label{opacity:1;transform:none;}
 .purch-view:not(.in) .pv-label{transition-delay:0ms;transition-duration:.25s;}
+.pv-task.pv-new,.purch-view.in .pv-task.pv-new{opacity:0;transform:translateY(26px) scale(.96);}
+.pv-empty{
+  align-self:flex-start;max-width:100%;padding:2px 9px;font-size:12px;color:var(--text3);
+  background:rgba(255,255,255,.85);border-radius:8px;
+}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
@@ -868,6 +873,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Oferta</label><input id="f-oferta-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
+      <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="напр. D (для вікна «Закупи»)" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -1244,6 +1250,7 @@ function parseObj(o){
       parsed.projectUrl=String(_serverFlags._projectUrl||'');
     else parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
   }
+  if(!parsed.purchCol) parsed.purchCol=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._purchCol)?String(_serverFlags._purchCol):'';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
@@ -1381,6 +1388,7 @@ async function apiSave(obj){
       dateStart:obj.dateStart||'',dateEnd:obj.dateEnd||'',
       furniture:obj.furniture||'',
       projectUrl:obj.projectUrl||'',
+      purchCol:obj.purchCol||'',
       ofertaUrl:obj.ofertaUrl||'',
       moneyUrl:obj.moneyUrl||'',
       ratyfikacjaUrl:obj.ratyfikacjaUrl||'',
@@ -1389,7 +1397,7 @@ async function apiSave(obj){
       paymentPct:obj.paymentPct||'',
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
-      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||''})),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -2285,7 +2293,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-purch-col'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2336,6 +2344,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
+  if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'';
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
@@ -2392,6 +2401,7 @@ async function saveCard(){
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
     projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
+    purchCol:document.getElementById('f-purch-col')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
     moneyUrl:document.getElementById('f-money-url')?.value.trim()||'',
@@ -2865,6 +2875,51 @@ function _pvCols(n){
   const w=window.innerWidth;
   return Math.min(n,w>1100?4:2); // як у дашборді: 4 в ряд на комп'ютері
 }
+let _pvExiting=false;
+const _pvTasksCache={};
+function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'');}
+async function pvLoadTasks(o){
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'getPurchases',spreadsheetUrl:o.ratyfikacjaUrl,column:_pvColOf(o)}),redirect:'follow'});
+    const data=await res.json();
+    if(data&&Array.isArray(data.tasks)){
+      const t=data.tasks.map(String);
+      return {state:t.length?'ok':'none',tasks:t};
+    }
+    return {state:'err'};
+  }catch(e){return {state:'err'};}
+}
+function pvFillCell(cell,i,cols,res){
+  const box=cell.querySelector('.pv-tasks');
+  box.querySelectorAll('.pv-task,.pv-empty').forEach(e=>e.remove());
+  const late=!!(_pvView&&_pvView.classList.contains('in'));
+  if(res.state==='ok'&&res.tasks&&res.tasks.length){
+    res.tasks.forEach((t,k)=>{
+      const d=document.createElement('div');d.className='pv-task';d.title=t;
+      d.style.setProperty('--d',((i%cols)*35+k*55)+'ms');
+      const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
+      d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
+      d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
+      d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
+      const dot=document.createElement('span');dot.className='pv-dot';
+      const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
+      d.appendChild(dot);d.appendChild(tt);
+      if(late)d.classList.add('pv-new');
+      box.appendChild(d);
+      if(late)requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.remove('pv-new')));
+    });
+  }else{
+    const e=document.createElement('div');e.className='pv-empty';
+    e.textContent={loading:'завантаження…',none:'немає задач',cfg:'вкажіть Zakup і колонку в налаштуваннях',err:'не вдалося завантажити'}[res.state]||'';
+    box.appendChild(e);
+  }
+}
+function pvRelayout(){
+  if(!_pvView||_pvExiting||!_pvFlies.length)return;
+  pvPlace(_pvView,_pvFlies);
+  _pvFlies.forEach(f=>{f.outer.style.transform='translate('+f.tx+'px,'+f.ty+'px) scale('+f.sc+')';});
+}
 function pvPlace(view,flies){
   const grid=view.querySelector('.pv-grid');
   const cols=_pvCols(flies.length);
@@ -2878,7 +2933,8 @@ function pvPlace(view,flies){
   flies.forEach((f,i)=>{
     // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
     f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.64)));
-    cells[i].querySelector('.pv-slot').style.height=Math.max(138,Math.round(f.h*f.sc*.64))+'px';
+    const tb=cells[i].querySelector('.pv-tasks');
+    cells[i].querySelector('.pv-slot').style.height=Math.max(138,Math.round(f.h*f.sc*.64),(tb?tb.offsetHeight+14:0))+'px';
   });
   const vr=view.getBoundingClientRect();
   flies.forEach((f,i)=>{
@@ -2899,6 +2955,7 @@ function pvEnter(){
   const n=cards.length,cols=_pvCols(n);
   const view=document.createElement('div');view.id='purchView';view.className='purch-view live';
   const grid=document.createElement('div');grid.className='pv-grid';
+  const pvCells=[];
   for(let i=0;i<n;i++){
     const cell=document.createElement('div');cell.className='pv-cell';
     const tasks=document.createElement('div');tasks.className='pv-tasks';
@@ -2907,21 +2964,28 @@ function pvEnter(){
     lab.textContent=(_o&&_o.name)||'—';
     lab.style.setProperty('--d',((i%cols)*35)+'ms');
     tasks.appendChild(lab);
-    PV_TASKS.forEach((t,k)=>{
-      const d=document.createElement('div');d.className='pv-task';
-      d.style.setProperty('--d',((i%cols)*35+k*55)+'ms');
-      // трохи «недбало»: кожна задача має свій нахил, зсув і ширину (детерміновано, без стрибків між входами)
-      const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
-      d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
-      d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
-      d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
-      d.innerHTML='<span class="pv-dot"></span><div class="pv-tt">'+t+'</div>';
-      tasks.appendChild(d);
-    });
     const slot=document.createElement('div');slot.className='pv-slot';
-    cell.appendChild(tasks);cell.appendChild(slot);grid.appendChild(cell);
+    cell.appendChild(tasks);cell.appendChild(slot);grid.appendChild(cell);pvCells.push(cell);
   }
   view.appendChild(grid);
+  // задачі з таблиці Zakup: спершу з кешу/«завантаження», потім свіжі дані
+  cards.forEach((c,i)=>{
+    const o=objects.find(x=>String(x.id)===String(c.dataset.objid));
+    if(!o)return;
+    const id=String(o.id),configured=!!(o.ratyfikacjaUrl&&_pvColOf(o));
+    pvFillCell(pvCells[i],i,cols,_pvTasksCache[id]||{state:configured?'loading':'cfg'});
+    if(!configured)return;
+    pvLoadTasks(o).then(r=>{
+      if(_pvView!==view||_pvExiting)return;
+      const prev=_pvTasksCache[id];
+      if(r.state==='err'&&prev)return;
+      if(JSON.stringify(r)===JSON.stringify(prev))return;
+      if(r.state!=='err')_pvTasksCache[id]=r;
+      pvFillCell(pvCells[i],i,cols,r);
+      pvRelayout();
+    });
+  });
+  _pvView=view;
   document.querySelector('.board-inner').appendChild(view);
   document.body.classList.add('purch-mode');
   const vr=view.getBoundingClientRect();
@@ -2958,7 +3022,7 @@ function pvEnter(){
 }
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
-  _pvBusy=true;
+  _pvBusy=true;_pvExiting=true;
   const view=_pvView,flies=_pvFlies;
   _pvSetBtn('🛒 Закупи');
   view.classList.remove('settled');view.classList.remove('in');
@@ -2991,7 +3055,7 @@ function pvExit(){
     setTimeout(()=>{
       view.remove();
       document.body.classList.remove('purch-return');
-      _pvActive=false;_pvBusy=false;_pvView=null;_pvFlies=[];
+      _pvActive=false;_pvBusy=false;_pvExiting=false;_pvView=null;_pvFlies=[];
     },850+(cols-1)*60+120);
   },300);
 }
