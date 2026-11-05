@@ -2257,26 +2257,6 @@ function toggleQuickDt(){
   else{row.style.display='flex';btn.textContent='− прибрати';}
 }
 
-async function addQuickNote(){
-  if(!_requireEdit()) return;
-  const inp=document.getElementById('quickNoteInput');
-  const text=inp?inp.value.trim():'';if(!text)return;
-  const date=document.getElementById('quickDtDate')?.value||'';
-  const hour=document.getElementById('quickDtHour')?.value||'9';
-  const time=date?date+'T'+String(hour).padStart(2,'0')+':00':'';
-  const sn={id:'sticky_'+Date.now(),name:text,col:1,addr:'1',status:'sticky',
-    stage:'',pack:'',area:'',inwork:false,completed:false,masters:false,
-    mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
-    notes:time?[{text,time}]:[]};
-  stickyNotes.push(sn);logStickyAdded(sn);
-  inp.value='';
-  if(document.getElementById('quickDtDate')) document.getElementById('quickDtDate').value='';
-  document.getElementById('quickDtRow').style.display='none';
-  document.getElementById('quickDtBtn').textContent='+ нагадати';
-  try{await apiSaveQueued(sn);}catch(e){console.error(e);}
-  renderNotes();
-}
-
 async function addMobileNote(){
   if(!_requireEdit()) return;
   const inp=document.getElementById('mobileNoteInput');
@@ -2339,6 +2319,7 @@ async function addGlobalNote(){
 
 async function addQuickNote(){
   if(!_requireEdit()) return;
+  if(_micActive) stopMic(true); // додаємо вручну — мікрофон вимикаємо
   const inp=document.getElementById('quickNoteInput'),sel=document.getElementById('quickObjSelect');
   if(!inp||!sel)return;
   const text=inp.value.trim();
@@ -3476,6 +3457,7 @@ let _recognition=null;
 let _micActive=false;
 let _micInputId=null;
 let _micBtnId=null;
+let _micTimer=null; // страховка: мікрофон сам вимикається
 let _micSuppressAutoSave=false; // true when user interacted with select — don't auto-submit
 
 function toggleMic(inputId, btnId){
@@ -3514,8 +3496,10 @@ function toggleMic(inputId, btnId){
       else interim+=e.results[i][0].transcript;
     }
     if(inp) inp.value=(final||interim).trim();
+    if(final){ try{_recognition.stop();}catch(e){} } // фраза закінчена — одразу відпускаємо мікрофон
   };
   _recognition.onend=()=>{
+    clearTimeout(_micTimer);
     _micActive=false;
     if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
     if(_micSuppressAutoSave){ _micSuppressAutoSave=false; return; }
@@ -3528,20 +3512,31 @@ function toggleMic(inputId, btnId){
     }
   };
   _recognition.onerror=e=>{
+    clearTimeout(_micTimer);
     _micActive=false;
     if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
     _micSuppressAutoSave=false;
     if(e.error!=='no-speech') console.error('Speech error:',e.error);
   };
   _recognition.start();
+  clearTimeout(_micTimer);
+  _micTimer=setTimeout(()=>{ if(_micActive) stopMic(); },20000); // не слухаємо довше 20 с
 }
 
-function stopMic(){
-  if(_recognition){ try{_recognition.stop();}catch(e){} }
+// silent=true — без автододавання тексту в замітку (коли додаємо вручну або йдемо зі сторінки)
+function stopMic(silent){
+  clearTimeout(_micTimer);
+  if(silent) _micSuppressAutoSave=true;
+  if(_recognition){ try{_recognition.abort();}catch(e){} try{_recognition.stop();}catch(e){} }
   _micActive=false;
   const btn=document.getElementById(_micBtnId);
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
+
+// Мікрофон не має слухати, коли ви вийшли зі сторінки, заблокували телефон чи перейшли в іншу програму
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&_micActive) stopMic(true); });
+window.addEventListener('pagehide',()=>{ if(_micActive) stopMic(true); });
+window.addEventListener('blur',()=>{ if(_micActive) stopMic(true); });
 
 _applyAccessState(false); // знімає readonly одразу
 // Перевірка збереженого ключа у фоні: скасовуємо вхід лише якщо скрипт явно відповів «ні»
