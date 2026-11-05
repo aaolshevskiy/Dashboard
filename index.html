@@ -673,18 +673,18 @@ body.focus-open{overflow:hidden;}
 .board-inner{position:relative;}
 body.purch-mode .cal-strip,body.purch-mode .section-label,body.purch-mode .objects-grid,
 body.purch-mode .notes-zone,body.purch-mode #overdueZone{display:none!important;}
-body.purch-return .obj-card{visibility:hidden;}
+body.purch-return .objects-grid .obj-card{visibility:hidden;}
 body.purch-return .cal-strip,body.purch-return .section-label,body.purch-return .notes-zone{animation:pv-fade .6s ease both;}
 @keyframes pv-fade{from{opacity:0}to{opacity:1}}
-.purch-view{position:relative;display:none;padding:6px 2px 60px;}
+.purch-view{position:relative;display:none;padding:0 2px 24px;}
 .purch-view.live{display:block;}
 .purch-view.pinned{position:absolute;left:0;right:0;}
-.pv-grid{display:grid;gap:30px 14px;align-items:end;}
+.pv-grid{display:grid;gap:18px 10px;align-items:end;}
 .pv-cell{position:relative;}
 .pv-slot{width:100%;}
-.pv-tasks{position:relative;height:104px;margin-bottom:-12px;z-index:3;}
+.pv-tasks{position:absolute;left:7%;right:7%;bottom:12px;height:100px;z-index:3;}
 .pv-task{
-  position:absolute;left:5%;right:5%;bottom:calc(var(--i)*11px);height:50px;
+  position:absolute;left:0;right:0;bottom:calc(var(--i)*11px);height:50px;
   display:flex;align-items:center;gap:9px;padding:0 12px;
   background:var(--surface);border:1px solid var(--border);border-radius:12px;
   box-shadow:var(--shadow-card);z-index:calc(10 - var(--i));
@@ -2851,9 +2851,8 @@ function _pvSetBtn(txt){
 }
 function _pvCards(){return Array.from(document.querySelectorAll('#objectsGrid .obj-card:not(.closed)'));}
 function _pvCols(n){
-  const w=window.innerWidth,max=w<769?2:w<1101?3:5;
-  const rows=Math.ceil(n/max);
-  return Math.ceil(n/rows);
+  const w=window.innerWidth;
+  return Math.min(n,w>1100?4:2); // як у дашборді: 4 в ряд на комп'ютері
 }
 function pvPlace(view,flies){
   const grid=view.querySelector('.pv-grid');
@@ -2861,14 +2860,19 @@ function pvPlace(view,flies){
   grid.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';
   const cells=Array.from(grid.children);
   const cw=cells[0].getBoundingClientRect().width;
+  const rows=Math.ceil(flies.length/cols);
+  const avail=window.innerHeight-view.getBoundingClientRect().top-30;
+  const rowH=(avail-18*(rows-1))/rows;
+  const hMax=Math.max(...flies.map(f=>f.h));
   flies.forEach((f,i)=>{
-    f.sc=Math.min(1,cw/f.w);
-    cells[i].querySelector('.pv-slot').style.height=Math.round(f.h*f.sc*.8)+'px';
+    // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
+    f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.7)));
+    cells[i].querySelector('.pv-slot').style.height=Math.round(f.h*f.sc*.7)+'px';
   });
   const vr=view.getBoundingClientRect();
   flies.forEach((f,i)=>{
     const sr=cells[i].querySelector('.pv-slot').getBoundingClientRect();
-    f.tx=sr.left-vr.left;
+    f.tx=sr.left-vr.left+(sr.width-f.w*f.sc)/2;
     f.ty=sr.bottom-vr.top-f.h*f.sc;
   });
   return cols;
@@ -2949,17 +2953,22 @@ function pvExit(){
     const vr2=view.getBoundingClientRect();
     const byId={};_pvCards().forEach(c=>{byId[String(c.dataset.objid)]=c;});
     const cols=_pvCols(flies.length);
-    flies.forEach((f,i)=>{
+    const targets=flies.map((f,i)=>{
       const rc=byId[f.id];
       const d=(cols-1-(i%cols))*60;
       const tr='transform .85s '+PV_EASE+' '+d+'ms, opacity .5s ease '+d+'ms';
       f.outer.style.transition=tr;f.inner.style.transition=tr;
-      if(rc){
-        const r=rc.getBoundingClientRect();
-        f.outer.style.transform='translate('+(r.left-vr2.left)+'px,'+(r.top-vr2.top)+'px) scale(1)';
-        f.inner.style.transform=PV_FLAT;
-      }else{f.outer.style.opacity='0';}
+      if(!rc)return null;
+      const r=rc.getBoundingClientRect();
+      return 'translate('+(r.left-vr2.left)+'px,'+(r.top-vr2.top)+'px) scale(1)';
     });
+    void view.offsetWidth;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      flies.forEach((f,i)=>{
+        if(targets[i]){f.outer.style.transform=targets[i];f.inner.style.transform=PV_FLAT;}
+        else f.outer.style.opacity='0';
+      });
+    }));
     setTimeout(()=>{
       view.remove();
       document.body.classList.remove('purch-return');
