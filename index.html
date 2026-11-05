@@ -676,29 +676,29 @@ body.purch-mode .notes-zone,body.purch-mode #overdueZone{display:none!important;
 body.purch-return .objects-grid .obj-card{visibility:hidden;}
 body.purch-return .cal-strip,body.purch-return .section-label,body.purch-return .notes-zone{animation:pv-fade .6s ease both;}
 @keyframes pv-fade{from{opacity:0}to{opacity:1}}
-.purch-view{position:relative;display:none;padding:0 2px 24px;}
+.purch-view{position:relative;display:none;padding:0 2px 6px;}
+body.purch-mode{padding-bottom:12px;}
 .purch-view.live{display:block;}
 .purch-view.pinned{position:absolute;left:0;right:0;}
-.pv-grid{display:grid;gap:18px 10px;align-items:end;}
+.pv-grid{display:grid;gap:12px 10px;align-items:end;}
 .pv-cell{position:relative;}
 .pv-slot{width:100%;}
-.pv-tasks{position:absolute;left:7%;right:7%;bottom:12px;height:100px;z-index:3;}
+.pv-tasks{
+  position:absolute;left:6%;right:6%;bottom:10px;z-index:3;
+  display:flex;flex-direction:column;gap:4px;
+}
 .pv-task{
-  position:absolute;left:0;right:0;bottom:calc(var(--i)*11px);height:50px;
-  display:flex;align-items:center;gap:9px;padding:0 12px;
-  background:var(--surface);border:1px solid var(--border);border-radius:12px;
-  box-shadow:var(--shadow-card);z-index:calc(10 - var(--i));
-  opacity:0;transform:translateY(34px) scale(.9);
-  transition:opacity .4s ease,transform .6s cubic-bezier(.2,.9,.3,1.15),bottom .3s ease;
+  height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  box-shadow:var(--shadow-card);
+  opacity:0;transform:translateY(26px) scale(.96);
+  transition:opacity .4s ease,transform .55s cubic-bezier(.2,.9,.3,1.15);
   transition-delay:var(--d,0ms);
 }
-.purch-view.in .pv-task{opacity:1;transform:translateY(0) rotate(var(--r)) scale(calc(1 - var(--i)*.035));}
+.purch-view.in .pv-task{opacity:1;transform:none;}
 .purch-view:not(.in) .pv-task{transition-delay:0ms;transition-duration:.25s;}
-.purch-view.settled .pv-task{transition-delay:0ms;}
-.pv-cell:hover .pv-task{bottom:calc(var(--i)*30px);}
-.pv-dot{width:16px;height:16px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
-.pv-tt{font-size:13px;font-weight:600;color:var(--text);}
-.pv-sk{height:6px;width:70%;background:var(--surface3);border-radius:3px;margin-top:5px;}
+.pv-dot{width:14px;height:14px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
+.pv-tt{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pv-fly{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;z-index:2;will-change:transform;}
 .pv-fly .obj-card{
   width:100%;height:100%;min-height:0;margin:0;position:relative;
@@ -2841,7 +2841,7 @@ window.addEventListener('resize',()=>{ if(_focusId!==null&&!focusAvail()) exitFo
 // ── ЗАКУПИ: макет (картки «лягають» в ряди, над ними — стоси задач) ──
 let _pvActive=false,_pvBusy=false,_pvView=null,_pvFlies=[];
 const PV_EASE='cubic-bezier(.22,1,.36,1)';
-const PV_TILT='perspective(800px) rotateX(48deg)';
+const PV_TILT='perspective(800px) rotateX(42deg)';
 const PV_FLAT='perspective(800px) rotateX(0deg)';
 const PV_TASKS=['Задача 1','Задача 2','Задача 3']; // поки порожні заглушки
 function _pvSetBtn(txt){
@@ -2861,13 +2861,13 @@ function pvPlace(view,flies){
   const cells=Array.from(grid.children);
   const cw=cells[0].getBoundingClientRect().width;
   const rows=Math.ceil(flies.length/cols);
-  const avail=window.innerHeight-view.getBoundingClientRect().top-30;
-  const rowH=(avail-18*(rows-1))/rows;
+  const avail=window.innerHeight-view.getBoundingClientRect().top-18;
+  const rowH=(avail-12*(rows-1))/rows;
   const hMax=Math.max(...flies.map(f=>f.h));
   flies.forEach((f,i)=>{
     // масштаб: по ширині колонки і так, щоб усі ряди вмістились на екрані
-    f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.7)));
-    cells[i].querySelector('.pv-slot').style.height=Math.round(f.h*f.sc*.7)+'px';
+    f.sc=Math.max(.35,Math.min(1,cw/f.w,rowH/(hMax*.64)));
+    cells[i].querySelector('.pv-slot').style.height=Math.max(116,Math.round(f.h*f.sc*.64))+'px';
   });
   const vr=view.getBoundingClientRect();
   flies.forEach((f,i)=>{
@@ -2893,10 +2893,8 @@ function pvEnter(){
     const tasks=document.createElement('div');tasks.className='pv-tasks';
     PV_TASKS.forEach((t,k)=>{
       const d=document.createElement('div');d.className='pv-task';
-      d.style.setProperty('--i',k);
-      d.style.setProperty('--r',[0,-3,2.5][k]+'deg');
       d.style.setProperty('--d',((i%cols)*70+k*90)+'ms');
-      d.innerHTML='<span class="pv-dot"></span><div style="min-width:0;flex:1"><div class="pv-tt">'+t+'</div><div class="pv-sk"></div></div>';
+      d.innerHTML='<span class="pv-dot"></span><div class="pv-tt">'+t+'</div>';
       tasks.appendChild(d);
     });
     const slot=document.createElement('div');slot.className='pv-slot';
