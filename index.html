@@ -692,10 +692,10 @@ body.purch-mode{padding-bottom:12px;}
   background:var(--surface);border:1px solid var(--border);border-radius:9px;
   box-shadow:var(--shadow-card);
   opacity:0;transform:translateY(26px) scale(.96);
-  transition:opacity .4s ease,transform .55s cubic-bezier(.2,.9,.3,1.15);
+  transition:opacity .3s ease,transform .42s cubic-bezier(.2,.9,.3,1.15);
   transition-delay:var(--d,0ms);
 }
-.purch-view.in .pv-task{opacity:1;transform:none;}
+.purch-view.in .pv-task{opacity:1;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));}
 .purch-view:not(.in) .pv-task{transition-delay:0ms;transition-duration:.25s;}
 .pv-dot{width:14px;height:14px;border:1.5px solid var(--text4);border-radius:50%;flex-shrink:0;}
 .pv-tt{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -2893,7 +2893,12 @@ function pvEnter(){
     const tasks=document.createElement('div');tasks.className='pv-tasks';
     PV_TASKS.forEach((t,k)=>{
       const d=document.createElement('div');d.className='pv-task';
-      d.style.setProperty('--d',((i%cols)*70+k*90)+'ms');
+      d.style.setProperty('--d',((i%cols)*35+k*55)+'ms');
+      // трохи «недбало»: кожна задача має свій нахил, зсув і ширину (детерміновано, без стрибків між входами)
+      const rnd=a=>{const x=Math.sin((i+1)*12.9898+(k+1)*78.233+a*37.719)*43758.5453;return x-Math.floor(x);};
+      d.style.setProperty('--r',((rnd(1)-.5)*5)+'deg');
+      d.style.setProperty('--x',((rnd(2)-.5)*10)+'px');
+      d.style.width=(92+rnd(3)*8)+'%';d.style.alignSelf='center';
       d.innerHTML='<span class="pv-dot"></span><div class="pv-tt">'+t+'</div>';
       tasks.appendChild(d);
     });
@@ -2932,8 +2937,8 @@ function pvEnter(){
   _pvView=view;_pvFlies=flies;
   _pvSetBtn('← Дашборд');
   const total=900+(cols-1)*70+(rows-1)*140;
-  setTimeout(()=>view.classList.add('in'),total-150);
-  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+800);
+  setTimeout(()=>view.classList.add('in'),total-450);
+  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+500);
 }
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
