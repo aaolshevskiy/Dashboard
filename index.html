@@ -1478,10 +1478,31 @@ async function apiGet(){
       });
     }
     objects=ob;stickyNotes=st;
-    // Стара назва «Свої задачі» → «Мої задачі» (один раз, редактор)
-    if(_isEditor){
-      const _old=objects.find(o=>isOwnCard(o)&&String(o.name||'').trim()!==OWN_CARD_NAME);
-      if(_old){_old.name=OWN_CARD_NAME;setTimeout(()=>apiSaveQueued(_old).catch(e=>console.error(e)),300);}
+    // «Мої задачі» має бути одна: дублі зливаємо (замітки переносяться), зайві видаляємо; стару назву міняємо на нову
+    if(_isEditor&&!payload.error){
+      const _owns=objects.filter(isOwnCard);
+      if(_owns.length>0){
+        _owns.sort((a,b)=>(b.notes||[]).length-(a.notes||[]).length||((String(a.id)===OWN_CARD_ID)-(String(b.id)===OWN_CARD_ID)));
+        const _keep=_owns[0],_extras=_owns.slice(1);
+        let _changed=String(_keep.name||'').trim()!==OWN_CARD_NAME;
+        _keep.name=OWN_CARD_NAME;
+        if(!Array.isArray(_keep.notes))_keep.notes=[];
+        _extras.forEach(x=>{
+          (x.notes||[]).forEach(n=>{
+            if(!_keep.notes.some(k=>k.text===n.text&&(k.time||'')===(n.time||''))){_keep.notes.push({...n});_changed=true;}
+          });
+        });
+        if(_extras.length){
+          try{localStorage.setItem('crm_own_dup_backup',JSON.stringify(_extras));}catch{} // запасна копія видалених дублів
+          objects=objects.filter(o=>_extras.indexOf(o)<0);
+        }
+        if(_changed||_extras.length){
+          setTimeout(async()=>{
+            try{await apiSaveQueued(_keep);}catch(e){console.error(e);return;}
+            for(const x of _extras){try{await apiDelete(x.id);}catch(e){console.error(e);}}
+          },300);
+        }
+      }
     }
     // Постійна картка «Мої задачі»: створюється один раз (редактор), лише після успішного завантаження даних
     if(_isEditor&&!payload.error&&rawObjects.length>0&&!objects.some(isOwnCard)){
@@ -1568,7 +1589,15 @@ function saveCardOrder(){
 
 // ── Постійна картка «Мої задачі» ──
 const OWN_CARD_ID='own_tasks', OWN_CARD_NAME='Мої задачі', OWN_CARD_OLD_NAME='Свої задачі';
-function isOwnCard(o){ if(!o)return false; const n=String(o.name||'').trim().toLowerCase(); return String(o.id)===OWN_CARD_ID||n===OWN_CARD_NAME.toLowerCase()||n===OWN_CARD_OLD_NAME.toLowerCase(); }
+// Назва порівнюється без урахування регістру, зайвих пробілів/знаків і латинських «двійників» літер (c, i, o, a, e, p, x, y)
+function _ownNorm(v){
+  const lat={c:'с',i:'і',o:'о',a:'а',e:'е',p:'р',x:'х',y:'у'};
+  let t=String(v||'');
+  try{t=t.normalize('NFC');}catch{}
+  return t.toLowerCase().replace(/[a-z]/g,ch=>lat[ch]||ch).replace(/[^а-яіїєґ]/g,'');
+}
+const _OWN_NAMES=[_ownNorm('Мої задачі'),_ownNorm('Свої задачі')];
+function isOwnCard(o){ if(!o)return false; return String(o.id)===OWN_CARD_ID||_OWN_NAMES.indexOf(_ownNorm(o.name))>=0; }
 function sortObjects(){
   const order=loadCardOrder();
   if(order.length){
