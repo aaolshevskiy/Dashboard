@@ -2941,8 +2941,8 @@ async function pvLoadTasks(o){
     return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
   }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
 }
-// Колір заявки за віком у тижнях: <1 тижня — без кольору, кожен повний тиждень — червоніше, 4+ тижні — максимально червона
-const PV_WEEK=7, PV_WEEKS_MAX=4;
+// Колір заявки за віком: крок 5 днів, кожен крок — червоніше; <5 днів — без кольору, 20+ днів — максимально червона
+const PV_STEP=5, PV_LVL_MAX=4;
 const PV_LEVELS=[0,.18,.40,.66,1];
 function pvDays(iso){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
@@ -2956,13 +2956,13 @@ function pvApplyAge(el,iso){
   const days=pvDays(iso);
   if(days==null)return;
   el.title=(el.dataset.t||'')+' · '+days+' дн.';
-  const lvl=Math.min(PV_WEEKS_MAX,Math.floor(days/PV_WEEK));
+  const lvl=Math.min(PV_LVL_MAX,Math.floor(days/PV_STEP));
   if(lvl<1)return;
   const a=PV_LEVELS[lvl];
   const mix=(w,r)=>Math.round(w+(r-w)*a);
   el.style.background='rgb('+mix(255,255)+','+mix(255,59)+','+mix(255,48)+')';
-  el.style.borderColor='rgba(255,59,48,'+(.25+.6*lvl/PV_WEEKS_MAX).toFixed(2)+')';
-  if(lvl>=PV_WEEKS_MAX)el.style.setProperty('--pv-fg','#fff');
+  el.style.borderColor='rgba(255,59,48,'+(.25+.6*lvl/PV_LVL_MAX).toFixed(2)+')';
+  if(lvl>=PV_LVL_MAX)el.style.setProperty('--pv-fg','#fff');
 }
 function pvFillCell(cell,i,cols,res){
   cell._res=res;
@@ -3061,7 +3061,7 @@ function pvSorted(res){
   const dates=(res&&res.dates)||[],ords=(res&&res.ordered)||[];
   return tasks.map((t,i)=>{
     const d=dates[i]||'',o=!!ords[i],days=pvDays(d);
-    const grp=o?1:((days!=null&&days>=PV_WEEK)?0:2);
+    const grp=o?1:((days!=null&&days>=PV_STEP)?0:2);
     return {t:t,d:d,o:o,i:i,grp:grp,days:days==null?-1:days};
   }).sort((a,b)=>a.grp-b.grp||b.days-a.days||a.i-b.i);
 }
