@@ -58,7 +58,6 @@ body{
   background:var(--topbar-bg);
   backdrop-filter:saturate(180%) blur(20px);
   -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid var(--border);
   margin-bottom:16px;
   margin-left:-4px;margin-right:-4px;
 }
@@ -69,7 +68,11 @@ body{
 .board-title b{font-weight:inherit;}
 .board-title .bt-txt{background:linear-gradient(90deg,#1c1c1e,#6e6e73);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em;}
 .board-date{font-size:16px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text4,#8e8e93);}
-.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.topbar-right{flex-direction:column;align-items:flex-end;}
+.weather{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;color:var(--text);font-size:22px;font-weight:600;letter-spacing:-.02em;}
+.wx-ico{display:flex;width:40px;height:40px;}
+.wx-ico svg{width:40px;height:40px;}
 .topbar{position:relative;}
 /* рубільник Дашборд / Закупи (стиль Apple) */
 .mode-switch{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
@@ -126,7 +129,6 @@ body{
 .cal-strip{
   padding:0 0 10px;display:flex;align-items:center;gap:12px;
   flex-wrap:wrap;margin-bottom:12px;
-  border-bottom:1px solid var(--border);
 }
 .cal-strip-date{
   font-size:13px;font-weight:600;color:var(--text3);
@@ -266,7 +268,19 @@ body{
 /* ── NOTES ZONE (bottom) ── */
 .obj-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:18px;flex-wrap:wrap;}
 body.purch-mode .obj-actions{display:none!important;}
-.notes-zone{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.notes-zone{display:none!important;}
+.quick-note{display:flex;align-items:center;gap:10px;padding:0;flex:0 1 auto;min-width:0;margin-right:auto;}
+.quick-note select{font-family:inherit;font-size:13px;font-weight:500;color:var(--text4,#8e8e93);border:none;outline:none;
+  background:transparent;padding:6px 0;max-width:34%;cursor:pointer;
+  -webkit-appearance:none;appearance:none;flex-shrink:0;text-overflow:ellipsis;}
+.quick-note select.qn-need{animation:qn-shake .35s ease;color:var(--red);}
+@keyframes qn-shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.quick-note input{flex:0 1 280px;width:280px;min-width:0;font-family:inherit;font-size:16px;border:none;outline:none;background:transparent;color:var(--text);padding:6px 0;}
+.quick-note input::placeholder{color:var(--text4,#8e8e93);opacity:.8;}
+.qn-btn{flex-shrink:0;border:none;background:transparent;padding:4px 6px;font-size:16px;cursor:pointer;
+  color:var(--text4,#8e8e93);opacity:.7;line-height:1;transition:opacity .2s,color .2s;}
+.qn-btn:hover,.qn-btn:active{opacity:1;}
+body.purch-mode .quick-note{display:none!important;}
 .notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;}
 .note-item{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;padding:2px 0;}
 .note-text{
@@ -632,7 +646,7 @@ body.purch-mode .obj-actions{display:none!important;}
     width:100%;
     flex-wrap:wrap;
     gap:6px;
-    justify-content:flex-start;
+    align-items:flex-start;flex-direction:row;justify-content:flex-start;
   }
   .sync-status{order:-1;width:100%;font-size:11px;}
   .objects-grid{grid-template-columns:1fr!important;gap:8px;}
@@ -849,6 +863,7 @@ body.readonly .card-checklist-body { display: none !important; }
   <div class="cal-strip-events" id="calStripEvents">
     <span class="cal-ev" style="color:var(--text4)">завантаження...</span>
   </div>
+  <div class="weather" id="weather" style="display:none"><span class="wx-ico" id="wxIco"></span><span class="wx-t" id="wxTemp"></span></div>
 </div>
 
 
@@ -859,60 +874,16 @@ body.readonly .card-checklist-body { display: none !important; }
 
 <!-- ACTIONS (внизу справа, над нотатками) -->
 <div class="obj-actions edit-only">
+  <div class="quick-note edit-only" id="quickNote">
+    <select id="quickObjSelect" aria-label="Об'єкт"><option value="">— оберіть об'єкт —</option></select>
+    <input id="quickNoteInput" placeholder="нова нотатка..." autocomplete="off" enterkeyhint="send"
+      onkeydown="if(event.key==='Enter')addQuickNote()">
+    <button class="qn-btn" id="quickMicBtn" onclick="toggleMic('quickNoteInput','quickMicBtn')" title="Голосовий ввід" aria-label="Голосовий ввід">🎤</button>
+    <button class="qn-btn qn-send" onclick="addQuickNote()" title="Додати" aria-label="Додати">↵</button>
+  </div>
   <button class="btn edit-only" onclick="openChecklistSettings()">☑ Чеклист</button>
   <button class="btn edit-only" onclick="openHistory()">📋 Історія</button>
   <button class="btn btn-primary edit-only" onclick="openAddModal()">+ Додати об'єкт</button>
-</div>
-
-<!-- NOTES ZONE -->
-<div class="notes-zone edit-only">
-  <!-- Mobile quick add — shown only on mobile, above notes -->
-  <div id="mobileAddZone" class="mobile-add-zone">
-    <input id="mobileNoteInput" placeholder="нова нотатка..." autocomplete="off"
-      onkeydown="if(event.key===’Enter’)addMobileNote()"
-      style="font-family:inherit;font-size:15px;border:none;border-bottom:1.5px solid var(--border);
-        background:transparent;outline:none;flex:1;min-width:0;padding:3px 2px;color:var(--text)">
-    <select id="mobileObjSelect"
-      style="font-family:inherit;font-size:13px;color:var(--text3);border:none;
-        border-bottom:1px solid var(--border);background:transparent;outline:none;
-        cursor:pointer;-webkit-appearance:none;appearance:none;max-width:140px">
-      <option value="">— без об’єкту —</option>
-    </select>
-    <button onclick="addMobileNote()"
-      style="font-family:inherit;font-size:14px;border:none;background:transparent;
-        color:var(--text3);cursor:pointer;padding:0 4px;flex-shrink:0">↵</button>
-    <button id="micBtnMob" onclick="toggleMic(‘mobileNoteInput’,’micBtnMob’)" title="Голосовий ввід"
-      style="font-size:18px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--text4);flex-shrink:0;transition:color .2s">🎤</button>
-  </div>
-  <div class="notes-cols">
-    <div id="notesLeft"></div>
-    <div id="notesRight"></div>
-  </div>
-  <div class="notes-add" style="margin-top:10px">
-    <input id="noteAddInput" placeholder="нова нотатка..." autocomplete="off"
-      onkeydown="if(event.key==='Enter')addGlobalNote()">
-    <button onclick="addGlobalNote()">↵</button>
-    <button id="micBtn" onclick="toggleMic('noteAddInput','micBtn')" title="Голосовий ввід"
-      style="font-size:16px;border:none;background:transparent;cursor:pointer;padding:0 4px;
-        color:var(--text4);transition:color .2s">🎤</button>
-    <button class="dt-btn" id="noteDtBtn" onclick="toggleNoteDt()">+ нагадати</button>
-  </div>
-  <div class="dt-row" id="noteDtRow" style="padding-top:4px">
-    <span class="dt-label">коли:</span>
-    <input type="date" id="noteDtDate" autocomplete="off">
-    <select class="hour-sel" id="noteDtHour">
-      <option value="6">6:00</option><option value="7">7:00</option><option value="8">8:00</option>
-      <option value="9" selected>9:00</option><option value="10">10:00</option>
-      <option value="11">11:00</option><option value="12">12:00</option>
-      <option value="13">13:00</option><option value="14">14:00</option>
-      <option value="15">15:00</option><option value="16">16:00</option>
-      <option value="17">17:00</option><option value="18">18:00</option>
-      <option value="19">19:00</option><option value="20">20:00</option>
-      <option value="21">21:00</option><option value="22">22:00</option>
-    </select>
-    <span class="dt-label">(рівно)</span>
-  </div>
 </div>
 
 </div><!-- /board-inner -->
@@ -2068,11 +2039,11 @@ function renderOverdueZone(){
 
 function renderNotes(){
   // Populate obj selectors — both desktop and mobile
-  ['noteObjSelect','mobileObjSelect'].forEach(function(selId){
+  ['noteObjSelect','mobileObjSelect','quickObjSelect'].forEach(function(selId){
     const sel=document.getElementById(selId);
     if(!sel)return;
     const cur=sel.value;
-    sel.innerHTML='<option value="">— без об’єкту —</option>';
+    sel.innerHTML=selId==='quickObjSelect'?'<option value="">— оберіть об\'єкт —</option>':'<option value="">— без об’єкту —</option>';
     [...objects].sort((a,b)=>(a.name||'').localeCompare(b.name||'','uk')).forEach(o=>{
       const opt=document.createElement('option');
       opt.value=o.id;
@@ -2283,6 +2254,25 @@ async function addGlobalNote(){
   // Optimistic: show immediately
   renderNotes();renderOverdueZone();
   apiSaveQueued(sn).catch(e=>console.error(e));
+}
+
+async function addQuickNote(){
+  if(!_requireEdit()) return;
+  const inp=document.getElementById('quickNoteInput'),sel=document.getElementById('quickObjSelect');
+  if(!inp||!sel)return;
+  const text=inp.value.trim();
+  if(!text)return;
+  const ri=objects.findIndex(o=>String(o.id)===String(sel.value));
+  if(ri<0){ // об'єкт не обрано — текст лишається, підсвічуємо вибір
+    sel.classList.remove('qn-need');void sel.offsetWidth;sel.classList.add('qn-need');
+    setTimeout(()=>sel.classList.remove('qn-need'),1200);
+    return;
+  }
+  if(!objects[ri].notes)objects[ri].notes=[];
+  _pushNote(objects[ri],{text,time:''});
+  inp.value='';
+  render();renderNotes();renderOverdueZone();
+  try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
 }
 
 async function deleteStickyNote(idx){
@@ -3424,7 +3414,7 @@ function toggleMic(inputId, btnId){
 
   // iOS: if user taps the object <select> while mic is active, suppress auto-submit
   // so the note isn't sent before they finish selecting the object
-  const selEl=document.getElementById('mobileObjSelect')||document.getElementById('noteObjSelect');
+  const selEl=document.getElementById('quickObjSelect')||document.getElementById('mobileObjSelect')||document.getElementById('noteObjSelect');
   const _onSelectFocus=()=>{ _micSuppressAutoSave=true; };
   if(selEl) selEl.addEventListener('focus',_onSelectFocus,{once:true});
   if(selEl) selEl.addEventListener('mousedown',_onSelectFocus,{once:true});
@@ -3447,6 +3437,7 @@ function toggleMic(inputId, btnId){
     if(inp&&inp.value.trim()){
       if(_micInputId==='noteAddInput') addGlobalNote();
       else if(_micInputId==='mobileNoteInput') addMobileNote();
+      else if(_micInputId==='quickNoteInput') addQuickNote();
     }
   };
   _recognition.onerror=e=>{
@@ -3724,6 +3715,59 @@ async function pvPrefetchAll(){
   setInterval(pvPrefetchAll,2*60*1000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pvPrefetchAll,1200);});
 })();
+
+// ── ПОГОДА (Варшава, Open-Meteo) ──
+const WX_DEFS='';
+const WX_ICONS=(function(){
+  const P={cloud:'#e3e9f3',cs:'#bcc7d9',dc:'#a9b6ca',dcs:'#8b9ab2',sun:'#ffc800',moon:'#c9c7f2',ms:'#9d9ad6',rain:'#2f8cff',snow:'#8fd3ff',bolt:'#ffc400',bs:'#e59a00',fog:'#aab6c9'};
+  const C=(y,fill,st)=>'<path transform="translate(0,'+y+')" d="M10.5 31h17a5 5 0 0 0 .7-9.95A8 8 0 0 0 12 20.2 5.3 5.3 0 0 0 10.5 31z" fill="'+fill+'" stroke="'+st+'" stroke-width="1" stroke-linejoin="round"/>';
+  const D=[[1,0],[.707,.707],[0,1],[-.707,.707],[-1,0],[-.707,-.707],[0,-1],[.707,-.707]];
+  const sun=(cx,cy,r,a,b)=>'<g stroke="'+P.sun+'" stroke-width="2" stroke-linecap="round">'+D.map(d=>'<line x1="'+(cx+a*d[0])+'" y1="'+(cy+a*d[1])+'" x2="'+(cx+b*d[0])+'" y2="'+(cy+b*d[1])+'"/>').join('')+'</g><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+P.sun+'"/>';
+  const drops='<g stroke="'+P.rain+'" stroke-width="2.2" stroke-linecap="round"><line x1="13" y1="31" x2="11.5" y2="35"/><line x1="20" y1="31" x2="18.5" y2="35"/><line x1="27" y1="31" x2="25.5" y2="35"/></g>';
+  return {
+    sun:sun(20,20,7,11.5,15.5),
+    moon:'<path d="M29 24.5A11.5 11.5 0 0 1 15.5 9.5a11.5 11.5 0 1 0 13.5 15z" fill="'+P.moon+'" stroke="'+P.ms+'" stroke-width="1.2"/>',
+    part:sun(27,13,5,8,11)+C(-1,P.cloud,P.cs),
+    cloud:C(1,P.cloud,P.cs),
+    fog:C(-4,P.cloud,P.cs)+'<g stroke="'+P.fog+'" stroke-width="2" stroke-linecap="round"><line x1="8" y1="30" x2="32" y2="30"/><line x1="12" y1="34.5" x2="28" y2="34.5"/></g>',
+    rain:C(-5,P.dc,P.dcs)+drops,
+    snow:C(-5,P.dc,P.dcs)+'<g fill="'+P.snow+'"><circle cx="13" cy="32" r="1.8"/><circle cx="20" cy="34.5" r="1.8"/><circle cx="27" cy="32" r="1.8"/></g>',
+    storm:C(-5,P.dc,P.dcs)+'<path d="M21.5 25.5L16.5 32.5h4l-2 5 6-7.5h-4z" fill="'+P.bolt+'" stroke="'+P.bs+'" stroke-width="1.2" stroke-linejoin="round"/>'
+  };
+})();
+function wxKind(code,day){
+  if(code===0)return day?'sun':'moon';
+  if(code===1||code===2)return day?'part':'cloud';
+  if(code===3)return 'cloud';
+  if(code===45||code===48)return 'fog';
+  if((code>=51&&code<=67)||(code>=80&&code<=82))return 'rain';
+  if((code>=71&&code<=77)||code===85||code===86)return 'snow';
+  if(code>=95)return 'storm';
+  return 'cloud';
+}
+const WX_NAMES={sun:'ясно',moon:'ясно',part:'мінлива хмарність',cloud:'хмарно',fog:'туман',rain:'дощ',snow:'сніг',storm:'гроза'};
+function wxRender(w){
+  const box=document.getElementById('weather');if(!box||!w)return;
+  const k=wxKind(w.code,w.day);
+  document.getElementById('wxIco').innerHTML='<svg viewBox="0 0 40 40">'+WX_DEFS+WX_ICONS[k]+'</svg>';
+  document.getElementById('wxTemp').textContent=Math.round(w.t)+'°';
+  box.title='Варшава: '+WX_NAMES[k];
+  box.style.display='';
+}
+async function wxLoad(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=52.23&longitude=21.01&current=temperature_2m,weather_code,is_day&timezone=auto');
+    const d=await r.json();
+    const c=d&&d.current;if(!c)return;
+    const w={t:c.temperature_2m,code:c.weather_code,day:c.is_day===1};
+    wxRender(w);
+    try{localStorage.setItem('crm_weather',JSON.stringify(w));}catch{}
+  }catch(e){console.warn('[weather]',e);}
+}
+try{wxRender(JSON.parse(localStorage.getItem('crm_weather')||'null'));}catch{}
+wxLoad();
+setInterval(wxLoad,20*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wxLoad();});
 
 // Refresh progress from server every 5 minutes
 setInterval(()=>{ _progressLoading=false; loadProgress(); },300000);
