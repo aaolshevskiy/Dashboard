@@ -747,6 +747,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-panel .pv-label{align-self:center;}
 .pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
 .pv-cols .pv-task{justify-self:center;}
+.pv-label.pv-failed .pv-label-name::after{content:' ⚠';color:var(--red);}
 .pv-task.pv-link{cursor:pointer;}
 .pv-task.pv-link:hover{filter:brightness(.96);}
 /* стос на головному вікні: по дві задачі в ряд (10 одразу) */
@@ -2933,10 +2934,11 @@ async function pvLoadTasks(o){
     if(data&&Array.isArray(data.tasks)){
       const t=data.tasks.map(String);
       const d=Array.isArray(data.dates)?data.dates.map(String):[];
-      return {state:t.length?'ok':'none',tasks:t,dates:d};
+      const od=Array.isArray(data.ordered)?data.ordered.map(Boolean):[];
+      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od};
     }
-    return {state:'err'};
-  }catch(e){return {state:'err'};}
+    return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
+  }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
 }
 // Колір заявки за віком: до 5 днів — без кольору, далі плавний градієнт до яскраво-червоного на 15+ днів
 const PV_AGE_FROM=5, PV_AGE_MAX=15;
@@ -2977,13 +2979,14 @@ function pvFillCell(cell,i,cols,res){
   }
   box.querySelectorAll('.pv-empty,.pv-ghost').forEach(e=>e.remove());
   const url=pvUrlOf(cell.dataset.oid);
-  const key=k=>list[k]+'\u0001'+(dates[k]||'')+'\u0001'+url;
+  const ords=res.ordered||[];
+  const key=k=>list[k]+'\u0001'+(dates[k]||'')+'\u0001'+url+'\u0001'+(ords[k]?1:0);
   const existing=Array.from(box.querySelectorAll('.pv-task'));
   let keep=0;
   while(keep<existing.length&&keep<shown.length&&existing[keep].dataset.k===key(keep))keep++;
   existing.slice(keep).forEach(e=>e.remove());
   for(let k=keep;k<shown.length;k++){
-    const d=pvTaskEl(list[k],dates[k],url);
+    const d=pvTaskEl(list[k],dates[k],url,ords[k]);
     d.dataset.k=key(k);
     d.style.setProperty('--d',((i%cols)*35+Math.min(k,5)*55)+'ms');
     if(late)d.classList.add('pv-new');
@@ -3018,11 +3021,15 @@ function pvBend(box){
     el.style.width=(94+rnd(3)*6).toFixed(1)+'%';el.style.alignSelf='center';
   });
 }
-function pvTaskEl(t,date,url){
+function pvTaskEl(t,date,url,ordered){
   const d=document.createElement('div');d.className='pv-task';d.title=t;d.dataset.t=t;
   const tt=document.createElement('div');tt.className='pv-tt';tt.textContent=t;
   d.appendChild(tt);
   pvApplyAge(d,date);
+  if(ordered){ // «Zamowione» — замовлено: легко-зелена, без червоного відтінку
+    d.style.background='rgb(222,246,228)';d.style.borderColor='rgba(52,199,89,.5)';d.style.removeProperty('--pv-fg');
+    d.title=t+' · замовлено';
+  }
   if(url&&/^https?:\/\//i.test(url)){
     d.classList.add('pv-link');
     d.addEventListener('click',e=>{e.stopPropagation();window.open(url,'_blank','noopener');});
@@ -3034,24 +3041,28 @@ function pvUrlOf(oid){
   return (o&&o.ratyfikacjaUrl)||'';
 }
 // Статус завантаження/оновлення у вікні закупів (як на дашборді)
-let _pvPending=0,_pvErr=false;
+let _pvPending=0,_pvErr=false,_pvTotal=0,_pvErrs=[];
 function pvSetStatus(state,text){
   const el=document.getElementById('pvStatus'),tx=document.getElementById('pvStatusText');
   if(!el||!tx)return;
   el.className='sync-status '+state;
+  el.title='';
   el.style.display=text?'':'none';
   tx.textContent=text;
 }
 function pvStatusStart(n){
-  _pvPending=n;_pvErr=false;
+  _pvPending=n;_pvErr=false;_pvTotal=n;_pvErrs=[];
   if(n>0)pvSetStatus('syncing','закупи: завантаження…');else pvSetStatus('','');
 }
-function pvStatusDone(isErr){
-  if(isErr)_pvErr=true;
+function pvStatusDone(isErr,name,msg){
+  if(isErr){_pvErr=true;_pvErrs.push({name:name||'?',msg:msg||''});}
   _pvPending=Math.max(0,_pvPending-1);
   if(_pvPending>0)return;
-  if(_pvErr)pvSetStatus('not-updated','закупи: не оновлено ✗');
-  else pvSetStatus('ok','закупи: оновлено ✓');
+  if(_pvErr){
+    pvSetStatus('not-updated','закупи: не оновлено ✗ ('+_pvErrs.length+' з '+_pvTotal+')');
+    const el=document.getElementById('pvStatus');
+    if(el)el.title=_pvErrs.map(e=>e.name+': '+e.msg).join('\n');
+  }else pvSetStatus('ok','закупи: оновлено ✓');
 }
 let _pvPanel=null;
 function pvOpenPanel(cell){
@@ -3096,7 +3107,8 @@ function pvBuildPanel(){
   grid.style.gridAutoColumns=colW+'px';
   grid.style.gap='3px '+GAPX+'px';
   const _zurl=(o&&o.ratyfikacjaUrl)||'';
-  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k],_zurl)));
+  const _ords=res.ordered||[];
+  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k],_zurl,_ords[k])));
   pvBend(grid);
   Array.from(grid.children).forEach((el,k)=>el.style.setProperty('--n',(Math.min(k,30)*.6).toFixed(1)));
   const pw=Math.min(Wv,cols*colW+(cols-1)*GAPX+8);
@@ -3180,7 +3192,8 @@ function pvEnter(){
     if(!configured)return;
     pvLoadTasks(o).then(r=>{
       if(_pvView!==view||_pvExiting)return;
-      pvStatusDone(r.state==='err');
+      pvStatusDone(r.state==='err',o.name,r.msg);
+      { const _lb=pvCells[i].querySelector('.pv-label'); if(_lb){_lb.classList.toggle('pv-failed',r.state==='err');_lb.title=r.state==='err'?('Не вдалося оновити: '+(r.msg||'')):'';} }
       const prev=_pvTasksCache[id];
       if(r.state==='err'&&prev)return;
       if(JSON.stringify(r)===JSON.stringify(prev))return;
