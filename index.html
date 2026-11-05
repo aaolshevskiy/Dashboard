@@ -873,7 +873,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Oferta</label><input id="f-oferta-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
-      <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="напр. D (для вікна «Закупи»)" autocomplete="off"></div>
+      <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="D (за замовчуванням)" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -2300,6 +2300,7 @@ function openAddModal(){
     const el=document.getElementById(id);if(el)el.checked=false;
   });
   document.getElementById('f-pack').value='';
+  { const _pc=document.getElementById('f-purch-col'); if(_pc) _pc.value='D'; }
   document.getElementById('f-err').style.display='none';
   document.getElementById('addModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-name').focus(),50);
@@ -2344,7 +2345,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
-  if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'';
+  if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
@@ -2877,7 +2878,7 @@ function _pvCols(n){
 }
 let _pvExiting=false;
 const _pvTasksCache={};
-function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'');}
+function _pvColOf(o){return String(o.purchCol||'').trim().toUpperCase().replace(/[^A-Z]/g,'')||'D';} // за замовчуванням колонка D
 async function pvLoadTasks(o){
   try{
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
