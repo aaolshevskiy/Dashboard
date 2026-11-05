@@ -758,7 +758,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-grid .pv-cell .pv-tasks{top:0;bottom:auto;}
 .pv-grid .pv-tasks>.pv-label{justify-self:center;}
 /* легке розмиття карток після того, як вони «лягли»; при виході плавно знімається */
-.purch-view.settled .pv-fly .obj-card{animation:pv-blur .6s ease both;}
+.purch-view.blurred .pv-fly .obj-card{animation:pv-blur .6s ease both;}
 .purch-view.unblur .pv-fly .obj-card{animation:pv-unblur .45s ease both;}
 @keyframes pv-blur{from{filter:blur(0)}to{filter:blur(4px)}}
 @keyframes pv-unblur{from{filter:blur(4px)}to{filter:blur(0)}}
@@ -3272,8 +3272,10 @@ function pvEnter(){
   _pvView=view;_pvFlies=flies;
   _pvSetBtn('← Дашборд');
   const total=900+(cols-1)*70+(rows-1)*140;
-  setTimeout(()=>view.classList.add('in'),total-450);
-  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+500);
+  // порядок: картки лягли → розмиваються → з'являються задачі
+  setTimeout(()=>view.classList.add('blurred'),total);
+  setTimeout(()=>view.classList.add('in'),total+550);
+  setTimeout(()=>{view.classList.add('settled');_pvActive=true;_pvBusy=false;},total+950);
 }
 function pvExit(){
   if(!_pvActive||_pvBusy)return;
@@ -3282,7 +3284,7 @@ function pvExit(){
   _pvBusy=true;_pvExiting=true;
   const view=_pvView,flies=_pvFlies;
   _pvSetBtn('🛒 Закупи');
-  view.classList.add('unblur');view.classList.remove('settled');view.classList.remove('in');
+  view.classList.add('unblur');view.classList.remove('settled');view.classList.remove('blurred');view.classList.remove('in');
   setTimeout(()=>{
     window.scrollTo(0,0);
     const inner=document.querySelector('.board-inner');
