@@ -768,7 +768,9 @@ body.purch-mode{padding-bottom:12px;}
 .pv-tasks>*{flex-shrink:0;}
 .pv-label.clickable{cursor:pointer;}
 .pv-label-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pv-more{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:10px;padding:0 6px;}
+.pv-more{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:#d70015;background:rgba(255,59,48,.14);border-radius:10px;padding:0 6px;}
+.pv-badge-ord{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:#1f8a3b;background:rgba(52,199,89,.2);border-radius:10px;padding:0 6px;}
+.pv-panel .pv-more{display:inline-block;color:var(--blue);background:var(--blue-bg);}
 .pv-label.clickable .pv-more{display:inline-block;}
 .pv-task{position:relative;z-index:1;flex-shrink:0;min-height:30px;}
 .pv-ghost{
@@ -3141,6 +3143,8 @@ function pvFillCell(cell,i,cols,res){
     lab.classList.toggle('clickable',list.length>0||((res&&res.ord)||[]).length>0);
     more.textContent='+'+Math.max(0,list.length-PV_MAX);
     more.style.display=list.length>PV_MAX?'inline-block':'none';
+    const ordB=lab.querySelector('.pv-badge-ord'),ordN=((res&&res.ord)||[]).length;
+    if(ordB){ordB.textContent='+'+ordN;ordB.style.display=ordN>0?'inline-block':'none';}
   }
   box.querySelectorAll('.pv-empty,.pv-ghost').forEach(e=>e.remove());
   const url=pvUrlOf(cell.dataset.oid);
@@ -3276,7 +3280,7 @@ function pvBuildPanel(){
   const todo={key:'todo',cap:'Не оброблено',list:S.map(x=>x.t),dates:S.map(x=>x.d)};
   const oT=(res&&res.ord)||[],oD=(res&&res.ordDates)||[];
   const oS=oT.map((t,i)=>({t:t,d:oD[i]||'',days:(pvDays(oD[i]||'')==null?-1:pvDays(oD[i]||'')),i:i})).sort((a,b)=>b.days-a.days||a.i-b.i);
-  const ord={key:'ord',cap:'Замовлено',list:oS.map(x=>x.t),dates:oS.map(x=>x.d)};
+  const ord={key:'ord',cap:'Замовлено, але не доставлено',list:oS.map(x=>x.t),dates:oS.map(x=>x.d)};
   const groups=[todo,ord].filter(g=>g.list.length);
   if(!groups.length){pvClosePanel();return;}
   const o=objects.find(x=>String(x.id)===String(cell.dataset.oid));
@@ -3395,7 +3399,8 @@ function pvEnter(){
     const lab=document.createElement('div');lab.className='pv-label';
     const labName=document.createElement('span');labName.className='pv-label-name';labName.textContent=(_o&&_o.name)||'—';
     const labMore=document.createElement('span');labMore.className='pv-more';
-    lab.appendChild(labName);lab.appendChild(labMore);
+    const labOrd=document.createElement('span');labOrd.className='pv-badge-ord';
+    lab.appendChild(labName);lab.appendChild(labMore);lab.appendChild(labOrd);
     lab.style.setProperty('--d',((i%cols)*20)+'ms');
     lab.addEventListener('click',()=>pvOpenPanel(cell));
     tasks.appendChild(lab);
