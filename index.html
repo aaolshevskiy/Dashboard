@@ -3100,7 +3100,7 @@ async function pvLoadTasks(o){
       const od=Array.isArray(data.ordered)?data.ordered.map(Boolean):[];
       const ot=Array.isArray(data.ordTasks)?data.ordTasks.map(String):[];
       const od2=Array.isArray(data.ordDates)?data.ordDates.map(String):[];
-      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od,ord:ot,ordDates:od2,ordKnown:Array.isArray(data.ordTasks)};
+      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od,ord:ot,ordDates:od2,ordKnown:Array.isArray(data.ordTasks),stat:data.stat||null,statNG:data.statNG||null};
     }
     return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
   }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
@@ -3291,6 +3291,13 @@ function pvBuildPanel(){
   if(!res.ordKnown){ // скрипт не віддає замовлені задачі → пояснюємо причину
     const w=document.createElement('div');w.className='pv-warn';
     w.textContent='⚠ Колонка «Замовлено» недоступна: скрипт не оновлено. Вставте новий Code.gs і зробіть новий деплой.';
+    panel.appendChild(w);
+  }
+  // діагностика: якщо замовлених немає, показуємо, які статуси скрипт бачить у таблиці
+  if(res.ordKnown&&!(res.ord||[]).length&&res.stat){
+    const f=m=>Object.keys(m||{}).map(k=>k+' '+m[k]).join(', ')||'—';
+    const w=document.createElement('div');w.className='pv-warn';w.style.color='var(--text3)';
+    w.textContent='Замовлених немає. Статуси в таблиці (зелені рядки): '+f(res.stat)+(res.statNG&&Object.keys(res.statNG).length?' · не зелені: '+f(res.statNG):'');
     panel.appendChild(w);
   }
   panel.appendChild(wrap);
@@ -3871,7 +3878,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks)};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null};}
     });
     return m;
   }catch(e){return null;}
