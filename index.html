@@ -798,6 +798,11 @@ body.purch-mode{padding-bottom:12px;}
 .pv-task,.pv-label,.pv-panel{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 .pv-panel .pv-label{align-self:center;}
 .pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
+.pv-groups{display:flex;justify-content:center;align-items:flex-start;gap:28px;}
+.pv-group{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.pv-cap{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--text2,#6c6c70);background:rgba(255,255,255,.85);border-radius:8px;padding:2px 10px;}
+.pv-group-ord .pv-cap{color:#1f8a3b;background:rgba(232,248,236,.95);}
+.pv-task.pv-ordered{background:rgba(52,199,89,.16);border-color:rgba(52,199,89,.35);}
 .pv-cols .pv-task{justify-self:center;}
 .pv-label.pv-failed .pv-label-name::after{content:' ⚠';color:var(--red);}
 .pv-tasks>.pv-errline{grid-column:1/-1;justify-self:start;max-width:100%;font-size:11px;line-height:1.25;color:var(--red);background:rgba(255,255,255,.88);border-radius:6px;padding:1px 8px;}
@@ -3081,7 +3086,9 @@ async function pvLoadTasks(o){
       const t=data.tasks.map(String);
       const d=Array.isArray(data.dates)?data.dates.map(String):[];
       const od=Array.isArray(data.ordered)?data.ordered.map(Boolean):[];
-      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od};
+      const ot=Array.isArray(data.ordTasks)?data.ordTasks.map(String):[];
+      const od2=Array.isArray(data.ordDates)?data.ordDates.map(String):[];
+      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od,ord:ot,ordDates:od2};
     }
     return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
   }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
@@ -3119,7 +3126,7 @@ function pvFillCell(cell,i,cols,res){
   const extra=list.length-shown.length;
   const more=box.querySelector('.pv-more');
   if(lab&&more){
-    lab.classList.toggle('clickable',list.length>0);
+    lab.classList.toggle('clickable',list.length>0||((res&&res.ord)||[]).length>0);
     more.textContent='+'+Math.max(0,list.length-PV_MAX);
     more.style.display=list.length>PV_MAX?'inline-block':'none';
   }
@@ -3182,7 +3189,7 @@ function pvTaskEl(t,date,url,ordered,withDate){
     const dt=document.createElement('span');dt.className='pv-date';dt.textContent=pvFmtDate(date);
     d.appendChild(dt);
   }
-  pvApplyAge(d,date);
+  if(ordered)d.classList.add('pv-ordered'); else pvApplyAge(d,date);
   if(url&&/^https?:\/\//i.test(url)){
     d.classList.add('pv-link');
     d.addEventListener('click',e=>{e.stopPropagation();window.open(url,'_blank','noopener');});
@@ -3237,8 +3244,8 @@ function pvStatusDone(isErr,name,msg){
 }
 let _pvPanel=null;
 function pvOpenPanel(cell){
-  const list=(cell._res&&cell._res.tasks)||[];
-  if(!list.length)return;
+  const list=(cell._res&&cell._res.tasks)||[],ordL=(cell._res&&cell._res.ord)||[];
+  if(!list.length&&!ordL.length)return;
   if(_pvPanel){const same=_pvPanel.cell===cell;pvClosePanel();if(same)return;}
   const ov=document.createElement('div');ov.className='pv-ov';
   ov.addEventListener('click',pvClosePanel);
@@ -3252,9 +3259,14 @@ function pvBuildPanel(){
   if(!_pvPanel)return;
   const {cell,panel}=_pvPanel;
   const res=cell._res||{};
+  // дві категорії: «Не оброблено» (без статусу) і «Замовлено» (статус Zamowione, ще не доставлено)
   const S=pvSorted(res);
-  const list=S.map(x=>x.t),dates=S.map(x=>x.d);
-  if(!list.length){pvClosePanel();return;}
+  const todo={key:'todo',cap:'Не оброблено',list:S.map(x=>x.t),dates:S.map(x=>x.d)};
+  const oT=(res&&res.ord)||[],oD=(res&&res.ordDates)||[];
+  const oS=oT.map((t,i)=>({t:t,d:oD[i]||'',days:(pvDays(oD[i]||'')==null?-1:pvDays(oD[i]||'')),i:i})).sort((a,b)=>b.days-a.days||a.i-b.i);
+  const ord={key:'ord',cap:'Замовлено',list:oS.map(x=>x.t),dates:oS.map(x=>x.d)};
+  const groups=[todo,ord].filter(g=>g.list.length);
+  if(!groups.length){pvClosePanel();return;}
   const o=objects.find(x=>String(x.id)===String(cell.dataset.oid));
   panel.innerHTML='';
   panel.style.width='';panel.style.maxHeight='';panel.style.overflowY='';
@@ -3262,28 +3274,40 @@ function pvBuildPanel(){
   const nm=document.createElement('span');nm.className='pv-label-name';nm.textContent=(o&&o.name)||'—';
   const mr=document.createElement('span');mr.className='pv-more';mr.textContent='▴';
   lab.appendChild(nm);lab.appendChild(mr);lab.addEventListener('click',pvClosePanel);
-  const grid=document.createElement('div');grid.className='pv-cols';
-  panel.appendChild(lab);panel.appendChild(grid);
-  // розкладка: повний стовпчик на всю висоту екрана, решта — у наступний стовпчик; усе по центру
-  const STEP=33,GAPX=10,COLW=280;
+  const wrap=document.createElement('div');wrap.className='pv-groups';
+  panel.appendChild(lab);panel.appendChild(wrap);
+  // розкладка: кожна категорія — свої стовпчики; усе по центру
+  const STEP=33,GAPX=10,GGAP=28,COLW=280,CAPH=groups.length>1?24:0;
   const H=window.innerHeight-24,Wv=window.innerWidth-24;
-  const headH=lab.offsetHeight+9;
-  const n=list.length;
-  let rows=Math.max(1,Math.floor((H-headH)/STEP));
-  const maxCols=Math.max(1,Math.floor((Wv+GAPX)/(COLW+GAPX)));
-  let cols=Math.ceil(n/rows);
-  if(cols>maxCols){cols=maxCols;rows=Math.ceil(n/cols);}
-  rows=Math.min(rows,n);
-  const colW=cols===1?Math.min(360,Wv):Math.min(320,Math.floor((Wv-(cols-1)*GAPX)/cols));
-  grid.style.gridTemplateRows='repeat('+rows+',30px)';
-  grid.style.gridAutoColumns=colW+'px';
-  grid.style.gap='3px '+GAPX+'px';
+  const headH=lab.offsetHeight+9+CAPH;
+  const rowsMax=Math.max(1,Math.floor((H-headH)/STEP));
+  const maxCols=Math.max(1,Math.floor((Wv-(groups.length-1)*GGAP+GAPX)/(COLW+GAPX)));
+  let rows=Math.max(1,Math.min(rowsMax,Math.max(...groups.map(g=>g.list.length))));
+  const colsOf=r=>groups.map(g=>Math.ceil(g.list.length/r));
+  let cc=colsOf(rows);
+  while(cc.reduce((a,b)=>a+b,0)>maxCols&&rows<Math.max(...groups.map(g=>g.list.length))&&rows<rowsMax){rows++;cc=colsOf(rows);}
+  const totalCols=cc.reduce((a,b)=>a+b,0);
+  const colW=totalCols===1?Math.min(360,Wv):Math.min(320,Math.floor((Wv-(totalCols-1)*GAPX-(groups.length-1)*GGAP)/totalCols));
   const _zurl=(o&&o.ratyfikacjaUrl)||'';
-  const _ords=S.map(x=>x.o);
-  list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,dates[k],_zurl,_ords[k],true)));
-  pvBend(grid);
-  Array.from(grid.children).forEach((el,k)=>el.style.setProperty('--n',(Math.min(k,30)*.6).toFixed(1)));
-  const pw=Math.min(Wv,cols*colW+(cols-1)*GAPX+8);
+  let nIdx=0,totalW=0;
+  groups.forEach((g,gi)=>{
+    const box=document.createElement('div');box.className='pv-group pv-group-'+g.key;
+    if(groups.length>1){
+      const cap=document.createElement('div');cap.className='pv-cap';cap.textContent=g.cap+' · '+g.list.length;
+      box.appendChild(cap);
+    }
+    const grid=document.createElement('div');grid.className='pv-cols';
+    const r=Math.min(rows,g.list.length);
+    grid.style.gridTemplateRows='repeat('+r+',30px)';
+    grid.style.gridAutoColumns=colW+'px';
+    grid.style.gap='3px '+GAPX+'px';
+    g.list.forEach((t,k)=>grid.appendChild(pvTaskEl(t,g.dates[k],_zurl,g.key==='ord',true)));
+    pvBend(grid);
+    Array.from(grid.children).forEach(el=>{el.style.setProperty('--n',(Math.min(nIdx++,30)*.6).toFixed(1));});
+    box.appendChild(grid);wrap.appendChild(box);
+    totalW+=cc[gi]*colW+(cc[gi]-1)*GAPX+(gi?GGAP:0);
+  });
+  const pw=Math.min(Wv,totalW+8);
   panel.style.width=pw+'px';
   panel.style.left=Math.round((window.innerWidth-pw)/2)+'px';
   let h=panel.offsetHeight;
@@ -3811,7 +3835,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[]};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[]};}
     });
     return m;
   }catch(e){return null;}
