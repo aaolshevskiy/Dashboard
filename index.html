@@ -844,16 +844,21 @@ body.readonly .edit-only { display: none !important; }
 body.readonly .cal-strip.edit-only{display:flex!important;}
 body.readonly .cal-strip-events,body.readonly #calStripDate{display:none!important;}
 body.readonly .obj-card { cursor: default !important; }
-body.readonly .obj-note-del { display: none !important; }
-body.readonly .note-del { display: none !important; }
-body.readonly .obj-add-note { display: none !important; }
+body.readonly:not(.user-mode) .obj-note-del { display: none !important; }
+body.readonly:not(.user-mode) .note-del { display: none !important; }
+body.readonly:not(.user-mode) .obj-add-note { display: none !important; }
 body.readonly .notes-add { display: none !important; }
 body.readonly .mobile-add-zone { display: none !important; }
 /* Hide notes (per-object and global) for read-only viewers */
-body.readonly .card-notes-toggle { display: none !important; }
-body.readonly .card-notes-body { display: none !important; }
-body.readonly .obj-notes-list { display: none !important; }
-body.readonly #overdueZone { display: none !important; }
+body.readonly:not(.user-mode) .card-notes-toggle { display: none !important; }
+body.readonly:not(.user-mode) .card-notes-body { display: none !important; }
+body.readonly:not(.user-mode) .obj-notes-list { display: none !important; }
+body.readonly:not(.user-mode) #overdueZone { display: none !important; }
+/* Звичайний користувач: ті самі картки, але бачить і веде лише свої нотатки */
+body.readonly:not(.user-mode) .obj-actions { display: none !important; }
+body.readonly .owner-only { display: none !important; }
+.obj-note-who{font-size:11px;color:var(--text4);white-space:nowrap;flex-shrink:0;}
+.obj-note-who.from{color:var(--blue);}
 /* Hide checklist toggle and body for read-only viewers */
 body.readonly .card-checklist-toggle { display: none !important; }
 body.readonly .card-checklist-body { display: none !important; }
@@ -896,9 +901,10 @@ body.readonly .card-checklist-body { display: none !important; }
 <div class="objects-grid" id="objectsGrid"></div>
 
 <!-- ACTIONS (внизу справа, над нотатками) -->
-<div class="obj-actions edit-only">
-  <div class="quick-note edit-only" id="quickNote">
+<div class="obj-actions">
+  <div class="quick-note" id="quickNote">
     <select id="quickObjSelect" aria-label="Об'єкт"><option value="">— оберіть об'єкт —</option></select>
+    <select id="quickPersonSelect" class="owner-only" aria-label="Кому" style="display:none"><option value="">для себе</option></select>
     <input id="quickNoteInput" placeholder="нова нотатка..." autocomplete="off" enterkeyhint="send"
       onkeydown="if(event.key==='Enter')addQuickNote()">
     <button class="qn-btn" id="quickMicBtn" onclick="toggleMic('quickNoteInput','quickMicBtn')" title="Голосовий ввід" aria-label="Голосовий ввід">🎤</button>
@@ -1103,7 +1109,12 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 // ── ACCESS CONTROL — пароль редактора; без нього лише перегляд ──
 const KEY_LS='crm_edit_key';
 let _editKey='';try{_editKey=localStorage.getItem(KEY_LS)||'';}catch{}
-let _isEditor=!!_editKey; // з ключем — редактор (ключ перевіряється у фоні)
+const ROLE_LS='crm_role';
+let _role='';try{_role=localStorage.getItem(ROLE_LS)||'';}catch{}
+let _isEditor=!!_editKey&&_role!=='user'; // ключ власника — редактор (ключ перевіряється у фоні)
+let _isUser=!!_editKey&&_role==='user';   // ключ людини з аркуша «Користувачі» — свої нотатки
+let _users=[];                            // список людей для призначення нотаток (приходить лише власнику)
+let _meName='';
 // Ключ додається до кожного запиту до скрипта
 const _origFetch=window.fetch.bind(window);
 window.fetch=function(url,opts){
@@ -1114,26 +1125,29 @@ window.fetch=function(url,opts){
 };
 function canEdit(){ return _isEditor; }
 function _requireEdit(){ return _isEditor; }
+function _requireNote(){ return _isEditor||_isUser; }
+function _newUid(){ return 'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function _applyAccessState(triggerRender){
   document.body.classList.toggle('readonly',!_isEditor);
+  document.body.classList.toggle('user-mode',_isUser);
   const b=document.getElementById('authBtn');
-  if(b)b.textContent=_isEditor?'Вийти':'🔒 Увійти';
+  if(b)b.textContent=_isEditor?'Вийти':(_isUser?('Вийти'+(_meName?' · '+_meName:'')):'🔒 Увійти');
   if(triggerRender){ render(); renderNotes(); renderOverdueZone(); }
 }
 async function _checkKey(key){
   const r=await _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:key}),redirect:'follow'});
-  const d=await r.json();return !!(d&&d.ok);
+  const d=await r.json();return (d&&d.ok)?d:null;
 }
 function authClick(){
-  if(_isEditor){ // вийти: прибрати ключ і локальні копії даних
-    try{localStorage.removeItem(KEY_LS);localStorage.removeItem('crm_snapshot_v3');localStorage.removeItem('crm_cl_items');localStorage.removeItem('crm_cl_checks');}catch{}
+  if(_isEditor||_isUser){ // вийти: прибрати ключ і локальні копії даних
+    try{localStorage.removeItem(KEY_LS);localStorage.removeItem(ROLE_LS);localStorage.removeItem('crm_snapshot_v3');localStorage.removeItem('crm_cl_items');localStorage.removeItem('crm_cl_checks');}catch{}
     location.reload();return;
   }
   if(document.getElementById('loginBox'))return;
   const ov=document.createElement('div');ov.id='loginBox';
   ov.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML='<div style="background:var(--surface);border-radius:18px;padding:22px 22px 18px;width:min(320px,100%);box-shadow:0 12px 40px rgba(0,0,0,.25)">'
-    +'<div style="font-size:17px;font-weight:700;margin-bottom:4px">Вхід для редагування</div>'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:4px">Вхід</div>'
     +'<div style="font-size:12px;color:var(--text4);margin-bottom:14px">Без входу доступний лише перегляд.</div>'
     +'<input id="loginPass" type="password" placeholder="Пароль" autocomplete="current-password" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;outline:none;background:var(--surface);color:var(--text)">'
     +'<div id="loginErr" style="font-size:12px;color:var(--red);min-height:16px;margin-top:6px"></div>'
@@ -1147,7 +1161,8 @@ function authClick(){
     const v=inp.value;if(!v)return;
     ok.disabled=true;err.textContent='Перевірка…';err.style.color='var(--text4)';
     try{
-      if(await _checkKey(v)){try{localStorage.setItem(KEY_LS,v);}catch{}location.reload();return;}
+      const d=await _checkKey(v);
+      if(d){try{localStorage.setItem(KEY_LS,v);localStorage.setItem(ROLE_LS,d.role||'owner');if(d.name)localStorage.setItem('crm_me_name',d.name);}catch{}location.reload();return;}
       err.style.color='var(--red)';err.textContent='Невірний пароль';
     }catch(e){err.style.color='var(--red)';err.textContent='Не вдалося перевірити. Перевірте інтернет.';}
     ok.disabled=false;
@@ -1477,6 +1492,10 @@ async function apiGet(){
       }
     }
 
+    if(payload&&!Array.isArray(payload)){
+      if(Array.isArray(payload.users)){_users=payload.users;}
+      if(payload.me&&payload.me.name){_meName=payload.me.name;try{localStorage.setItem('crm_me_name',_meName);}catch{} _applyAccessState(false);}
+    }
     // Обробка об'єктів (після оновлення _closedFlagsCache — parseObj підхопить правильні прапорці)
     const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
     const st=[],ob=[];
@@ -1550,7 +1569,8 @@ async function apiGet(){
 }
 
 async function apiSave(obj){
-  if(!_requireEdit()) return false;
+  if(!_requireNote()) return false;
+  const _sentRm=(obj._rmNotes||[]).slice();
   setSyncStatus('ok','збережено ✓'); // optimistic — show immediately
   const _saveId=String(obj.id||'');
   if(_saveId) _pendingSaveIds.add(_saveId);
@@ -1558,7 +1578,7 @@ async function apiSave(obj){
   if(String(obj.id).startsWith('sticky_')||String(obj.status)==='sticky'){
     full={id:obj.id||'sticky_'+Date.now(),name:obj.name||'',addr:String(obj.col||1),
       stage:'',status:'sticky',pack:'',area:'',inwork:false,completed:false,masters:false,
-      mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',
+      mastersName:'',linkProject:'',linkFolder:'',dateStart:'',dateEnd:'',removedNotes:_sentRm,
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }else{
     full={id:obj.id||'',name:obj.name||'',client:obj.client||'',addr:obj.addr||'',intercom:obj.intercom||'',stage:obj.stage||'',
@@ -1577,6 +1597,7 @@ async function apiSave(obj){
       paymentPct:obj.paymentPct||'',
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
+      removedNotes:_sentRm,
       closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
@@ -1584,6 +1605,8 @@ async function apiSave(obj){
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'save',object:full}),redirect:'follow'});
     const data=await res.json();
+    if(data&&data.error){setNotUpdated();console.error('save:',data.error);return false;}
+    if(_sentRm.length&&obj._rmNotes)obj._rmNotes=obj._rmNotes.filter(u=>_sentRm.indexOf(u)<0);
     if(data.id)obj.id=data.id;
     if(obj.id){_projectUrlCache[obj.id]=obj.projectUrl||'';saveProjectUrlCache();}
     setSyncStatus('ok','збережено ✓');
@@ -1691,7 +1714,7 @@ function _renderObjects(){
   }
   sortObjects();
   objects.forEach((o,i)=>{
-    if(isOwnCard(o)&&!_isEditor)return; // глядачі цю картку не бачать
+    if(isOwnCard(o)&&!_isEditor&&!_isUser)return; // глядачі цю картку не бачать
     try{grid.appendChild(buildCard(o,i));}catch(e){
       console.error('buildCard error:',e,o);
       const d=document.createElement('div');d.className='obj-card';d.textContent=o.name||'?';grid.appendChild(d);
@@ -2086,6 +2109,8 @@ function buildCard(o,i){
       txt.textContent='\u2013 '+n.text;
       txt.onclick=()=>openNoteModal({type:'obj',objId:o.id,ni:origNi});
       row.appendChild(txt);
+      { const who=_noteWho(n);
+        if(who){const w=document.createElement('span');w.className='obj-note-who'+(n.by?' from':'');w.textContent=who;row.appendChild(w);} }
       if(n.time){
         const hasFuture=!active&&!!n.time;
         const t=document.createElement('span');
@@ -2171,7 +2196,20 @@ function renderOverdueZone(){
   });
 }
 
+// Підпис біля нотатки: «від X» (призначили вам) або «→ Y» (ви призначили)
+function _noteWho(n){
+  if(n.by)return '\u2190 '+n.by;
+  const names=(n.toNames&&n.toNames.length)?n.toNames:(Array.isArray(n.to)?n.to.map(m=>{const u=_users.find(x=>x.email===m);return u?u.name:m;}):[]);
+  if(!names.length)return '';
+  return '\u2192 '+names.join(', ')+((n.done&&n.done.length)?' \u2713':'');
+}
 function renderNotes(){
+  { const ps=document.getElementById('quickPersonSelect');
+    if(ps){
+      const cur=ps.value;
+      ps.innerHTML='<option value="">для себе</option>'+_users.map(u=>'<option value="'+String(u.email).replace(/"/g,'&quot;')+'">'+String(u.name).replace(/</g,'&lt;')+'</option>').join('');
+      ps.value=cur;ps.style.display=_users.length?'':'none';
+    } }
   // Populate obj selectors — both desktop and mobile
   ['noteObjSelect','mobileObjSelect','quickObjSelect'].forEach(function(selId){
     const sel=document.getElementById(selId);
@@ -2258,7 +2296,7 @@ function renderNotes(){
 
 // ── OBJ NOTE ACTIONS ──
 async function addObjNoteWithTime(objId,addRow){
-  if(!_requireEdit()) return;
+  if(!_requireNote()) return;
   const inp=addRow.querySelector('input[placeholder]');
   const text=inp?inp.value.trim():'';if(!text)return;
   const dtDate=addRow.querySelector('input[type=date]');
@@ -2280,7 +2318,7 @@ async function addObjNoteWithTime(objId,addRow){
 }
 
 async function addObjNote(objId,inp){
-  if(!_requireEdit()) return;
+  if(!_requireNote()) return;
   const text=inp.value.trim();if(!text)return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
@@ -2292,10 +2330,11 @@ async function addObjNote(objId,inp){
 }
 
 async function deleteObjNote(objId,ni){
-  if(!_requireEdit()) return;
+  if(!_requireNote()) return;
   const ri=objects.findIndex(o=>String(o.id)===String(objId));
   if(ri<0)return;
   addHistory({type:'note',label:objects[ri].notes[ni].text,parentName:objects[ri].name,objId,data:{...objects[ri].notes[ni]}});
+  if(objects[ri].notes[ni].uid){(objects[ri]._rmNotes=objects[ri]._rmNotes||[]).push(objects[ri].notes[ni].uid);}
   objects[ri].notes.splice(ni,1);
   _rebuildOneCard(objects[ri].id);renderNotes();renderOverdueZone();
   try{ await apiSaveQueued(objects[ri]); }catch(e){console.error(e);}
@@ -2371,7 +2410,7 @@ async function addGlobalNote(){
 }
 
 async function addQuickNote(){
-  if(!_requireEdit()) return;
+  if(!_requireNote()) return;
   if(_micActive) stopMic(true); // додаємо вручну — мікрофон вимикаємо
   const inp=document.getElementById('quickNoteInput'),sel=document.getElementById('quickObjSelect');
   if(!inp||!sel)return;
@@ -2384,8 +2423,10 @@ async function addQuickNote(){
     return;
   }
   if(!objects[ri].notes)objects[ri].notes=[];
-  _pushNote(objects[ri],{text,time:''});
-  inp.value='';
+  const _ps=document.getElementById('quickPersonSelect');
+  const _to=(_isEditor&&_ps&&_ps.value)?[_ps.value]:[];
+  _pushNote(objects[ri],_to.length?{text,time:'',to:_to}:{text,time:''});
+  inp.value='';if(_ps)_ps.value='';
   render();renderNotes();renderOverdueZone();
   try{await apiSaveQueued(objects[ri]);}catch(e){console.error(e);}
 }
@@ -2419,7 +2460,9 @@ function openNoteModal(ctx){
   }else{
     const ri=objects.findIndex(o=>String(o.id)===String(ctx.objId));
     if(ri<0)return;
-    const n=objects[ri].notes[ctx.ni];text=n.text||'';time=n.time||'';created=n.created||'';
+    const n=objects[ri].notes[ctx.ni];
+    if(n.by)return; // нотатка від іншої людини — лише читати
+    text=n.text||'';time=n.time||'';created=n.created||'';
   }
   document.getElementById('nm-created').textContent=fmtFull(created)||'невідомо';
   document.getElementById('nm-text').value=text;
@@ -2447,7 +2490,7 @@ function closeNoteModal(){
 }
 
 async function saveNoteModal(){
-  if(!_requireEdit()) return;
+  if(!_requireNote()) return;
   const text=document.getElementById('nm-text').value.trim();
   if(!text){document.getElementById('nm-err').style.display='block';return;}
   const date=document.getElementById('nm-date').value;
@@ -2754,6 +2797,7 @@ function fmtFull(iso){
 // Додає замітку до об'єкта: ставить дату створення і пише в історію
 function _pushNote(o,n){
   n.created=n.created||nowIso();
+  if(_isUser||(n.to&&n.to.length))n.uid=n.uid||_newUid(); // такі нотатки зберігаються в аркуші «Нотатки»
   if(!o.notes)o.notes=[];
   o.notes.push(n);
   addHistory({action:'added',type:'note',label:n.text,parentName:o.name,objId:o.id,data:{...n}});
@@ -3644,12 +3688,14 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 window.addEventListener('pagehide',()=>{ if(_micActive) stopMic(true); });
 window.addEventListener('blur',()=>{ if(_micActive) stopMic(true); });
 
+try{_meName=localStorage.getItem('crm_me_name')||'';}catch{}
 _applyAccessState(false); // знімає readonly одразу
 // Перевірка збереженого ключа у фоні: скасовуємо вхід лише якщо скрипт явно відповів «ні»
 if(_editKey){
   _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:_editKey}),redirect:'follow'})
     .then(r=>r.json()).then(d=>{
-      if(d&&d.ok===false){try{localStorage.removeItem(KEY_LS);}catch{}_editKey='';_isEditor=false;_applyAccessState(true);}
+      if(d&&d.ok===false){try{localStorage.removeItem(KEY_LS);localStorage.removeItem(ROLE_LS);}catch{}_editKey='';_isEditor=false;_isUser=false;_applyAccessState(true);}
+      else if(d&&d.ok&&d.role&&d.role!==(_isUser?'user':'owner')){try{localStorage.setItem(ROLE_LS,d.role);}catch{}location.reload();} // роль змінилась
     }).catch(()=>{});
 }
 
