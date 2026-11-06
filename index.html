@@ -798,6 +798,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-task,.pv-label,.pv-panel{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 .pv-panel .pv-label{align-self:center;}
 .pv-cols{display:grid;grid-auto-flow:column;justify-content:center;}
+.pv-warn{align-self:center;max-width:520px;text-align:center;font-size:12px;color:var(--red);background:rgba(255,255,255,.92);border-radius:8px;padding:3px 10px;margin-bottom:4px;}
 .pv-groups{display:flex;justify-content:center;align-items:flex-start;gap:28px;}
 .pv-group{display:flex;flex-direction:column;gap:6px;align-items:center;}
 .pv-cap{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--text2,#6c6c70);background:rgba(255,255,255,.85);border-radius:8px;padding:2px 10px;}
@@ -1081,6 +1082,17 @@ body.readonly .card-checklist-body { display: none !important; }
 
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbx-v-yIRbWSaGms_8F2DES4DXXPRutoWoSItR9SmK33ytvolCF3kFnoozaYwdnYTpMb/exec";
+
+// ── Нова версія сторінки: показуємо маленьке повідомлення, натискання перезавантажує ──
+function showUpdateToast(){
+  if(document.getElementById('updToast'))return;
+  const el=document.createElement('div');el.id='updToast';
+  el.textContent='Є нова версія · натисніть, щоб оновити';
+  el.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:400;background:#1c1c1e;color:#fff;font-size:14px;font-weight:500;padding:10px 18px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;';
+  el.onclick=()=>location.reload();
+  document.body.appendChild(el);
+}
+if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='new-version')showUpdateToast();});}
 
 // ── Офлайн: service worker зберігає саму сторінку на пристрої (потрібен HTTPS і файл sw.js поруч) ──
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
@@ -3088,7 +3100,7 @@ async function pvLoadTasks(o){
       const od=Array.isArray(data.ordered)?data.ordered.map(Boolean):[];
       const ot=Array.isArray(data.ordTasks)?data.ordTasks.map(String):[];
       const od2=Array.isArray(data.ordDates)?data.ordDates.map(String):[];
-      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od,ord:ot,ordDates:od2};
+      return {state:t.length?'ok':'none',tasks:t,dates:d,ordered:od,ord:ot,ordDates:od2,ordKnown:Array.isArray(data.ordTasks)};
     }
     return {state:'err',msg:String((data&&data.error)||'невірна відповідь сервера')};
   }catch(e){return {state:'err',msg:String((e&&e.message)||e)};}
@@ -3275,7 +3287,13 @@ function pvBuildPanel(){
   const mr=document.createElement('span');mr.className='pv-more';mr.textContent='▴';
   lab.appendChild(nm);lab.appendChild(mr);lab.addEventListener('click',pvClosePanel);
   const wrap=document.createElement('div');wrap.className='pv-groups';
-  panel.appendChild(lab);panel.appendChild(wrap);
+  panel.appendChild(lab);
+  if(!res.ordKnown){ // скрипт не віддає замовлені задачі → пояснюємо причину
+    const w=document.createElement('div');w.className='pv-warn';
+    w.textContent='⚠ Колонка «Замовлено» недоступна: скрипт не оновлено. Вставте новий Code.gs і зробіть новий деплой.';
+    panel.appendChild(w);
+  }
+  panel.appendChild(wrap);
   // розкладка: кожна категорія — свої стовпчики; усе по центру
   const STEP=33,GAPX=10,GGAP=28,COLW=280,CAPH=groups.length>1?24:0;
   const H=window.innerHeight-24,Wv=window.innerWidth-24;
@@ -3853,7 +3871,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[]};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks)};}
     });
     return m;
   }catch(e){return null;}
