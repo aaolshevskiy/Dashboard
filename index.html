@@ -1041,6 +1041,10 @@ body.readonly .card-checklist-body { display: none !important; }
         <label>Об'єкт</label>
         <select id="nm-obj-select"></select>
       </div>
+      <div class="form-row" id="nm-to-row" style="display:none;align-items:flex-start">
+        <label style="padding-top:4px">Кому</label>
+        <div id="nm-to-list" style="flex:1;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end"></div>
+      </div>
     </div>
     <button onclick="document.getElementById('nm-date').value='';document.getElementById('nm-hour').value='9'"
       style="font-family:inherit;font-size:13px;border:none;background:transparent;
@@ -2488,6 +2492,7 @@ function openNoteModal(ctx){
     const n=objects[ri].notes[ctx.ni];
     if(n.by)return; // нотатка від іншої людини — лише читати
     text=n.text||'';time=n.time||'';created=n.created||'';
+    _fillNoteTo(objects[ri],n);
   }
   document.getElementById('nm-created').textContent=fmtFull(created)||'невідомо';
   document.getElementById('nm-text').value=text;
@@ -2505,10 +2510,29 @@ function openNoteModal(ctx){
       const opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');objSel.appendChild(opt);
     });
   }else if(objRow){objRow.style.display='none';}
+  if(ctx.type==='sticky'){const tr=document.getElementById('nm-to-row');if(tr)tr.style.display='none';window._nmTo=null;}
   document.getElementById('noteModal').classList.add('open');
   setTimeout(()=>document.getElementById('nm-text').focus(),50);
 }
 
+// «Кому»: вибір членів команди, яким ця нотатка теж буде видна (лише власник; лише ті, кому відкрита картка)
+function _fillNoteTo(o,n){
+  const row=document.getElementById('nm-to-row'),box=document.getElementById('nm-to-list');
+  if(!row||!box)return;
+  const acc=isOwnCard(o)?null:((o._closedFlags&&Array.isArray(o._closedFlags._access))?o._closedFlags._access:[]);
+  const list=_isEditor?_users.filter(u=>!acc||acc.indexOf(u.email)>=0):[];
+  window._nmTo=null;box.innerHTML='';
+  if(!list.length){row.style.display='none';return;}
+  const sel=new Set(Array.isArray(n.to)?n.to:[]);
+  window._nmTo=sel;
+  list.forEach(u=>{
+    const b=document.createElement('button');b.type='button';b.textContent=u.name;
+    const paint=()=>{const on=sel.has(u.email);b.style.cssText='font-family:inherit;font-size:13px;padding:4px 12px;border-radius:999px;cursor:pointer;border:1px solid '+(on?'var(--blue)':'var(--border)')+';background:'+(on?'var(--blue)':'transparent')+';color:'+(on?'#fff':'var(--text)');};
+    b.onclick=()=>{if(sel.has(u.email))sel.delete(u.email);else sel.add(u.email);paint();};
+    paint();box.appendChild(b);
+  });
+  row.style.display='flex';
+}
 function closeNoteModal(){
   document.getElementById('noteModal').classList.remove('open');
   noteCtx=null;
@@ -2547,6 +2571,15 @@ async function saveNoteModal(){
     if(ri<0)return;
     objects[ri].notes[noteCtx.ni].text=text;
     objects[ri].notes[noteCtx.ni].time=time;
+    if(_isEditor&&window._nmTo){ // «Кому» змінюється лише коли блок показаний
+      const nn=objects[ri].notes[noteCtx.ni],arr=[...window._nmTo];
+      const before=JSON.stringify(Array.isArray(nn.to)?nn.to:[]);
+      if(JSON.stringify(arr)!==before){
+        nn.to=arr;delete nn.toNames;delete nn.done;
+        if(arr.length&&!nn.uid)nn.uid=_newUid();
+        if(!arr.length&&!nn.uid)delete nn.to;
+      }
+    }
     closeNoteModal();render();renderNotes();
     apiSaveQueued(objects[ri]).catch(e=>console.error(e));
   }
