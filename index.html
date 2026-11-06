@@ -3403,6 +3403,24 @@ function pvEnter(){
       pvRelayout();
     });
   });
+  // Тихо просимо сервер перерахувати застаріле (без зміни статусу) і оновлюємо картки, якщо щось змінилось
+  setTimeout(()=>{
+    pvLoadAll(true).then(m=>{
+      if(!m||_pvView!==view||_pvExiting)return;
+      let ch=false;
+      cards.forEach((c,i)=>{
+        const o=objects.find(x=>String(x.id)===String(c.dataset.objid));
+        if(!o)return;
+        const id=String(o.id),r=m[id];
+        if(!r||r.state==='err')return;
+        _pvTs[id]=Date.now();
+        if(JSON.stringify(r)===JSON.stringify(_pvTasksCache[id]))return;
+        _pvTasksCache[id]=r;ch=true;
+        pvFillCell(pvCells[i],i,cols,r);
+      });
+      if(ch){_pvSaveCache();pvRelayout();}
+    });
+  },800);
   _pvView=view;
   document.querySelector('.board-inner').appendChild(view);
   document.body.classList.add('purch-mode');
