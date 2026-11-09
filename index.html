@@ -959,6 +959,7 @@ body.readonly .card-checklist-body { display: none !important; }
     <div class="form-group">
       <div class="form-row"><label>Проєкт</label><input id="f-project-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Google Диск</label><input id="f-link-folder" placeholder="https://drive.google.com/..." autocomplete="off"></div>
+      <div class="form-row"><label>Фото</label><input id="f-photos-url" placeholder="Папка з фото: https://..." autocomplete="off"></div>
       <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..." autocomplete="off"></div>
       <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Oferta</label><input id="f-oferta-url" placeholder="https://..." autocomplete="off"></div>
@@ -1418,6 +1419,7 @@ function parseObj(o){
       parsed.projectUrl=String(_serverFlags._projectUrl||'');
     else parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
   }
+  if(!parsed.photosUrl) parsed.photosUrl=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._photosUrl)?String(_serverFlags._photosUrl):'';
   if(!parsed.purchCol) parsed.purchCol=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._purchCol)?String(_serverFlags._purchCol):'';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
@@ -1607,7 +1609,7 @@ async function apiSave(obj){
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
       removedNotes:_sentRm,
-      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||''})),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -1961,7 +1963,7 @@ function buildCard(o,i){
 
   // Links row — між назвою і адресою, всі 4 іконки в один рядок
   const linkStyle='display:inline-flex;flex-shrink:0;opacity:.6;align-items:center;gap:2px;font-size:11px;color:var(--text3);text-decoration:none';
-  if(o.projectUrl||o.linkFolder||o.bitrix||o.furniture||o.moneyUrl||o.ofertaUrl){
+  if(o.projectUrl||o.linkFolder||o.photosUrl||o.bitrix||o.furniture||o.moneyUrl||o.ofertaUrl){
     const linksRow=document.createElement('div');
     linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;margin-bottom:1px';
     // Порядок: Проєкт → Диск → Bitrix → Oferta → Zakup → Money → Меблі
@@ -1976,6 +1978,12 @@ function buildCard(o,i){
       gd.style.cssText=linkStyle;gd.onclick=e=>e.stopPropagation();
       gd.innerHTML='<svg viewBox="0 0 87.3 78" width="12" height="12"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>Диск';
       linksRow.appendChild(gd);
+    }
+    if(o.photosUrl){
+      const ph=document.createElement('a');ph.href=o.photosUrl;ph.target='_blank';ph.rel='noopener';ph.title='Фото об\'єкта';
+      ph.style.cssText=linkStyle;ph.onclick=e=>e.stopPropagation();
+      ph.innerHTML='📷 Фото';
+      linksRow.appendChild(ph);
     }
     if(o.bitrix){
       const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
@@ -2604,7 +2612,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-purch-col'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-photos-url','f-purch-col'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2657,6 +2665,7 @@ function openEditModal(objId){
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
+  if(document.getElementById('f-photos-url')) document.getElementById('f-photos-url').value=o.photosUrl||'';
   if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
   _fillAccess(o);
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
@@ -2715,6 +2724,7 @@ async function saveCard(){
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
     projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
+    photosUrl:document.getElementById('f-photos-url')?.value.trim()||'',
     purchCol:document.getElementById('f-purch-col')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
