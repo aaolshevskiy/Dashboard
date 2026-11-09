@@ -210,7 +210,9 @@ body{
 /* Число в «слідкуваній» клітинці менше 10 000 — рамка світиться червоним */
 .obj-card.glow-red{box-shadow:0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
 @keyframes glowRed{0%,100%{box-shadow:0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 24px 7px rgba(255,59,48,.75);}}
-@media (prefers-reduced-motion:reduce){.obj-card.glow-red{animation:none;}}
+.obj-card.glow-blue{box-shadow:0 0 16px 3px rgba(10,132,255,.55);animation:glowBlue 2.4s ease-in-out infinite;}
+@keyframes glowBlue{0%,100%{box-shadow:0 0 10px 2px rgba(10,132,255,.40);}50%{box-shadow:0 0 24px 7px rgba(10,132,255,.75);}}
+@media (prefers-reduced-motion:reduce){.obj-card.glow-red,.obj-card.glow-blue{animation:none;}}
 .obj-card-num{font-size:11px;color:var(--text4);margin-bottom:1px;}
 .obj-card-name{
   font-size:15px;font-weight:600;color:var(--text);
@@ -970,7 +972,8 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="D (за замовчуванням)" autocomplete="off"></div>
-      <div class="form-row"><label>Залишок коштів</label><input id="f-watch-cell" placeholder="клітинка, напр. B2 (світиться, якщо менше 10 000)" autocomplete="off"></div>
+      <div class="form-row"><label>Залишок: будівельні</label><input id="f-watch-cell" placeholder="клітинка, напр. B2" autocomplete="off"></div>
+      <div class="form-row"><label>Залишок: оздоблювальні</label><input id="f-watch-cell2" placeholder="клітинка, напр. B3" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -983,13 +986,13 @@ body.readonly .card-checklist-body { display: none !important; }
     <div id="f-flags-row" style="display:none">
       <div class="fsec">Прапорці</div>
       <div class="form-group" style="padding:12px 14px;gap:10px;flex-direction:column;align-items:flex-start">
-        <div style="font-size:12px;color:var(--text3);font-weight:500">Зняти галочку = відновити прапорець</div>
+        <div style="font-size:12px;color:var(--text3);font-weight:500">Зняти галочку = повернути підсвічування</div>
         <label id="f-flag-kanban-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
           <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer">
-          <span style="color:var(--blue)">🚩 канбан — закрито</span></label>
+          <span style="color:var(--blue)">🔵 канбан — виконано (прибрати підсвічування)</span></label>
         <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
           <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
-          <span style="color:var(--red)">🚩 платіж — закрито</span></label>
+          <span style="color:var(--red)">🔴 платіж — виконано (прибрати підсвічування)</span></label>
       </div>
     </div>
 
@@ -1424,6 +1427,7 @@ function parseObj(o){
       parsed.projectUrl=String(_serverFlags._projectUrl||'');
     else parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
   }
+  if(!parsed.watchCell2) parsed.watchCell2=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._watchCell2)?String(_serverFlags._watchCell2):'';
   if(!parsed.watchCell) parsed.watchCell=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._watchCell)?String(_serverFlags._watchCell):'';
   if(!parsed.photosUrl) parsed.photosUrl=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._photosUrl)?String(_serverFlags._photosUrl):'';
   if(!parsed.purchCol) parsed.purchCol=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._purchCol)?String(_serverFlags._purchCol):'';
@@ -1615,7 +1619,7 @@ async function apiSave(obj){
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
       removedNotes:_sentRm,
-      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||'',_watchCell:obj.watchCell||''})),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||'',_watchCell:obj.watchCell||'',_watchCell2:obj.watchCell2||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -1674,13 +1678,32 @@ const _OWN_NAMES=[_ownNorm('Мої задачі'),_ownNorm('Свої задач�
 function isOwnCard(o){ if(!o)return false; return String(o.id)===OWN_CARD_ID||_OWN_NAMES.indexOf(_ownNorm(o.name))>=0; }
 // Світіння картки: число у «слідкуваній» клітинці (приходить із закупів лише власнику) менше порога
 const WATCH_LIMIT=10000;
-function _watchLow(o){
-  try{const r=_pvTasksCache[String(o.id)];return !!(r&&typeof r.watch==='number'&&r.watch<WATCH_LIMIT);}catch{return false;}
+function _watchLow(o){ // залишок коштів у будь-якій з двох клітинок менше порога
+  try{const r=_pvTasksCache[String(o.id)];return !!(r&&((typeof r.watch==='number'&&r.watch<WATCH_LIMIT)||(typeof r.watch2==='number'&&r.watch2<WATCH_LIMIT)));}catch{return false;}
 }
+// Підсвічування картки: червоне — мало коштів АБО час платежу; синє — час переміщати канбан (поки не «закрито» в налаштуваннях картки)
+// Три етапи канбану: 1–29 %, 30–90 %, 91 % і вище (кожен підсвічується окремо, доки його не «виконано»)
+function _kanbanKey(n){return n>=91?'kanban3':n>=30?'kanban2':n>=1?'kanban1':null;}
+function _glowKind(o){
+  if(!o||o.closed||isOwnCard(o))return '';
+  if(_watchLow(o))return 'red';
+  const pv=o._progressValue,num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+  if(isNaN(num))return '';
+  const cl=o._closedFlags||{};
+  if(o.paymentPct){
+    const th=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
+    if(!isNaN(th)&&num>=th&&!cl.payment)return 'red';
+  }
+  const kk=_kanbanKey(num);
+  if(kk&&!cl[kk])return 'blue';
+  return '';
+}
+function _glowClass(o){const k=_glowKind(o);return k?' glow-'+k:'';}
 function applyWatchGlow(){
   document.querySelectorAll('.obj-card[data-objid]').forEach(c=>{
-    const o=objects.find(x=>String(x.id)===c.dataset.objid);
-    c.classList.toggle('glow-red',!!o&&_watchLow(o));
+    const o=objects.find(x=>String(x.id)===c.dataset.objid),k=o?_glowKind(o):'';
+    c.classList.toggle('glow-red',k==='red');
+    c.classList.toggle('glow-blue',k==='blue');
   });
 }
 function sortObjects(){
@@ -1772,7 +1795,7 @@ function buildCard(o,i){
     +(isClosed?' closed':'')
     +(notInWork?' not-inwork':'')
     +(hasOverdueNote?' has-overdue':'')
-    +(_watchLow(o)?' glow-red':'');
+    +_glowClass(o);
   card.id='card-'+i;
   card.dataset.objid=o.id;
   card.draggable=canEdit(); // drag-and-drop only in edit mode
@@ -2101,15 +2124,7 @@ function buildCard(o,i){
     const pv=o._progressValue;
     const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
     const closed=o._closedFlags||{};
-    const flags=[];
-    if(!isNaN(num)){
-      const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-      if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
-      if(o.paymentPct){
-        const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-        if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'#c0392b',bg:'rgba(192,57,43,.10)'});
-      }
-    }
+    const flags=[]; // прапорці замінено підсвічуванням картки (див. _glowKind)
     const ds=fmtDate(o.dateStart), de=fmtDate(o.dateEnd);
     const hasDates=!!(ds||de);
     const row=document.createElement('div');
@@ -2630,7 +2645,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-photos-url','f-purch-col','f-watch-cell'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-photos-url','f-purch-col','f-watch-cell','f-watch-cell2'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2685,6 +2700,7 @@ function openEditModal(objId){
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
   if(document.getElementById('f-photos-url')) document.getElementById('f-photos-url').value=o.photosUrl||'';
   if(document.getElementById('f-watch-cell')) document.getElementById('f-watch-cell').value=o.watchCell||'';
+  if(document.getElementById('f-watch-cell2')) document.getElementById('f-watch-cell2').value=o.watchCell2||'';
   if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
   _fillAccess(o);
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
@@ -2697,7 +2713,7 @@ function openEditModal(objId){
   const closedFlags=o._closedFlags||{};
   const pv=o._progressValue;
   const pnum=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
-  const activeKanbanKey=!isNaN(pnum)?(pnum>=90?'kanban3':pnum>=30?'kanban2':pnum>=1?'kanban1':null):null;
+  const activeKanbanKey=!isNaN(pnum)?_kanbanKey(pnum):null;
   const hasFlagKanban=!!activeKanbanKey;
   const hasFlagPayment=!!o.paymentPct&&!isNaN(pnum)&&pnum>=parseFloat(o.paymentPct);
   const anyFlag=hasFlagKanban||hasFlagPayment;
@@ -2745,6 +2761,7 @@ async function saveCard(){
     projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
     photosUrl:document.getElementById('f-photos-url')?.value.trim()||'',
     watchCell:document.getElementById('f-watch-cell')?.value.trim()||'',
+    watchCell2:document.getElementById('f-watch-cell2')?.value.trim()||'',
     purchCol:document.getElementById('f-purch-col')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
@@ -2760,7 +2777,7 @@ async function saveCard(){
       // Determine active kanban key from current progress
       const cpv=_cur?_cur._progressValue:null;
       const cn=cpv?parseFloat(String(cpv).replace('%','').replace(',','.')):NaN;
-      const cKey=!isNaN(cn)?(cn>=90?'kanban3':cn>=30?'kanban2':cn>=1?'kanban1':null):null;
+      const cKey=!isNaN(cn)?_kanbanKey(cn):null;
       const kanbanClosed=document.getElementById('f-flag-kanban-closed')?.checked||false;
       const out={...prev,payment:document.getElementById('f-flag-payment-closed')?.checked||false};
       if(cKey) out[cKey]=kanbanClosed;
@@ -2985,15 +3002,8 @@ function updateProgressFlags(o){
   const row=document.getElementById('flags-wrap-'+o.id);
   if(!row) return;
   const num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
-  const flags=[];
-  if(!isNaN(num)){
-    const kanbanKey=num>=90?'kanban3':num>=30?'kanban2':num>=1?'kanban1':null;
-    if(kanbanKey) flags.push({key:kanbanKey,label:'канбан',color:'var(--blue)',bg:'var(--blue-bg)'});
-    if(o.paymentPct){
-      const threshold=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-      if(!isNaN(threshold)&&num>=threshold) flags.push({key:'payment',label:'платіж',color:'var(--red)',bg:'var(--red-bg)'});
-    }
-  }
+  const flags=[]; // прапорці замінено підсвічуванням картки
+  applyWatchGlow();
   const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
   const hasDates=!!(ds||de);
   // Очищаємо тільки прапорці, не чіпаємо .obj-card-dates
@@ -4034,7 +4044,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null,watch:(typeof e.watch==='number'?e.watch:null)};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null,watch:(typeof e.watch==='number'?e.watch:null),watch2:(typeof e.watch2==='number'?e.watch2:null)};}
     });
     return m;
   }catch(e){return null;}
