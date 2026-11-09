@@ -1678,9 +1678,38 @@ const _OWN_NAMES=[_ownNorm('Мої задачі'),_ownNorm('Свої задач�
 function isOwnCard(o){ if(!o)return false; return String(o.id)===OWN_CARD_ID||_OWN_NAMES.indexOf(_ownNorm(o.name))>=0; }
 // Світіння картки: число у «слідкуваній» клітинці (приходить із закупів лише власнику) менше порога
 const WATCH_MIN=0; // світиться, коли залишок у клітинці дорівнює нулю або більший
-function _watchLow(o){ // залишок коштів у будь-якій з двох клітинок >= WATCH_MIN
-  try{const r=_pvTasksCache[String(o.id)];return !!(r&&((typeof r.watch==='number'&&r.watch>=WATCH_MIN)||(typeof r.watch2==='number'&&r.watch2>=WATCH_MIN)));}catch{return false;}
+// Залишок коштів: свіжі значення двох клітинок кожної картки (id → {a,b}). Опитуємо сервер щохвилини, поки сторінка відкрита.
+let _watchVals={},_watchTs=0,_watchBusy=false;
+try{const w=JSON.parse(localStorage.getItem('crm_watch_v2')||'null');if(w&&w.v&&Date.now()-w.ts<10*60*1000){_watchVals=w.v;_watchTs=w.ts;}}catch{}
+function _watchLow(o){ // світиться, коли хоча б одна з двох клітинок >= WATCH_MIN; немає свіжого значення — не світиться
+  if(!o||!(o.watchCell||o.watchCell2))return false;
+  if(Date.now()-_watchTs>10*60*1000)return false;
+  const w=_watchVals[String(o.id)];
+  return !!(w&&((typeof w.a==='number'&&w.a>=WATCH_MIN)||(typeof w.b==='number'&&w.b>=WATCH_MIN)));
 }
+async function watchRefresh(){
+  if(!_isEditor||_watchBusy||document.visibilityState!=='visible')return;
+  const has=(typeof objects!=='undefined'&&Array.isArray(objects))&&objects.some(o=>o&&(o.watchCell||o.watchCell2));
+  if(!has){_watchVals={};_watchTs=Date.now();applyWatchGlow();return;}
+  _watchBusy=true;
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getWatch'}),redirect:'follow'});
+    const d=await res.json();
+    if(d&&d.v&&typeof d.v==='object'){
+      _watchVals=d.v;_watchTs=Date.now();
+      try{localStorage.setItem('crm_watch_v2',JSON.stringify({ts:_watchTs,v:_watchVals}));}catch{}
+      applyWatchGlow();
+    }
+  }catch(e){console.warn('[watch]',e);}
+  finally{_watchBusy=false;}
+}
+(function(){
+  let tries=0;
+  const first=setInterval(()=>{tries++;if((typeof objects!=='undefined'&&objects&&objects.length)||tries>40){clearInterval(first);watchRefresh();}},1500);
+  setInterval(watchRefresh,60*1000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(watchRefresh,600);});
+  window.addEventListener('focus',()=>setTimeout(watchRefresh,600));
+})();
 // Підсвічування картки: червоне — мало коштів АБО час платежу; синє — час переміщати канбан (поки не «закрито» в налаштуваннях картки)
 // Три етапи канбану: 1–29 %, 30–90 %, 91 % і вище (кожен підсвічується окремо, доки його не «виконано»)
 function _kanbanKey(n){return n>=91?'kanban3':n>=30?'kanban2':n>=1?'kanban1':null;}
@@ -2822,6 +2851,7 @@ async function saveCard(){
   closeAddModal();
   // Optimistic: update local state and render immediately
   render();renderNotes();renderOverdueZone();
+  setTimeout(watchRefresh,2500); // клітинки могли змінитися
   }catch(err){
     console.error('saveCard error:',err);
     const btn2=document.getElementById('btnSave');
@@ -4044,7 +4074,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null,watch:(typeof e.watch==='number'?e.watch:null),watch2:(typeof e.watch2==='number'?e.watch2:null)};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null};}
     });
     return m;
   }catch(e){return null;}
