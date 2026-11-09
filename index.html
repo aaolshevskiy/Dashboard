@@ -207,6 +207,10 @@ body{
 .obj-card.completed{opacity:.5;}
 .obj-card.not-inwork{background:#f2f2f7;}
 .obj-card.has-overdue{background:#fff0ef;}
+/* Число в «слідкуваній» клітинці менше 10 000 — рамка світиться червоним */
+.obj-card.glow-red{border-color:#ff3b30;box-shadow:0 0 0 1.5px #ff3b30,0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
+@keyframes glowRed{0%,100%{box-shadow:0 0 0 1.5px #ff3b30,0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 0 1.5px #ff3b30,0 0 22px 6px rgba(255,59,48,.70);}}
+@media (prefers-reduced-motion:reduce){.obj-card.glow-red{animation:none;}}
 .obj-card-num{font-size:11px;color:var(--text4);margin-bottom:1px;}
 .obj-card-name{
   font-size:15px;font-weight:600;color:var(--text);
@@ -966,6 +970,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="D (за замовчуванням)" autocomplete="off"></div>
+      <div class="form-row"><label>Слідкувати за клітинкою</label><input id="f-watch-cell" placeholder="напр. B2 — світиться червоним, якщо менше 10 000" autocomplete="off"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -1419,6 +1424,7 @@ function parseObj(o){
       parsed.projectUrl=String(_serverFlags._projectUrl||'');
     else parsed.projectUrl=_projectUrlCache[parsed.id||o.id]||'';
   }
+  if(!parsed.watchCell) parsed.watchCell=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._watchCell)?String(_serverFlags._watchCell):'';
   if(!parsed.photosUrl) parsed.photosUrl=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._photosUrl)?String(_serverFlags._photosUrl):'';
   if(!parsed.purchCol) parsed.purchCol=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._purchCol)?String(_serverFlags._purchCol):'';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
@@ -1609,7 +1615,7 @@ async function apiSave(obj){
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
       removedNotes:_sentRm,
-      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||''})),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||'',_watchCell:obj.watchCell||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -1666,6 +1672,17 @@ function _ownNorm(v){
 }
 const _OWN_NAMES=[_ownNorm('Мої задачі'),_ownNorm('Свої задачі')];
 function isOwnCard(o){ if(!o)return false; return String(o.id)===OWN_CARD_ID||_OWN_NAMES.indexOf(_ownNorm(o.name))>=0; }
+// Світіння картки: число у «слідкуваній» клітинці (приходить із закупів лише власнику) менше порога
+const WATCH_LIMIT=10000;
+function _watchLow(o){
+  try{const r=_pvTasksCache[String(o.id)];return !!(r&&typeof r.watch==='number'&&r.watch<WATCH_LIMIT);}catch{return false;}
+}
+function applyWatchGlow(){
+  document.querySelectorAll('.obj-card[data-objid]').forEach(c=>{
+    const o=objects.find(x=>String(x.id)===c.dataset.objid);
+    c.classList.toggle('glow-red',!!o&&_watchLow(o));
+  });
+}
 function sortObjects(){
   const order=loadCardOrder();
   if(order.length){
@@ -1754,7 +1771,8 @@ function buildCard(o,i){
     +(o.completed?' completed':'')
     +(isClosed?' closed':'')
     +(notInWork?' not-inwork':'')
-    +(hasOverdueNote?' has-overdue':'');
+    +(hasOverdueNote?' has-overdue':'')
+    +(_watchLow(o)?' glow-red':'');
   card.id='card-'+i;
   card.dataset.objid=o.id;
   card.draggable=canEdit(); // drag-and-drop only in edit mode
@@ -2612,7 +2630,7 @@ function openAddModal(){
   if(!_requireEdit()) return;
   editIdx=null;
   document.getElementById('modalTitle').textContent='Новий об\'єкт';
-  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-photos-url','f-purch-col'].forEach(id=>{
+  ['f-name','f-client','f-addr','f-intercom','f-area','f-link-folder','f-start','f-end','f-masters-name','f-designer','f-project-url','f-photos-url','f-purch-col','f-watch-cell'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f-inwork','f-masters','f-completed','f-closed'].forEach(id=>{
@@ -2666,6 +2684,7 @@ function openEditModal(objId){
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
   if(document.getElementById('f-photos-url')) document.getElementById('f-photos-url').value=o.photosUrl||'';
+  if(document.getElementById('f-watch-cell')) document.getElementById('f-watch-cell').value=o.watchCell||'';
   if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
   _fillAccess(o);
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
@@ -2725,6 +2744,7 @@ async function saveCard(){
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
     projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
     photosUrl:document.getElementById('f-photos-url')?.value.trim()||'',
+    watchCell:document.getElementById('f-watch-cell')?.value.trim()||'',
     purchCol:document.getElementById('f-purch-col')?.value.trim()||'',
     ofertaUrl:document.getElementById('f-oferta-url')?.value.trim()||'',
     ratyfikacjaUrl:document.getElementById('f-ratyfikacja-url')?.value.trim()||'',
@@ -4014,7 +4034,7 @@ async function pvLoadAll(fresh){
     Object.keys(d.results).forEach(id=>{
       const e=d.results[id]||{};
       if(e.error)m[id]={state:'err',msg:String(e.error)};
-      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null};}
+      else{const t=Array.isArray(e.tasks)?e.tasks.map(String):[];m[id]={state:t.length?'ok':'none',tasks:t,dates:Array.isArray(e.dates)?e.dates.map(String):[],ordered:[],ord:Array.isArray(e.ordTasks)?e.ordTasks.map(String):[],ordDates:Array.isArray(e.ordDates)?e.ordDates.map(String):[],ordKnown:Array.isArray(e.ordTasks),stat:e.stat||null,statNG:e.statNG||null,watch:(typeof e.watch==='number'?e.watch:null)};}
     });
     return m;
   }catch(e){return null;}
@@ -4043,7 +4063,7 @@ function pvApplyMap(m,list){
     _pvTs[id]=Date.now();
     if(JSON.stringify(r)!==JSON.stringify(_pvTasksCache[id])){_pvTasksCache[id]=r;changed=true;}
   });
-  if(changed)_pvSaveCache();
+  if(changed){_pvSaveCache();applyWatchGlow();}
   return errs;
 }
 function pvFinalStatus(errs,total){
