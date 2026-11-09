@@ -208,8 +208,8 @@ body{
 .obj-card.not-inwork{background:#f2f2f7;}
 .obj-card.has-overdue{background:#fff0ef;}
 /* Число в «слідкуваній» клітинці менше 10 000 — рамка світиться червоним */
-.obj-card.glow-red{border-color:#ff3b30;box-shadow:0 0 0 1.5px #ff3b30,0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
-@keyframes glowRed{0%,100%{box-shadow:0 0 0 1.5px #ff3b30,0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 0 1.5px #ff3b30,0 0 22px 6px rgba(255,59,48,.70);}}
+.obj-card.glow-red{box-shadow:0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
+@keyframes glowRed{0%,100%{box-shadow:0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 24px 7px rgba(255,59,48,.75);}}
 @media (prefers-reduced-motion:reduce){.obj-card.glow-red{animation:none;}}
 .obj-card-num{font-size:11px;color:var(--text4);margin-bottom:1px;}
 .obj-card-name{
