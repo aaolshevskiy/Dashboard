@@ -1677,9 +1677,9 @@ function _ownNorm(v){
 const _OWN_NAMES=[_ownNorm('Мої задачі'),_ownNorm('Свої задачі')];
 function isOwnCard(o){ if(!o)return false; return String(o.id)===OWN_CARD_ID||_OWN_NAMES.indexOf(_ownNorm(o.name))>=0; }
 // Світіння картки: число у «слідкуваній» клітинці (приходить із закупів лише власнику) менше порога
-const WATCH_LIMIT=10000;
-function _watchLow(o){ // залишок коштів у будь-якій з двох клітинок менше порога
-  try{const r=_pvTasksCache[String(o.id)];return !!(r&&((typeof r.watch==='number'&&r.watch<WATCH_LIMIT)||(typeof r.watch2==='number'&&r.watch2<WATCH_LIMIT)));}catch{return false;}
+const WATCH_MIN=0; // світиться, коли залишок у клітинці дорівнює нулю або більший
+function _watchLow(o){ // залишок коштів у будь-якій з двох клітинок >= WATCH_MIN
+  try{const r=_pvTasksCache[String(o.id)];return !!(r&&((typeof r.watch==='number'&&r.watch>=WATCH_MIN)||(typeof r.watch2==='number'&&r.watch2>=WATCH_MIN)));}catch{return false;}
 }
 // Підсвічування картки: червоне — мало коштів АБО час платежу; синє — час переміщати канбан (поки не «закрито» в налаштуваннях картки)
 // Три етапи канбану: 1–29 %, 30–90 %, 91 % і вище (кожен підсвічується окремо, доки його не «виконано»)
