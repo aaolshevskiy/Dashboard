@@ -2310,6 +2310,7 @@ function _fillWatchInfo(o){
   const el=document.getElementById('f-watch-info');if(!el)return;
   if(!_isEditor||!(o.watchCell||o.watchCell2)){el.style.display='none';el.innerHTML='';return;}
   const w=_watchVals[String(o.id)];
+  if(!o.moneyUrl){el.innerHTML='<b>Вкажіть посилання Money</b> — клітинки залишку беруться з цієї таблиці.';el.style.display='block';return;}
   const part=(name,ref,i)=>{
     if(!ref)return '';
     if(!i)return name+' '+ref+': ще не завантажено';
@@ -2318,7 +2319,7 @@ function _fillWatchInfo(o){
     return name+' '+ref+' = «'+String(i.d||'').replace(/</g,'&lt;')+'»'+(num===null?' — <b>не число</b>':(num>=WATCH_MIN?' → світиться':' → не світиться'))+(i.s?' (аркуш «'+String(i.s).replace(/</g,'&lt;')+'»)':'');
   };
   const lines=[part('Будівельні',o.watchCell,w&&w.ia),part('Оздоблювальні',o.watchCell2,w&&w.ib)].filter(Boolean);
-  lines.push('Світиться, якщо хоча б одна клітинка 0 або більше. Інший аркуш: <i>Назва аркуша!B2</i>.');
+  lines.push('Клітинки беруться з таблиці за посиланням Money. Світиться, якщо хоча б одна 0 або більше. Інший аркуш: <i>Назва аркуша!B2</i>.');
   el.innerHTML=lines.join('<br>');el.style.display='block';
 }
 function _fillAccess(o){
