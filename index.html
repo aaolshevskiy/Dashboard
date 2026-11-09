@@ -1498,6 +1498,10 @@ async function apiGet(){
     }
 
     if(payload&&!Array.isArray(payload)){
+      if(Array.isArray(payload.order)&&!_orderPending){ // порядок карток із сервера — спільний для всіх пристроїв
+        if(payload.order.length){try{localStorage.setItem('crm_card_order',JSON.stringify(payload.order));}catch{}}
+        else if(_isEditor){const lo=loadCardOrder();if(lo.length)pushCardOrder(lo);} // перший раз: відправити порядок цього пристрою
+      }
       if(Array.isArray(payload.users)){_users=payload.users;}
       if(payload.me&&payload.me.name){_meName=payload.me.name;try{localStorage.setItem('crm_me_name',_meName);}catch{} _applyAccessState(false);}
     }
@@ -1637,6 +1641,16 @@ function loadCardOrder(){
 function saveCardOrder(){
   const order=objects.map(o=>String(o.id));
   localStorage.setItem('crm_card_order', JSON.stringify(order));
+  if(_isEditor)pushCardOrder(order); // і на сервер, щоб на інших пристроях був той самий порядок
+}
+let _orderPending=0;
+async function pushCardOrder(order){
+  _orderPending++;
+  try{
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveOrder',order}),redirect:'follow'});
+  }catch(e){console.warn('[Order] save failed',e);}
+  finally{_orderPending--;}
 }
 
 // ── Постійна картка «Мої задачі» ──
