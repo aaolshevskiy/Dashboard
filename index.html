@@ -974,6 +974,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Колонка задач</label><input id="f-purch-col" placeholder="D (за замовчуванням)" autocomplete="off"></div>
       <div class="form-row"><label>Залишок: будівельні</label><input id="f-watch-cell" placeholder="клітинка, напр. B2" autocomplete="off"></div>
       <div class="form-row"><label>Залишок: оздоблювальні</label><input id="f-watch-cell2" placeholder="клітинка, напр. B3" autocomplete="off"></div>
+      <div id="f-watch-info" style="display:none;font-size:12px;line-height:1.45;color:var(--text3);padding:8px 14px"></div>
     </div>
 
     <div class="fsec">Прогрес</div>
@@ -2304,6 +2305,22 @@ function renderPersonSelect(){
   ps.value=list.some(u=>u.email===cur)?cur:'';
   ps.style.display=list.length?'':'none';
 }
+// Під полями «Залишок»: що саме скрипт зараз бачить у цих клітинках (допомагає знайти помилку в адресі/аркуші)
+function _fillWatchInfo(o){
+  const el=document.getElementById('f-watch-info');if(!el)return;
+  if(!_isEditor||!(o.watchCell||o.watchCell2)){el.style.display='none';el.innerHTML='';return;}
+  const w=_watchVals[String(o.id)];
+  const part=(name,ref,i)=>{
+    if(!ref)return '';
+    if(!i)return name+' '+ref+': ще не завантажено';
+    if(i.err)return name+' '+ref+': <b>не вдалося прочитати</b> ('+String(i.err).replace(/</g,'&lt;')+')';
+    const num=(typeof i.v==='number')?i.v:null;
+    return name+' '+ref+' = «'+String(i.d||'').replace(/</g,'&lt;')+'»'+(num===null?' — <b>не число</b>':(num>=WATCH_MIN?' → світиться':' → не світиться'))+(i.s?' (аркуш «'+String(i.s).replace(/</g,'&lt;')+'»)':'');
+  };
+  const lines=[part('Будівельні',o.watchCell,w&&w.ia),part('Оздоблювальні',o.watchCell2,w&&w.ib)].filter(Boolean);
+  lines.push('Світиться, якщо хоча б одна клітинка 0 або більше. Інший аркуш: <i>Назва аркуша!B2</i>.');
+  el.innerHTML=lines.join('<br>');el.style.display='block';
+}
 function _fillAccess(o){
   const sec=document.getElementById('f-access-sec'),box=document.getElementById('f-access-list');
   if(!sec||!box)return;
@@ -2732,6 +2749,7 @@ function openEditModal(objId){
   if(document.getElementById('f-watch-cell2')) document.getElementById('f-watch-cell2').value=o.watchCell2||'';
   if(document.getElementById('f-purch-col')) document.getElementById('f-purch-col').value=o.purchCol||'D';
   _fillAccess(o);
+  _fillWatchInfo(o);
   if(document.getElementById('f-oferta-url')) document.getElementById('f-oferta-url').value=o.ofertaUrl||'';
   if(document.getElementById('f-ratyfikacja-url')) document.getElementById('f-ratyfikacja-url').value=o.ratyfikacjaUrl||'';
   if(document.getElementById('f-money-url')) document.getElementById('f-money-url').value=o.moneyUrl||'';
