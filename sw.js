@@ -1,6 +1,6 @@
 // Service worker: сторінка відкривається з пам'яті пристрою навіть без інтернету.
 // Навігація: спершу збережена копія (миттєво), у фоні — оновлення з мережі.
-const CACHE = 'dashboard-v1';
+const CACHE = 'dashboard-v1'; // версію не змінюємо: оновлення сторінки визначається порівнянням вмісту
 const LAST_KEY = new URL('./__last_page__', self.registration.scope).href;
 const STATIC = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
@@ -29,7 +29,24 @@ const OFFLINE_HTML =
 // Перший запуск: сторінка просить зберегти саму себе (навігація до встановлення SW до нього не доходить)
 self.addEventListener('message', e => {
   const d = e.data;
-  if (!d || d.type !== 'cache-page' || !d.url) return;
+  if (!d || !d.url) return;
+  if (d.type === 'check-update') {                          // потягування вниз: чи є нова версія сторінки?
+    e.waitUntil((async () => {
+      const cache = await caches.open(CACHE);
+      const resp = await fetch(d.url, { cache: 'reload' });
+      if (!resp || !resp.ok || resp.redirected) return;
+      const old = await cache.match(LAST_KEY);
+      const [o, n] = await Promise.all([old ? old.clone().text() : Promise.resolve(null), resp.clone().text()]);
+      await cache.put(new Request(d.url), resp.clone());
+      await cache.put(LAST_KEY, resp.clone());
+      if (old && o !== n) {
+        const wins = await self.clients.matchAll({ type: 'window' });
+        wins.forEach(w => w.postMessage({ type: 'new-version' }));
+      }
+    })().catch(() => {}));
+    return;
+  }
+  if (d.type !== 'cache-page') return;
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     if (await cache.match(LAST_KEY)) return;                // копія вже є
@@ -51,10 +68,22 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
       const cached = (await cache.match(req, { ignoreSearch: true })) || (await cache.match(LAST_KEY));
+      const cachedCopy = cached ? cached.clone() : null;   // копія для порівняння (до того, як браузер прочитає відповідь)
       const update = fetch(req).then(async resp => {
         if (resp && resp.ok && !resp.redirected) {
+          let changed = false;
+          try {
+            if (cachedCopy) {
+              const [oldTxt, newTxt] = await Promise.all([cachedCopy.text(), resp.clone().text()]);
+              changed = oldTxt !== newTxt;
+            }
+          } catch (err) {}
           await cache.put(req, resp.clone());
           await cache.put(LAST_KEY, resp.clone());
+          if (changed) {   // повідомляємо відкриті вікна: є нова версія
+            const wins = await self.clients.matchAll({ type: 'window' });
+            wins.forEach(w => w.postMessage({ type: 'new-version' }));
+          }
         }
         return resp;
       }).catch(() => null);
