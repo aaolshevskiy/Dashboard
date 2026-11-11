@@ -479,6 +479,10 @@ body.purch-mode .quick-note{display:none!important;}
   font-size:11px;font-weight:600;color:var(--yellow-text);
   flex-shrink:0;white-space:nowrap;
 }
+.obj-progress-grp{
+  display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap;
+  margin-left:auto;flex-shrink:0;white-space:nowrap;
+}
 
 /* ── NOTES TOGGLE IN CARD ── */
 .card-notes-toggle{
@@ -706,8 +710,10 @@ body.focus-open{overflow:hidden;}
   font-size:12px;color:var(--text3);min-height:18px;
 }
 .fl-text{font-size:12.5px;color:var(--text2);line-height:1.4;flex:1;min-width:0;}
-@media (min-width:1101px) and (hover:hover) and (pointer:fine){
-  .obj-card:not(.closed) .obj-card-name{cursor:pointer;}
+@media (min-width:700px) and (min-height:560px){
+  .obj-card:not(.closed) .obj-card-name{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+}
+@media (min-width:700px) and (min-height:560px) and (hover:hover){
   .obj-card:not(.closed):not(.focused) .obj-card-name:hover{color:var(--blue);}
 }
 
@@ -2109,6 +2115,9 @@ function buildCard(o,i){
   if(o.masters) meta.innerHTML+='<span class="obj-m">М</span>';
   if(o.mastersName) meta.innerHTML+='<span style="font-size:12px;color:#999">'+o.mastersName+'</span>';
   if(o.designer) meta.innerHTML+='<span style="font-size:12px;color:var(--blue);opacity:.75">✏ '+o.designer+'</span>';
+  // Час і прогрес — завжди разом в одній групі, щоб не переносилися на різні рядки
+  const _grp=document.createElement('span');
+  _grp.className='obj-progress-grp';
   // Time progress (yellow): % of days elapsed between dateStart and dateEnd
   if(!isOwn&&o.dateStart&&o.dateEnd){
     const ds2=new Date(o.dateStart),de2=new Date(o.dateEnd),now2=new Date();
@@ -2120,10 +2129,9 @@ function buildCard(o,i){
       tspan.className='obj-progress-time';
       tspan.id='time-pct-'+o.id;
       tspan.textContent=timePct+'%';
-      tspan.style.marginLeft='auto';
       if(timePct>=100){tspan.style.color='var(--red)';tspan.style.fontWeight='700';}
       tspan.title='Час проекту: '+timePct+'% пройшло';
-      meta.appendChild(tspan);
+      _grp.appendChild(tspan);
     }
   }
   if(!isOwn&&o.progressUrl&&o.progressCell){
@@ -2132,11 +2140,9 @@ function buildCard(o,i){
     pct.id='progress-wrap-'+o.id;
     // Show cached value immediately if available, else 0%
     pct.textContent=o._progressValue!=null?o._progressValue:'0%';
-    // If time-pct already added margin-left:auto, no need to add again
-    if(!meta.querySelector('.obj-progress-time')) pct.style.marginLeft='auto';
-    else pct.style.marginLeft='6px';
-    meta.appendChild(pct);
+    _grp.appendChild(pct);
   }
+  if(_grp.children.length) meta.appendChild(_grp);
   if(meta.innerHTML||meta.children.length) card.appendChild(meta);
 
   // Flags + Dates — один рядок: прапорці зліва, дати справа
@@ -3137,7 +3143,8 @@ async function loadProgress(){
 let _focusId=null, _focusS=1, _focusW=0;
 const FOCUS_SCALE=1.2;
 function focusAvail(){
-  return window.matchMedia('(min-width:1101px) and (hover:hover) and (pointer:fine)').matches;
+  // комп'ютер і планшет (iPad); телефони — ні
+  return window.matchMedia('(min-width:700px) and (min-height:560px)').matches;
 }
 function _esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -3189,8 +3196,10 @@ function showLegend(animate){
   lg.innerHTML=buildHistoryHtml(o);
   const half=_focusW*_focusS/2;
   const leftPos=window.innerWidth/2+half+24;
+  const rightPos=window.innerWidth/2+half+24;
   if(leftPos+300<=window.innerWidth-12){lg.style.left=leftPos+'px';lg.style.right='auto';}
-  else{lg.style.left='auto';lg.style.right=(window.innerWidth/2+half+24)+'px';}
+  else if(rightPos+300<=window.innerWidth-12){lg.style.left='auto';lg.style.right=rightPos+'px';}
+  else{lg.remove();return;} // на вузькому екрані (iPad вертикально) місця для історії немає
   if(isNew){
     setTimeout(()=>{if(_focusId!==null)lg.classList.add('on');},animate?350:20);
   }
@@ -3762,6 +3771,7 @@ let _micActive=false;
 let _micInputId=null;
 let _micBtnId=null;
 let _micTimer=null; // страховка: мікрофон сам вимикається
+let _micFinish=null;
 let _micSuppressAutoSave=false; // true when user interacted with select — don't auto-submit
 
 function toggleMic(inputId, btnId){
@@ -3793,34 +3803,42 @@ function toggleMic(inputId, btnId){
   if(selEl) selEl.addEventListener('mousedown',_onSelectFocus,{once:true});
   if(selEl) selEl.addEventListener('touchstart',_onSelectFocus,{once:true,passive:true});
 
-  _recognition.onresult=e=>{
+  const rec=_recognition;
+  let _done=false;
+  // Єдине місце, де мікрофон гарантовано вимикається (і потім, за потреби, зберігається замітка)
+  const finish=(autoSave)=>{
+    if(_done) return; _done=true;
+    clearTimeout(_micTimer);
+    if(_micFinish===finish) _micFinish=null;
+    rec.onresult=rec.onend=rec.onerror=null; // більше жодних подій від цієї сесії
+    try{rec.abort();}catch(e){}
+    try{rec.stop();}catch(e){}
+    if(_recognition===rec) _recognition=null;
+    _micActive=false;
+    if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
+    const suppressed=_micSuppressAutoSave; _micSuppressAutoSave=false;
+    if(!autoSave||suppressed) return;
+    const inp2=document.getElementById(_micInputId);
+    if(inp2&&inp2.value.trim()){
+      if(_micInputId==='noteAddInput') addGlobalNote();
+      else if(_micInputId==='mobileNoteInput') addMobileNote();
+      else if(_micInputId==='quickNoteInput') addQuickNote();
+    }
+  };
+  _micFinish=finish;
+  rec.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
       if(e.results[i].isFinal) final+=e.results[i][0].transcript;
       else interim+=e.results[i][0].transcript;
     }
     if(inp) inp.value=(final||interim).trim();
-    if(final){ try{_recognition.stop();}catch(e){} } // фраза закінчена — одразу відпускаємо мікрофон
+    if(final) finish(true); // фраза закінчена — одразу вимикаємо мікрофон і зберігаємо
   };
-  _recognition.onend=()=>{
-    clearTimeout(_micTimer);
-    _micActive=false;
-    if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
-    if(_micSuppressAutoSave){ _micSuppressAutoSave=false; return; }
-    // Auto-save only if text present and user didn't interact with select
-    const inp=document.getElementById(_micInputId);
-    if(inp&&inp.value.trim()){
-      if(_micInputId==='noteAddInput') addGlobalNote();
-      else if(_micInputId==='mobileNoteInput') addMobileNote();
-      else if(_micInputId==='quickNoteInput') addQuickNote();
-    }
-  };
-  _recognition.onerror=e=>{
-    clearTimeout(_micTimer);
-    _micActive=false;
-    if(btn){btn.textContent='\uD83C\uDFA4';btn.style.color='';}
-    _micSuppressAutoSave=false;
+  rec.onend=()=>finish(true);
+  rec.onerror=e=>{
     if(e.error!=='no-speech') console.error('Speech error:',e.error);
+    finish(false);
   };
   _recognition.start();
   clearTimeout(_micTimer);
@@ -3831,8 +3849,10 @@ function toggleMic(inputId, btnId){
 function stopMic(silent){
   clearTimeout(_micTimer);
   if(silent) _micSuppressAutoSave=true;
-  if(_recognition){ try{_recognition.abort();}catch(e){} try{_recognition.stop();}catch(e){} }
+  if(_micFinish){ const f=_micFinish; _micFinish=null; f(false); }
+  else if(_recognition){ try{_recognition.abort();}catch(e){} try{_recognition.stop();}catch(e){} _recognition=null; }
   _micActive=false;
+  _micSuppressAutoSave=false;
   const btn=document.getElementById(_micBtnId);
   if(btn){btn.textContent='🎤';btn.style.color='';}
 }
