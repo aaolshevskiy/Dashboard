@@ -3249,7 +3249,8 @@ function showSides(animate){
   const room=cx-half-gap-edge;           // вільне місце з кожного боку від картки
   const w=Math.min(620,Math.floor(room));
   const ok=w>=260;                        // на вузькому екрані бокових панелей немає
-  const hasP=ok&&!!o.projectUrl,hasF=ok&&!!o.photosUrl;
+  const authed=!!(_isEditor||_isUser); // без входу (режим перегляду) панелей проєкту й фото немає
+  const hasP=ok&&authed&&!!o.projectUrl,hasF=ok&&authed&&!!o.photosUrl;
   if(hasP)_focusSide('focusSideL','l','Проєкт',o.projectUrl,'project',Math.round(cx-half-gap-w),w,animate);
   else{const e=document.getElementById('focusSideL');if(e)e.remove();}
   if(hasF)_focusSide('focusSideR','r','Фото',o.photosUrl,'photos',Math.round(cx+half+gap),w,animate);
