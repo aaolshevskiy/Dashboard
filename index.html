@@ -3151,7 +3151,7 @@ async function loadProgress(){
         if(wrap) wrap.textContent=val;
         // Update progress flags
         updateProgressFlags(o);
-        if(_focusId!==null&&String(o.id)===_focusId) showLegend(false);
+        if(_focusId!==null&&String(o.id)===_focusId) showSides(false);
       }catch(e){
         console.error('[progress] error for',o.name,e);
       }
@@ -3254,27 +3254,6 @@ function showSides(animate){
   else{const e=document.getElementById('focusSideL');if(e)e.remove();}
   if(hasF)_focusSide('focusSideR','r','Фото',o.photosUrl,'photos',Math.round(cx+half+gap),w,animate);
   else{const e=document.getElementById('focusSideR');if(e)e.remove();}
-  // історія заміток — праворуч, лише якщо там немає фото
-  if(hasF){const lg=document.getElementById('focusLegend');if(lg)lg.remove();}
-  else showLegend(animate,hasP);
-}
-function showLegend(animate,forceRight){
-  if(!_isEditor)return; // історія заміток — лише для редактора
-  const o=objects.find(x=>String(x.id)===String(_focusId));
-  if(!o)return;
-  let lg=document.getElementById('focusLegend');
-  const isNew=!lg;
-  if(!lg){lg=document.createElement('div');lg.id='focusLegend';lg.className='focus-legend';document.body.appendChild(lg);}
-  lg.innerHTML=buildHistoryHtml(o);
-  const half=_focusW*_focusS/2;
-  const leftPos=window.innerWidth/2+half+24;
-  const rightPos=window.innerWidth/2+half+24;
-  if(leftPos+300<=window.innerWidth-12){lg.style.left=leftPos+'px';lg.style.right='auto';}
-  else if(!forceRight&&rightPos+300<=window.innerWidth-12){lg.style.left='auto';lg.style.right=rightPos+'px';}
-  else{lg.remove();return;} // на вузькому екрані (iPad вертикально) місця для історії немає
-  if(isNew){
-    setTimeout(()=>{if(_focusId!==null)lg.classList.add('on');},animate?350:20);
-  }
 }
 function enterFocus(card,animate){
   if(!card)return;
@@ -3312,8 +3291,6 @@ function exitFocus(animate){
   const card=document.querySelector('.obj-card.focused');
   const ph=document.querySelector('.focus-ph');
   const ov=document.getElementById('focusOverlay');
-  const lg=document.getElementById('focusLegend');
-  if(lg){lg.classList.remove('on');setTimeout(()=>lg.remove(),300);}
   ['focusSideL','focusSideR'].forEach(id=>{const e=document.getElementById(id);if(e){e.classList.remove('on');setTimeout(()=>e.remove(),400);}});
   if(ov)ov.classList.remove('on');
   document.body.classList.remove('focus-open');
