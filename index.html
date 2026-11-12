@@ -3173,11 +3173,11 @@ function _clRing(done,total){
   const R=7.5,C=9,N=Math.max(total,0),D=Math.min(Math.max(done,0),N);
   let g='';
   if(N>0&&D>0){
-    if(D>=N) g='<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="#34c759"/>';
+    if(D>=N) g='<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="#8fcf9f"/>';
     else for(let i=0;i<D;i++){
       const a0=-Math.PI/2+i*2*Math.PI/N,a1=-Math.PI/2+(i+1)*2*Math.PI/N;
       const x0=C+R*Math.cos(a0),y0=C+R*Math.sin(a0),x1=C+R*Math.cos(a1),y1=C+R*Math.sin(a1);
-      g+='<path d="M'+C+' '+C+'L'+x0.toFixed(2)+' '+y0.toFixed(2)+'A'+R+' '+R+' 0 0 1 '+x1.toFixed(2)+' '+y1.toFixed(2)+'Z" fill="#34c759"/>';
+      g+='<path d="M'+C+' '+C+'L'+x0.toFixed(2)+' '+y0.toFixed(2)+'A'+R+' '+R+' 0 0 1 '+x1.toFixed(2)+' '+y1.toFixed(2)+'Z" fill="#8fcf9f"/>';
     }
   }
   let sep='';
@@ -3186,8 +3186,8 @@ function _clRing(done,total){
     sep+='<line x1="'+C+'" y1="'+C+'" x2="'+(C+R*Math.cos(a)).toFixed(2)+'" y2="'+(C+R*Math.sin(a)).toFixed(2)+'"/>';
   }
   return '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true">'+g
-    +'<g stroke="currentColor" stroke-width=".7" opacity=".35">'+sep+'</g>'
-    +'<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="none" stroke="#1c1c1e" stroke-width="1.3"/></svg>';
+    +'<g stroke="currentColor" stroke-width=".6" opacity=".25">'+sep+'</g>'
+    +'<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="none" stroke="#c4c4c9" stroke-width="1"/></svg>';
 }
 function _esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
