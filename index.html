@@ -697,6 +697,29 @@ body.focus-open{overflow:hidden;}
   transition:opacity .28s ease,transform .28s ease;pointer-events:none;
 }
 .focus-legend.on{opacity:1;transform:translateY(-50%);pointer-events:auto;}
+.focus-side{
+  position:fixed;top:50%;z-index:96;height:88vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-modal);
+  opacity:0;transition:opacity .35s ease,transform .45s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+}
+.focus-side.l{transform:translateY(-50%) translateX(-26px);}
+.focus-side.r{transform:translateY(-50%) translateX(26px);}
+.focus-side.on{opacity:1;transform:translateY(-50%);pointer-events:auto;}
+.fs-head{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 14px;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;
+}
+.fs-head a{font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;text-transform:none;letter-spacing:0;white-space:nowrap;}
+.fs-body{flex:1 1 auto;position:relative;min-height:0;background:var(--surface2);}
+.fs-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;}
+.fs-note{
+  position:absolute;left:0;right:0;bottom:0;padding:7px 12px;font-size:11px;color:var(--text4);
+  background:linear-gradient(transparent,var(--surface2) 40%);pointer-events:none;text-align:center;
+}
 .fl-title{
   font-size:11px;font-weight:600;color:var(--text3);
   text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;
@@ -3186,7 +3209,56 @@ function buildHistoryHtml(o){
   });
   return html;
 }
-function showLegend(animate){
+// Посилання → адреса, яку можна показати всередині сторінки (Google Drive / Docs). Інші — як є.
+function _embedUrl(u,kind){
+  u=String(u||'').trim();if(!u)return '';
+  let m;
+  if((m=u.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]+)/)))
+    return 'https://drive.google.com/embeddedfolderview?id='+m[1]+(kind==='photos'?'#grid':'#list');
+  if((m=u.match(/drive\.google\.com\/file\/d\/([\w-]+)/)))
+    return 'https://drive.google.com/file/d/'+m[1]+'/preview';
+  if((m=u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/)))
+    return kind==='photos'?'https://drive.google.com/embeddedfolderview?id='+m[1]+'#grid':'https://drive.google.com/file/d/'+m[1]+'/preview';
+  if((m=u.match(/docs\.google\.com\/(document|spreadsheets)\/d\/([\w-]+)/)))
+    return 'https://docs.google.com/'+m[1]+'/d/'+m[2]+'/preview';
+  if((m=u.match(/docs\.google\.com\/presentation\/d\/([\w-]+)/)))
+    return 'https://docs.google.com/presentation/d/'+m[1]+'/embed';
+  return u;
+}
+function _focusSide(id,cls,title,url,kind,left,w,animate){
+  let el=document.getElementById(id);
+  const src=_embedUrl(url,kind);
+  if(el&&el.dataset.src!==src){el.remove();el=null;}
+  if(!el){
+    el=document.createElement('div');el.id=id;el.className='focus-side '+cls;el.dataset.src=src;
+    el.innerHTML='<div class="fs-head"><span></span><a target="_blank" rel="noopener">Відкрити ↗</a></div>'
+      +'<div class="fs-body"><iframe loading="lazy" allow="fullscreen" referrerpolicy="no-referrer"></iframe>'
+      +'<div class="fs-note">Не показується? Натисніть «Відкрити ↗»</div></div>';
+    el.querySelector('.fs-head span').textContent=title;
+    el.querySelector('.fs-head a').href=url;
+    el.querySelector('iframe').src=src;
+    document.body.appendChild(el);
+    setTimeout(()=>{if(_focusId!==null&&el.isConnected)el.classList.add('on');},animate?350:20);
+  }
+  el.style.left=left+'px';el.style.width=w+'px';
+}
+function showSides(animate){
+  const o=objects.find(x=>String(x.id)===String(_focusId));
+  if(!o)return;
+  const half=_focusW*_focusS/2,cx=document.documentElement.clientWidth/2,gap=22,edge=14;
+  const room=cx-half-gap-edge;           // вільне місце з кожного боку від картки
+  const w=Math.min(620,Math.floor(room));
+  const ok=w>=260;                        // на вузькому екрані бокових панелей немає
+  const hasP=ok&&!!o.projectUrl,hasF=ok&&!!o.photosUrl;
+  if(hasP)_focusSide('focusSideL','l','Проєкт',o.projectUrl,'project',Math.round(cx-half-gap-w),w,animate);
+  else{const e=document.getElementById('focusSideL');if(e)e.remove();}
+  if(hasF)_focusSide('focusSideR','r','Фото',o.photosUrl,'photos',Math.round(cx+half+gap),w,animate);
+  else{const e=document.getElementById('focusSideR');if(e)e.remove();}
+  // історія заміток — праворуч, лише якщо там немає фото
+  if(hasF){const lg=document.getElementById('focusLegend');if(lg)lg.remove();}
+  else showLegend(animate,hasP);
+}
+function showLegend(animate,forceRight){
   if(!_isEditor)return; // історія заміток — лише для редактора
   const o=objects.find(x=>String(x.id)===String(_focusId));
   if(!o)return;
@@ -3198,7 +3270,7 @@ function showLegend(animate){
   const leftPos=window.innerWidth/2+half+24;
   const rightPos=window.innerWidth/2+half+24;
   if(leftPos+300<=window.innerWidth-12){lg.style.left=leftPos+'px';lg.style.right='auto';}
-  else if(rightPos+300<=window.innerWidth-12){lg.style.left='auto';lg.style.right=rightPos+'px';}
+  else if(!forceRight&&rightPos+300<=window.innerWidth-12){lg.style.left='auto';lg.style.right=rightPos+'px';}
   else{lg.remove();return;} // на вузькому екрані (iPad вертикально) місця для історії немає
   if(isNew){
     setTimeout(()=>{if(_focusId!==null)lg.classList.add('on');},animate?350:20);
@@ -3231,7 +3303,7 @@ function enterFocus(card,animate){
     st.transition='none';st.top='50%';st.left='50%';st.transform=centered;
     ov.classList.add('on');
   }
-  showLegend(animate);
+  showSides(animate);
 }
 function exitFocus(animate){
   if(animate===undefined)animate=true;
@@ -3242,6 +3314,7 @@ function exitFocus(animate){
   const ov=document.getElementById('focusOverlay');
   const lg=document.getElementById('focusLegend');
   if(lg){lg.classList.remove('on');setTimeout(()=>lg.remove(),300);}
+  ['focusSideL','focusSideR'].forEach(id=>{const e=document.getElementById(id);if(e){e.classList.remove('on');setTimeout(()=>e.remove(),400);}});
   if(ov)ov.classList.remove('on');
   document.body.classList.remove('focus-open');
   const cleanup=()=>{
@@ -3272,7 +3345,7 @@ function toggleFocus(card,id){
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&_focusId!==null&&!document.querySelector('.overlay.open')) exitFocus();
 });
-window.addEventListener('resize',()=>{ if(_focusId!==null&&!focusAvail()) exitFocus(false); });
+window.addEventListener('resize',()=>{ if(_focusId!==null&&!focusAvail()) exitFocus(false); else if(_focusId!==null) showSides(false); });
 
 
 // ── ЗАКУПИ: макет (картки «лягають» в ряди, над ними — стоси задач) ──
