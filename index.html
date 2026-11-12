@@ -1990,10 +1990,10 @@ function buildCard(o,i){
 
     const prog=document.createElement('span');
     prog.className='card-checklist-progress';
-    prog.textContent=doneCount+'/'+total;
-    if(doneCount===total&&total>0) prog.style.color='var(--green)';
+    prog.innerHTML=_clRing(doneCount,total);
+    prog.style.display='inline-flex';
+    toggle.setAttribute('aria-label','Чек-лист');
 
-    toggle.appendChild(arrow);
     toggle.appendChild(prog);
 
     const body=document.createElement('div');
@@ -2016,8 +2016,7 @@ function buildCard(o,i){
 
       const updateProgress=()=>{
         const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
-        prog.textContent=newDone+'/'+total;
-        prog.style.color=(newDone===total&&total>0)?'var(--green)':'';
+        prog.innerHTML=_clRing(newDone,total);
       };
 
       cb.onchange=()=>{
@@ -2056,7 +2055,7 @@ function buildCard(o,i){
   if(o.projectUrl||o.linkFolder||o.photosUrl||o.bitrix||o.furniture||o.moneyUrl||o.ofertaUrl){
     const linksRow=document.createElement('div');
     linksRow.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;margin-bottom:1px';
-    // Порядок: Проєкт → Диск → Bitrix → Oferta → Zakup → Money → Меблі
+    // Порядок: Проєкт → Диск → Bitrix → Oferta → Zakup → Money → Фото → Меблі
     if(o.projectUrl){
       const pr=document.createElement('a');pr.href=o.projectUrl;pr.target='_blank';pr.rel='noopener';pr.title='Проєкт';
       pr.style.cssText=linkStyle;pr.onclick=e=>e.stopPropagation();
@@ -2068,12 +2067,6 @@ function buildCard(o,i){
       gd.style.cssText=linkStyle;gd.onclick=e=>e.stopPropagation();
       gd.innerHTML='<svg viewBox="0 0 87.3 78" width="12" height="12"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>Диск';
       linksRow.appendChild(gd);
-    }
-    if(o.photosUrl){
-      const ph=document.createElement('a');ph.href=o.photosUrl;ph.target='_blank';ph.rel='noopener';ph.title='Фото об\'єкта';
-      ph.style.cssText=linkStyle;ph.onclick=e=>e.stopPropagation();
-      ph.innerHTML='📷 Фото';
-      linksRow.appendChild(ph);
     }
     if(o.bitrix){
       const bx=document.createElement('a');bx.href=o.bitrix;bx.target='_blank';bx.title='Bitrix';
@@ -2098,6 +2091,12 @@ function buildCard(o,i){
       mn.style.cssText=linkStyle;mn.onclick=e=>e.stopPropagation();
       mn.innerHTML='💰 Money';
       linksRow.appendChild(mn);
+    }
+    if(o.photosUrl){
+      const ph=document.createElement('a');ph.href=o.photosUrl;ph.target='_blank';ph.rel='noopener';ph.title='Фото об\'єкта';
+      ph.style.cssText=linkStyle;ph.onclick=e=>e.stopPropagation();
+      ph.innerHTML='📷 Фото';
+      linksRow.appendChild(ph);
     }
     if(o.furniture){
       const fw=document.createElement('a');fw.href=o.furniture;fw.target='_blank';fw.title='Меблева угода';
@@ -2199,7 +2198,7 @@ function buildCard(o,i){
       const dates=document.createElement('span');
       dates.className='obj-card-dates';
       dates.style.cssText='display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;margin-top:0';
-      dates.innerHTML=(ds?'<span style="color:#888;font-size:10px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
+      dates.innerHTML=(ds||'')+(ds&&de?' <span style="opacity:.45">→</span> ':'')+(de||'');
       row.appendChild(dates);
     }
     card.appendChild(row);
@@ -3168,6 +3167,27 @@ const FOCUS_SCALE=1.2;
 function focusAvail(){
   // комп'ютер і планшет (iPad); телефони — ні
   return window.matchMedia('(min-width:700px) and (min-height:560px)').matches;
+}
+// Кружечок чек-листа: стільки часток, скільки пунктів; виконані зафарбовані зеленим
+function _clRing(done,total){
+  const R=7.5,C=9,N=Math.max(total,0),D=Math.min(Math.max(done,0),N);
+  let g='';
+  if(N>0&&D>0){
+    if(D>=N) g='<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="#34c759"/>';
+    else for(let i=0;i<D;i++){
+      const a0=-Math.PI/2+i*2*Math.PI/N,a1=-Math.PI/2+(i+1)*2*Math.PI/N;
+      const x0=C+R*Math.cos(a0),y0=C+R*Math.sin(a0),x1=C+R*Math.cos(a1),y1=C+R*Math.sin(a1);
+      g+='<path d="M'+C+' '+C+'L'+x0.toFixed(2)+' '+y0.toFixed(2)+'A'+R+' '+R+' 0 0 1 '+x1.toFixed(2)+' '+y1.toFixed(2)+'Z" fill="#34c759"/>';
+    }
+  }
+  let sep='';
+  if(N>1&&N<=40) for(let i=0;i<N;i++){
+    const a=-Math.PI/2+i*2*Math.PI/N;
+    sep+='<line x1="'+C+'" y1="'+C+'" x2="'+(C+R*Math.cos(a)).toFixed(2)+'" y2="'+(C+R*Math.sin(a)).toFixed(2)+'"/>';
+  }
+  return '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true">'+g
+    +'<g stroke="currentColor" stroke-width=".7" opacity=".35">'+sep+'</g>'
+    +'<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="none" stroke="#1c1c1e" stroke-width="1.3"/></svg>';
 }
 function _esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
