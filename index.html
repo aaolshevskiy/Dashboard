@@ -1731,8 +1731,25 @@ async function watchRefresh(){
   window.addEventListener('focus',()=>setTimeout(watchRefresh,600));
 })();
 // Підсвічування картки: червоне — мало коштів АБО час платежу; синє — час переміщати канбан (поки не «закрито» в налаштуваннях картки)
-// Три етапи канбану: 1–29 %, 30–90 %, 91 % і вище (кожен підсвічується окремо, доки його не «виконано»)
-function _kanbanKey(n){return n>=91?'kanban3':n>=30?'kanban2':n>=1?'kanban1':null;}
+// Три етапи канбану: 1–29 %, 30–89 %, 90 % і вище (кожен підсвічується окремо, доки його не «виконано»)
+function _kanbanKey(n){return n>=90?'kanban3':n>=30?'kanban2':n>=1?'kanban1':null;}
+// Пороги канбану: 1 %, 30 %, 90 %. Коли прогрес ВПЕРШЕ доходить до нового (вищого) порога —
+// стара галочка «виконано» для цього етапу скидається, і картка знову підсвічується.
+function _kanbanSync(o){
+  if(!_isEditor||!o)return false;
+  const pv=o._progressValue,num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
+  const key=isNaN(num)?null:_kanbanKey(num);
+  if(!key)return false;
+  const rank=k=>({kanban1:1,kanban2:2,kanban3:3}[k]||0);
+  const cl=o._closedFlags=(o._closedFlags&&typeof o._closedFlags==='object')?o._closedFlags:{};
+  const prev=cl._kstage;
+  if(prev===key)return false;
+  if(prev&&rank(key)>rank(prev)) cl[key]=false;   // перейшли на вищий етап — знову світимось
+  cl._kstage=key;
+  try{_closedFlagsCache[o.id]=cl;saveClosedFlagsCache();}catch{}
+  apiSaveQueued(o).catch(e=>console.warn('[kanban] save failed',e));
+  return true;
+}
 function _glowKind(o){
   if(!o||o.closed||isOwnCard(o))return '';
   if(_watchLow(o))return 'red';
@@ -3140,6 +3157,7 @@ async function loadProgress(){
         else{val=Math.round(num)+'%';}
         // Cache in object so next render shows it immediately
         o._progressValue=val;
+        _kanbanSync(o);
         // Persist to localStorage and in-memory cache so value survives page reload and re-render
         try{
           _progressCache[o.id]=val;
