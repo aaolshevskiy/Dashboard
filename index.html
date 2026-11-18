@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+<script>try{if(!localStorage.getItem('crm_edit_key'))document.documentElement.classList.add('locked');}catch(e){document.documentElement.classList.add('locked');}</script>
+<style>
+/* Без входу — лише вікно пароля, більше нічого */
+#loginGate{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:20px;background:var(--bg,#f2f2f7)}
+html.locked #loginGate{display:flex}
+html.locked body>*:not(#loginGate){display:none!important}
+#loginGate .lg-box{width:min(300px,100%);display:flex;flex-direction:column;align-items:stretch;gap:22px}
+#loginGate input{width:100%;box-sizing:border-box;font-family:inherit;font-size:19px;font-weight:500;letter-spacing:.02em;padding:10px 4px 12px;border:0;border-bottom:1.5px solid rgba(128,128,128,.35);border-radius:0;outline:none;background:transparent;color:var(--text,#111);text-align:center;transition:border-color .2s}
+#loginGate input::placeholder{color:rgba(128,128,128,.7);font-weight:400;letter-spacing:0}
+#loginGate input:focus{border-bottom-color:var(--text,#111)}
+#loginGate button{font-family:inherit;font-size:15px;font-weight:600;border:0;border-radius:999px;padding:13px 0;background:var(--text,#111);color:var(--bg,#fff);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .15s,transform .1s}
+#loginGate button:active{transform:scale(.98)}
+#loginGate button:disabled{opacity:.4}
+#loginGate .lg-err{min-height:16px;margin-top:-10px;text-align:center;font-size:13px;color:var(--red,#ff3b30)}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -891,6 +906,11 @@ body.readonly .card-checklist-body { display: none !important; }
 </style>
 </head>
 <body>
+<div id="loginGate"><div class="lg-box">
+  <input id="gatePass" type="password" placeholder="Введи свій пароль" autocomplete="current-password" autocapitalize="off" autocorrect="off" enterkeyhint="go">
+  <div class="lg-err" id="gateErr"></div>
+  <button id="gateOk" type="button">Увійти</button>
+</div></div>
 <div class="board">
 <div class="board-inner">
 
@@ -1167,6 +1187,35 @@ function _applyAccessState(triggerRender){
   const b=document.getElementById('authBtn');
   if(b)b.textContent=_isEditor?'Вийти':(_isUser?('Вийти'+(_meName?' · '+_meName:'')):'🔒 Увійти');
   if(triggerRender){ render(); renderNotes(); renderOverdueZone(); }
+}
+// ── Без входу: жодних даних — ні з сервера, ні з пам'яті пристрою ──
+const _LOCKED=!_editKey;
+if(_LOCKED){
+  try{['crm_snapshot_v3','crm_cl_items','crm_cl_checks','crm_history','crm_closed_flags','crm_progress_v2','crm_project_urls','crm_pv_tasks','crm_watch_v2','crm_card_order','crm_me_name','crm_own_dup_backup','crm_offline_queue'].forEach(k=>localStorage.removeItem(k));}catch{}
+  const _of=window.fetch;
+  window.fetch=function(url,opts){
+    if(url===API_URL){
+      let a='';try{a=JSON.parse(opts&&opts.body||'{}').action;}catch{}
+      if(a!=='auth')return Promise.reject(new Error('locked'));
+    }
+    return _of(url,opts);
+  };
+  window.addEventListener('DOMContentLoaded',()=>{
+    const inp=document.getElementById('gatePass'),ok=document.getElementById('gateOk'),err=document.getElementById('gateErr');
+    if(!inp)return;
+    const go=async()=>{
+      const v=inp.value;if(!v)return;
+      ok.disabled=true;err.style.color='';err.textContent='';
+      try{
+        const d=await _checkKey(v);
+        if(d){try{localStorage.setItem(KEY_LS,v);localStorage.setItem(ROLE_LS,d.role||'owner');if(d.name)localStorage.setItem('crm_me_name',d.name);}catch{}location.reload();return;}
+        err.textContent='Невірний пароль';inp.select();
+      }catch(e){err.textContent='Не вдалося перевірити. Перевірте інтернет.';}
+      ok.disabled=false;
+    };
+    ok.onclick=go;inp.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    setTimeout(()=>inp.focus(),80);
+  });
 }
 async function _checkKey(key){
   const r=await _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:key}),redirect:'follow'});
@@ -1489,6 +1538,7 @@ function saveSnapshot(){
   }catch(e){console.warn('[Snapshot] save failed',e);}
 }
 function loadSnapshot(){
+  if(_LOCKED)return false;
   try{
     const raw=localStorage.getItem(SNAPSHOT_KEY);
     if(!raw)return false;
@@ -3957,7 +4007,7 @@ _applyAccessState(false); // знімає readonly одразу
 if(_editKey){
   _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'auth',key:_editKey}),redirect:'follow'})
     .then(r=>r.json()).then(d=>{
-      if(d&&d.ok===false){try{localStorage.removeItem(KEY_LS);localStorage.removeItem(ROLE_LS);}catch{}_editKey='';_isEditor=false;_isUser=false;_applyAccessState(true);}
+      if(d&&d.ok===false){try{localStorage.removeItem(KEY_LS);localStorage.removeItem(ROLE_LS);}catch{}location.reload();}
       else if(d&&d.ok&&d.role&&d.role!==(_isUser?'user':'owner')){try{localStorage.setItem(ROLE_LS,d.role);}catch{}location.reload();} // роль змінилась
     }).catch(()=>{});
 }
