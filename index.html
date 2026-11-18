@@ -784,6 +784,7 @@ body.purch-mode{padding-bottom:12px;}
 .pv-label.clickable{cursor:pointer;}
 .pv-label-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pv-more{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:#d70015;background:rgba(255,59,48,.14);border-radius:10px;padding:0 6px;}
+.pv-more.g{color:#1f8a3b;background:rgba(52,199,89,.2);}
 .pv-badge-ord{display:none;flex-shrink:0;font-size:11px;font-weight:700;color:#1f8a3b;background:rgba(52,199,89,.2);border-radius:10px;padding:0 6px;}
 .pv-panel .pv-more{display:inline-block;color:var(--blue);background:var(--blue-bg);}
 .pv-label.clickable .pv-more{display:inline-block;}
@@ -3394,8 +3395,9 @@ function pvFillCell(cell,i,cols,res){
   const box=cell.querySelector('.pv-tasks');
   const lab=box.querySelector('.pv-label');
   const late=!!(_pvView&&_pvView.classList.contains('in'));
-  const _S=pvSorted(res);
-  const list=_S.map(x=>x.t),dates=_S.map(x=>x.d),ords=_S.map(x=>x.o);
+  // Спершу червоні (необроблені), за ними зелені (замовлені/оброблені); якщо червоних немає — одразу зелені
+  const _S=pvSorted(res),_G=(res&&(res.state==='ok'||res.state==='none'))?pvOrdSorted(res):[];
+  const list=_S.map(x=>x.t).concat(_G.map(x=>x.t)),dates=_S.map(x=>x.d).concat(_G.map(x=>x.d)),ords=_S.map(x=>x.o).concat(_G.map(()=>true));
   const shown=list.slice(0,PV_MAX);
   const extra=list.length-shown.length;
   const more=box.querySelector('.pv-more');
@@ -3403,6 +3405,7 @@ function pvFillCell(cell,i,cols,res){
     lab.classList.toggle('clickable',list.length>0||((res&&res.ord)||[]).length>0);
     more.textContent='+'+Math.max(0,list.length-PV_MAX);
     more.style.display=list.length>PV_MAX?'inline-block':'none';
+    more.classList.toggle('g',list.length>PV_MAX&&_S.length<=PV_MAX); // приховані лише зелені — бейдж зелений
     const ordB=lab.querySelector('.pv-badge-ord'),ordN=((res&&res.ord)||[]).length;
     if(ordB){ordB.textContent='+'+ordN;ordB.style.display=ordN>0?'inline-block':'none';}
   }
@@ -3491,6 +3494,11 @@ function pvStatusStart(n){
   if(n>0)pvSetStatus('syncing','закупи: завантаження…');else pvSetStatus('','');
 }
 // Порядок задач: спершу червоні (від найстаріших/яскравіших до легких), потім зелені (замовлені), потім білі
+// Замовлені (зелені) заявки: найстаріші зверху
+function pvOrdSorted(res){
+  const oT=(res&&res.ord)||[],oD=(res&&res.ordDates)||[];
+  return oT.map((t,i)=>{const dd=pvDays(oD[i]||'');return {t:t,d:oD[i]||'',days:dd==null?-1:dd,i:i};}).sort((a,b)=>b.days-a.days||a.i-b.i);
+}
 function pvSorted(res){
   const tasks=(res&&res.state==='ok'&&res.tasks)?res.tasks:[];
   const dates=(res&&res.dates)||[],ords=(res&&res.ordered)||[];
@@ -3538,8 +3546,7 @@ function pvBuildPanel(){
   // дві категорії: «Не оброблено» (без статусу) і «Замовлено» (статус Zamowione, ще не доставлено)
   const S=pvSorted(res);
   const todo={key:'todo',cap:'Не оброблено',list:S.map(x=>x.t),dates:S.map(x=>x.d)};
-  const oT=(res&&res.ord)||[],oD=(res&&res.ordDates)||[];
-  const oS=oT.map((t,i)=>({t:t,d:oD[i]||'',days:(pvDays(oD[i]||'')==null?-1:pvDays(oD[i]||'')),i:i})).sort((a,b)=>b.days-a.days||a.i-b.i);
+  const oS=pvOrdSorted(res);
   const ord={key:'ord',cap:'Замовлено, але не доставлено',list:oS.map(x=>x.t),dates:oS.map(x=>x.d)};
   const groups=[todo,ord].filter(g=>g.list.length);
   if(!groups.length){pvClosePanel();return;}
