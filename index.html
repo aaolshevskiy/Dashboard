@@ -257,6 +257,24 @@ body{
 }
 .obj-note-text:hover{color:var(--blue);}
 .obj-note-text.overdue{color:var(--red);}
+/* 🔥 Гаряча замітка: легке червоне світіння й язичок полум'я, що ворушиться */
+.obj-note-row.hot,.note-item.hot{
+  border-radius:8px;margin-left:-6px;margin-right:-6px;padding:2px 6px;
+  background:linear-gradient(90deg,rgba(255,59,48,.10),rgba(255,149,0,.05));
+  animation:hotGlow 2.6s ease-in-out infinite;
+}
+@keyframes hotGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,69,0,0);background-color:rgba(255,59,48,.03);}
+  50%{box-shadow:0 0 9px 1px rgba(255,69,0,.26);background-color:rgba(255,59,48,.09);}
+}
+.flame{display:inline-flex;flex-shrink:0;width:13px;height:15px;margin-top:2px;transform-origin:50% 90%;animation:flameFlicker 1.1s ease-in-out infinite;}
+.flame svg{width:100%;height:100%;display:block;}
+@keyframes flameFlicker{
+  0%,100%{transform:scale(1,1) rotate(-2deg);}
+  30%{transform:scale(.94,1.1) rotate(2deg);}
+  60%{transform:scale(1.04,.96) rotate(-1deg);}
+}
+@media (prefers-reduced-motion:reduce){.obj-note-row.hot,.note-item.hot,.flame{animation:none;}}
 .obj-note-time{font-size:11px;color:var(--text4);}
 .obj-note-time.has-rem{color:var(--green);}
 .obj-note-del{
@@ -1089,6 +1107,9 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row" id="nm-obj-row" style="display:none">
         <label>Об'єкт</label>
         <select id="nm-obj-select"></select>
+      </div>
+      <div class="form-row" id="nm-hot-row" style="display:none"><label>Гаряча</label>
+        <button type="button" id="nm-hot-btn" aria-pressed="false" title="Гаряча замітка" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text3);border-radius:999px;padding:5px 12px 5px 9px;cursor:pointer"><span style="width:16px;height:16px;display:inline-flex" id="nm-hot-ic"></span><span id="nm-hot-tx">звичайна</span></button>
       </div>
       <div class="form-row" id="nm-to-row" style="display:none;align-items:flex-start">
         <label style="padding-top:4px">Кому</label>
@@ -2278,7 +2299,8 @@ function buildCard(o,i){
     withIdx.sort((a,b)=>isNoteActive(b.n)-isNoteActive(a.n));
     withIdx.forEach(({n,origNi})=>{
       const active=isNoteActive(n);
-      const row=document.createElement('div');row.className='obj-note-row';
+      const row=document.createElement('div');row.className='obj-note-row'+(n.hot?' hot':'');
+      if(n.hot){const fl=document.createElement('span');fl.className='flame';fl.innerHTML=_flameSvg(true);row.appendChild(fl);}
       const txt=document.createElement('span');
       txt.className='obj-note-text'+(active?' overdue':'');
       txt.textContent='\u2013 '+n.text;
@@ -2680,6 +2702,7 @@ function openNoteModal(ctx){
     if(n.by)return; // нотатка від іншої людини — лише читати
     text=n.text||'';time=n.time||'';created=n.created||'';
     _fillNoteTo(objects[ri],n);
+    _setHot(!!n.hot,true);
   }
   document.getElementById('nm-created').textContent=fmtFull(created)||'невідомо';
   document.getElementById('nm-text').value=text;
@@ -2697,12 +2720,24 @@ function openNoteModal(ctx){
       const opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name+(o.addr?' ('+o.addr.split(',')[0]+')':'');objSel.appendChild(opt);
     });
   }else if(objRow){objRow.style.display='none';}
-  if(ctx.type==='sticky'){const tr=document.getElementById('nm-to-row');if(tr)tr.style.display='none';window._nmTo=null;}
+  if(ctx.type==='sticky'){const tr=document.getElementById('nm-to-row');if(tr)tr.style.display='none';window._nmTo=null;_setHot(false,false);}
   document.getElementById('noteModal').classList.add('open');
   setTimeout(()=>document.getElementById('nm-text').focus(),50);
 }
 
 // «Кому»: вибір членів команди, яким ця нотатка теж буде видна (лише власник; лише ті, кому відкрита картка)
+function _setHot(on,show){
+  window._nmHot=!!on;
+  const row=document.getElementById('nm-hot-row'),b=document.getElementById('nm-hot-btn');
+  if(!row||!b)return;
+  row.style.display=show?'flex':'none';
+  document.getElementById('nm-hot-ic').innerHTML=_flameSvg(!!on);
+  document.getElementById('nm-hot-tx').textContent=on?'гаряча':'звичайна';
+  b.setAttribute('aria-pressed',on?'true':'false');
+  b.style.borderColor=on?'var(--red)':'var(--border)';
+  b.style.color=on?'var(--red)':'var(--text3)';
+  b.onclick=()=>_setHot(!window._nmHot,true);
+}
 function _fillNoteTo(o,n){
   const row=document.getElementById('nm-to-row'),box=document.getElementById('nm-to-list');
   if(!row||!box)return;
@@ -2758,6 +2793,7 @@ async function saveNoteModal(){
     if(ri<0)return;
     objects[ri].notes[noteCtx.ni].text=text;
     objects[ri].notes[noteCtx.ni].time=time;
+    if(window._nmHot) objects[ri].notes[noteCtx.ni].hot=true; else delete objects[ri].notes[noteCtx.ni].hot;
     if(_isEditor&&window._nmTo){ // «Кому» змінюється лише коли блок показаний
       const nn=objects[ri].notes[noteCtx.ni],arr=[...window._nmTo];
       const before=JSON.stringify(Array.isArray(nn.to)?nn.to:[]);
@@ -3237,6 +3273,9 @@ function focusAvail(){
   return window.matchMedia('(min-width:700px) and (min-height:560px)').matches;
 }
 // Кружечок чек-листа: стільки часток, скільки пунктів; виконані зафарбовані зеленим
+function _flameSvg(on){
+  return '<svg viewBox="0 0 24 24" fill="'+(on?'#ff3b30':'none')+'" stroke="'+(on?'#ff3b30':'currentColor')+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
+}
 function _clRing(done,total){
   const R=7.5,C=9,N=Math.max(total,0),D=Math.min(Math.max(done,0),N);
   let g='';
