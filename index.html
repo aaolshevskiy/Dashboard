@@ -3264,7 +3264,7 @@ function _focusOverlay(){
 function enterFocus(card,animate){
   if(!card)return;
   const r=card.getBoundingClientRect();
-  const s=Math.max(.6,Math.min(FOCUS_SCALE,(window.innerHeight*.9)/r.height));
+  const s=FOCUS_SCALE; // однакове збільшення завжди; якщо замітки не влазять — картка скролиться
   _focusId=String(card.dataset.objid);_focusS=s;_focusW=r.width;
   const ph=document.createElement('div');
   ph.className='focus-ph';ph.style.height=r.height+'px';
@@ -3272,8 +3272,9 @@ function enterFocus(card,animate){
   card.draggable=false;
   card.classList.add('focused');
   const st=card.style;
-  st.position='fixed';st.margin='0';st.width=r.width+'px';st.minHeight=r.height+'px';
-  st.zIndex='95';st.maxHeight=Math.floor(window.innerHeight*.92/s)+'px';st.overflowY='auto';
+  const maxH=Math.floor(window.innerHeight*.92/s);   // скільки карточка може бути заввишки до масштабування
+  st.position='fixed';st.margin='0';st.width=r.width+'px';st.minHeight=Math.min(r.height,maxH)+'px';
+  st.zIndex='95';st.maxHeight=maxH+'px';st.overflowY='auto';
   const centered='translate(-50%,-50%) scale('+s+')';
   const ov=_focusOverlay();
   document.body.classList.add('focus-open');
