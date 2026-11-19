@@ -1536,6 +1536,7 @@ function loadSnapshot(){
   }catch(e){console.warn('[Snapshot] load failed',e);return false;}
 }
 
+let _emptyStrikes=0;
 async function apiGet(){
   setSyncStatus('syncing','завантаження...');
   try{
@@ -1543,6 +1544,15 @@ async function apiGet(){
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'getAllWithChecklist'}),redirect:'follow'});
     const text=await res.text();
     let payload;try{payload=JSON.parse(text);}catch{setNotUpdated();render();renderNotes();return;}
+    // Відповідь без списку об'єктів (помилка сервера, перевантаження, поганий зв'язок) — це НЕ «порожній дашборд»:
+    // лишаємо те, що вже є на екрані і в кеші, і просто пробуємо ще раз пізніше
+    const _okShape=Array.isArray(payload)||(payload&&typeof payload==='object'&&!payload.error&&Array.isArray(payload.objects));
+    if(!_okShape){setNotUpdated();console.warn('[apiGet] bad payload:',payload&&payload.error);return;}
+    const _rawN=(Array.isArray(payload)?payload:payload.objects).length;
+    if(_rawN===0&&objects.length>0&&_emptyStrikes<1){ // раптово порожньо — спершу перевіряємо ще раз
+      _emptyStrikes++;setNotUpdated();setTimeout(()=>{apiGet();},2000);return;
+    }
+    _emptyStrikes=0;
 
     // Спочатку обробляємо checklist і flags — щоб parseObj вже мав актуальний _closedFlagsCache
     if(payload&&payload.checklist){
@@ -1567,7 +1577,7 @@ async function apiGet(){
     }
     // Обробка об'єктів (після оновлення _closedFlagsCache — parseObj підхопить правильні прапорці)
     const rawObjects = Array.isArray(payload) ? payload : (payload.objects || []);
-    const st=[],ob=[];
+    const st=[];let ob=[];
     rawObjects.forEach(o=>{
       if(String(o.id)==='__checklist__') return; // службовий рядок — пропускаємо
       if(String(o.id)==='__flags__') return;     // старий службовий рядок — ігноруємо
@@ -1882,7 +1892,7 @@ function buildCard(o,i){
   const card=document.createElement('div');
   const isOwn=isOwnCard(o);
   const isClosed=!!o.closed&&!isOwn;
-  const hasOverdueNote=!isClosed&&Array.isArray(o.notes)&&o.notes.some(n=>isNoteActive(n));
+  const hasOverdueNote=!isClosed&&Array.isArray(o.notes)&&o.notes.some(n=>isNoteActive(n)||n.hot); // гаряча замітка теж фарбує картку, як протермінована
   const notInWork=!isClosed&&!o.inwork&&!o.completed&&!isOwn; // «Мої задачі» — завжди білий фон, як у реалізації
   card.className='obj-card'+(isOwn?' own-card':'')
     +(o.completed?' completed':'')
