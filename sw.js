@@ -7,7 +7,17 @@ const STATIC = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', '.
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => Promise.all(STATIC.map(u => c.add(u).catch(() => {}))))
+      .then(async c => {
+        await Promise.all(STATIC.map(u => c.add(u).catch(() => {})));
+        // Сторінка зберігається одразу при встановленні — перший же наступний запуск миттєвий
+        try {
+          const r = await fetch('./', { cache: 'reload' });
+          if (r && r.ok && !r.redirected) {
+            await c.put(new Request(new URL('./', self.registration.scope).href), r.clone());
+            if (!(await c.match(LAST_KEY))) await c.put(LAST_KEY, r.clone());
+          }
+        } catch (err) {}
+      })
       .then(() => self.skipWaiting())
   );
 });
