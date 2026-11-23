@@ -1455,6 +1455,7 @@ const _pendingSaveIds=new Set();
 
 // localStorage cache for closed flags {objId: {kanban:bool, payment:bool}}
 let _closedFlagsCache={};
+const _flagsLocalTs={}; // коли прапорці цієї картки востаннє змінено тут: сервер у цей час не перезаписує локальні
 try{_closedFlagsCache=JSON.parse(localStorage.getItem('crm_closed_flags')||'{}');}catch{}
 // localStorage cache for project URLs {objId: url}
 let _projectUrlCache={};
@@ -1486,7 +1487,10 @@ function parseObj(o){
   const _cfjHasData=_cfjRaw&&_cfjRaw!==''&&_cfjRaw!=='{}';
   let _serverFlags=null;
   if(_cfjRaw){try{_serverFlags=JSON.parse(_cfjRaw);}catch{}}
-  if(_serverFlags&&typeof _serverFlags==='object'&&!Array.isArray(_serverFlags)){
+  const _recentLocal=_flagsLocalTs[parsed.id||o.id]&&Date.now()-_flagsLocalTs[parsed.id||o.id]<60000&&_closedFlagsCache[parsed.id||o.id];
+  if(_recentLocal){
+    parsed._closedFlags=_closedFlagsCache[parsed.id||o.id];
+  } else if(_serverFlags&&typeof _serverFlags==='object'&&!Array.isArray(_serverFlags)){
     // Server value present — always authoritative (even {} means all open)
     parsed._closedFlags=_serverFlags;
     // Sync to local cache for offline use
@@ -1812,9 +1816,10 @@ function _kanbanSync(o){
   const rank=k=>({kanban1:1,kanban2:2,kanban3:3}[k]||0);
   const cl=o._closedFlags=(o._closedFlags&&typeof o._closedFlags==='object')?o._closedFlags:{};
   const prev=cl._kstage;
-  if(prev===key)return false;
-  if(prev&&rank(key)>rank(prev)) cl[key]=false;   // перейшли на вищий етап — знову світимось
+  if(prev&&rank(key)<=rank(prev))return false;    // етап лише зростає: тимчасовий «провал» прогресу не скидає закриття
+  if(prev) cl[key]=false;   // вперше дійшли до вищого етапу — знову світимось
   cl._kstage=key;
+  _flagsLocalTs[o.id]=Date.now();
   try{_closedFlagsCache[o.id]=cl;saveClosedFlagsCache();}catch{}
   apiSaveQueued(o).catch(e=>console.warn('[kanban] save failed',e));
   return true;
@@ -2973,6 +2978,7 @@ async function saveCard(){
     if(obj.id&&_progressCache[obj.id]) obj._progressValue=_progressCache[obj.id];
     // Save closed flags to cache
     if(obj.id&&obj._closedFlags){
+      _flagsLocalTs[obj.id]=Date.now();
       _closedFlagsCache[obj.id]=obj._closedFlags;
       saveClosedFlagsCache();
     }
@@ -3206,6 +3212,7 @@ function toggleFlag(o,key,label){
   if(ri>=0) objects[ri]._closedFlags=closed;
   // Зберігаємо в localStorage
   _closedFlagsCache[o.id]=closed;
+  _flagsLocalTs[o.id]=Date.now();
   saveClosedFlagsCache();
   // Зберігаємо на сервер — closedFlagsJson в полі об'єкта (надійна синхронізація між пристроями)
   const objToSave=ri>=0?objects[ri]:o;
