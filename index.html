@@ -244,6 +244,11 @@ body{
 .obj-card.completed{opacity:.5;}
 .obj-card.not-inwork{background:#f2f2f7;}
 .obj-card.has-overdue{background:#fff0ef;}
+.obj-furn{margin-top:8px;padding-top:7px;border-top:1px solid var(--border,rgba(128,128,128,.25));display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--text3,#6c6c70)}
+.obj-furn-lbl{font-weight:600;color:var(--text2,#3a3a3c)}
+.obj-furn-hint{opacity:.7}
+.obj-furn.due .obj-furn-date{color:var(--red,#ff3b30);font-weight:600}
+.obj-furn-money{margin-left:auto;font-weight:600;color:var(--red,#ff3b30);cursor:pointer}
 /* Число в «слідкуваній» клітинці менше 10 000 — рамка світиться червоним */
 .obj-card.glow-red{box-shadow:0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
 @keyframes glowRed{0%,100%{box-shadow:0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 24px 7px rgba(255,59,48,.75);}}
@@ -1013,6 +1018,7 @@ body.readonly .card-checklist-body { display: none !important; }
       <div class="form-row"><label>Фото</label><input id="f-photos-url" placeholder="Папка з фото: https://..." autocomplete="off"></div>
       <div class="form-row"><label>Bitrix</label><input id="f-bitrix" placeholder="https://bitrix24..." autocomplete="off"></div>
       <div class="form-row"><label>Меблі</label><input id="f-furniture" placeholder="https://..." autocomplete="off"></div>
+      <div class="form-row"><label>Монтаж меблів</label><input id="f-furn-date" type="date" autocomplete="off" style="max-width:170px"></div>
       <div class="form-row"><label>Oferta</label><input id="f-oferta-url" placeholder="https://..." autocomplete="off"></div>
       <div class="form-row"><label>Money</label><input id="f-money-url" placeholder="https://docs.google.com/spreadsheets/d/..." autocomplete="off"></div>
       <div class="form-row"><label>Закупівля</label><input id="f-ratyfikacja-url" placeholder="https://..." autocomplete="off"></div>
@@ -1039,6 +1045,9 @@ body.readonly .card-checklist-body { display: none !important; }
         <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
           <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
           <span style="color:var(--red)">🔴 платіж — виконано (прибрати підсвічування)</span></label>
+        <label id="f-flag-furn-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
+          <input type="checkbox" id="f-flag-furn-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
+          <span style="color:var(--red)">🔴 меблі — гроші взято (прибрати підсвічування)</span></label>
       </div>
     </div>
 
@@ -1513,6 +1522,7 @@ function parseObj(o){
   if(!parsed.watchCell) parsed.watchCell=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._watchCell)?String(_serverFlags._watchCell):'';
   if(!parsed.photosUrl) parsed.photosUrl=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._photosUrl)?String(_serverFlags._photosUrl):'';
   if(!parsed.purchCol) parsed.purchCol=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._purchCol)?String(_serverFlags._purchCol):'';
+  if(!parsed.furnDate) parsed.furnDate=(_serverFlags&&typeof _serverFlags==='object'&&_serverFlags._furnDate)?String(_serverFlags._furnDate):'';
   if(!parsed.ofertaUrl) parsed.ofertaUrl='';
   if(!parsed.ratyfikacjaUrl) parsed.ratyfikacjaUrl='';
   if(!parsed.moneyUrl) parsed.moneyUrl='';
@@ -1712,7 +1722,7 @@ async function apiSave(obj){
       designer:obj.designer||'',
       projectStatus:obj.projectStatus||'',
       removedNotes:_sentRm,
-      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||'',_watchCell:obj.watchCell||'',_watchCell2:obj.watchCell2||''})),
+      closedFlagsJson:JSON.stringify(Object.assign({},(obj._closedFlags&&typeof obj._closedFlags==='object'?obj._closedFlags:{}),{_projectUrl:obj.projectUrl||'',_purchCol:obj.purchCol||'',_photosUrl:obj.photosUrl||'',_watchCell:obj.watchCell||'',_watchCell2:obj.watchCell2||'',_furnDate:obj.furnDate||''})),
       notes:Array.isArray(obj.notes)?obj.notes:[]};
   }
   try{
@@ -1824,12 +1834,33 @@ function _kanbanSync(o){
   apiSaveQueued(o).catch(e=>console.warn('[kanban] save failed',e));
   return true;
 }
+// Меблі: за 2 дні до готовності монтажу (і далі, доки не «гроші взято») — час брати гроші
+function _furnDays(o){
+  if(!o||!o.furniture||!o.furnDate)return null;
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(o.furnDate));if(!m)return null;
+  const d=new Date(+m[1],+m[2]-1,+m[3]),t=new Date();t.setHours(0,0,0,0);
+  return Math.round((d-t)/86400000);
+}
+function _furnDue(o){const n=_furnDays(o);return n!==null&&n<=2;}
+function _furnZone(o){
+  const z=document.createElement('div');z.className='obj-furn';
+  const n=_furnDays(o),due=_furnDue(o)&&!(o._closedFlags||{}).furn;
+  if(due)z.classList.add('due');
+  const ds=n===null?'':fmtDate(o.furnDate);
+  let hint='';
+  if(n!==null){hint=n<0?'· минуло '+(-n)+' дн.':n===0?'· сьогодні':n===1?'· завтра':'· через '+n+' дн.';}
+  z.innerHTML='<span class="obj-furn-lbl">Меблі</span><span class="obj-furn-date">'+(n===null?'дата монтажу не вказана':'монтаж готовий: '+ds+' <span class="obj-furn-hint">'+hint+'</span>')+'</span>'
+    +(due?'<span class="obj-furn-money">💰 взяти гроші</span>':'');
+  if(due&&_isEditor){z.querySelector('.obj-furn-money').onclick=ev=>{ev.stopPropagation();toggleFlag(o,'furn','');};z.querySelector('.obj-furn-money').title='Гроші взято — прибрати підсвічування';}
+  return z;
+}
 function _glowKind(o){
   if(!o||o.closed||isOwnCard(o))return '';
   if(_watchLow(o))return 'red';
   const pv=o._progressValue,num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
-  if(isNaN(num))return '';
   const cl=o._closedFlags||{};
+  if(_furnDue(o)&&!cl.furn)return 'red';
+  if(isNaN(num))return '';
   if(o.paymentPct){
     const th=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
     if(!isNaN(th)&&num>=th&&!cl.payment)return 'red';
@@ -2325,6 +2356,8 @@ function buildCard(o,i){
     });
     card.appendChild(nl);
   }
+
+  if(o.furniture&&!isOwnCard(o)){const fz=_furnZone(o);fz.id='furn-zone-'+o.id;card.appendChild(fz);}
 
   // Add note input
   const addRow=document.createElement('div');addRow.className='obj-add-note';
@@ -2868,6 +2901,7 @@ function openEditModal(objId){
   document.getElementById('f-link-folder').value=o.linkFolder||'';
   if(document.getElementById('f-bitrix')) document.getElementById('f-bitrix').value=o.bitrix||'';
   if(document.getElementById('f-furniture')) document.getElementById('f-furniture').value=o.furniture||'';
+  if(document.getElementById('f-furn-date')) document.getElementById('f-furn-date').value=String(o.furnDate||'').slice(0,10);
   if(document.getElementById('f-project-url')) document.getElementById('f-project-url').value=o.projectUrl||'';
   if(document.getElementById('f-photos-url')) document.getElementById('f-photos-url').value=o.photosUrl||'';
   if(document.getElementById('f-watch-cell')) document.getElementById('f-watch-cell').value=o.watchCell||'';
@@ -2888,12 +2922,14 @@ function openEditModal(objId){
   const activeKanbanKey=!isNaN(pnum)?_kanbanKey(pnum):null;
   const hasFlagKanban=!!activeKanbanKey;
   const hasFlagPayment=!!o.paymentPct&&!isNaN(pnum)&&pnum>=parseFloat(o.paymentPct);
-  const anyFlag=hasFlagKanban||hasFlagPayment;
+  const hasFlagFurn=_furnDue(o);
+  const anyFlag=hasFlagKanban||hasFlagPayment||hasFlagFurn;
   const flagsRow=document.getElementById('f-flags-row');
   if(flagsRow) flagsRow.style.display=anyFlag?'flex':'none';
   [
     ['f-flag-kanban-row','f-flag-kanban-closed',activeKanbanKey,hasFlagKanban],
     ['f-flag-payment-row','f-flag-payment-closed','payment',hasFlagPayment],
+    ['f-flag-furn-row','f-flag-furn-closed','furn',hasFlagFurn],
   ].forEach(([rowId,cbId,key,show])=>{
     const rowEl=document.getElementById(rowId);
     const cbEl=document.getElementById(cbId);
@@ -2930,6 +2966,7 @@ async function saveCard(){
     linkFolder:document.getElementById('f-link-folder').value.trim(),
     bitrix:document.getElementById('f-bitrix')?.value.trim()||'',
     furniture:document.getElementById('f-furniture')?.value.trim()||'',
+    furnDate:document.getElementById('f-furn-date')?.value||'',
     projectUrl:document.getElementById('f-project-url')?.value.trim()||'',
     photosUrl:document.getElementById('f-photos-url')?.value.trim()||'',
     watchCell:document.getElementById('f-watch-cell')?.value.trim()||'',
@@ -2953,6 +2990,10 @@ async function saveCard(){
       const kanbanClosed=document.getElementById('f-flag-kanban-closed')?.checked||false;
       const out={...prev,payment:document.getElementById('f-flag-payment-closed')?.checked||false};
       if(cKey) out[cKey]=kanbanClosed;
+      {const fr=document.getElementById('f-flag-furn-row');
+       const newD=document.getElementById('f-furn-date')?.value||'';
+       if(_cur&&String(_cur.furnDate||'')!==newD) out.furn=false;            // нова дата — підсвічування знову діє
+       else if(fr&&fr.style.display!=='none') out.furn=document.getElementById('f-flag-furn-closed').checked;}
       if(document.querySelector('#f-access-list input')) out._access=[...document.querySelectorAll('#f-access-list input:checked')].map(i=>i.value);
       return out;
     })(),
@@ -3218,6 +3259,7 @@ function toggleFlag(o,key,label){
   const objToSave=ri>=0?objects[ri]:o;
   apiSaveQueued(objToSave).catch(e=>console.warn('[Flags] save failed',e));
   updateProgressFlags(o);
+  try{const fz=document.getElementById('furn-zone-'+o.id);if(fz){const nz=_furnZone(objects[ri>=0?ri:0]);nz.id=fz.id;fz.replaceWith(nz);}applyWatchGlow();}catch{}
 }
 
 // ── PROGRESS LOADING ──
