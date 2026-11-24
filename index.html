@@ -247,14 +247,16 @@ body{
 .obj-furn{margin-top:8px;padding-top:7px;border-top:1px solid var(--border,rgba(128,128,128,.25));display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--text3,#6c6c70)}
 .obj-furn-lbl{font-weight:600;color:var(--text2,#3a3a3c)}
 .obj-furn-hint{opacity:.7}
-.obj-furn.due .obj-furn-date{color:var(--red,#ff3b30);font-weight:600}
-.obj-furn-money{margin-left:auto;font-weight:600;color:var(--red,#ff3b30);cursor:pointer}
-/* Число в «слідкуваній» клітинці менше 10 000 — рамка світиться червоним */
+.obj-furn.due .obj-furn-date{color:#1f9d48;font-weight:600}
+.obj-furn-money{margin-left:auto;font-weight:600;color:#1f9d48;cursor:pointer}
+/* Зелений: гроші (мало коштів / час платежу / меблі). Червоний: до дедлайну (дата завершення робіт) лишилося менше 7 днів */
+.obj-card.glow-green{box-shadow:0 0 16px 3px rgba(52,199,89,.55);animation:glowGreen 2.4s ease-in-out infinite;}
+@keyframes glowGreen{0%,100%{box-shadow:0 0 10px 2px rgba(52,199,89,.40);}50%{box-shadow:0 0 24px 7px rgba(52,199,89,.75);}}
 .obj-card.glow-red{box-shadow:0 0 16px 3px rgba(255,59,48,.55);animation:glowRed 2.4s ease-in-out infinite;}
 @keyframes glowRed{0%,100%{box-shadow:0 0 10px 2px rgba(255,59,48,.40);}50%{box-shadow:0 0 24px 7px rgba(255,59,48,.75);}}
 .obj-card.glow-blue{box-shadow:0 0 16px 3px rgba(10,132,255,.55);animation:glowBlue 2.4s ease-in-out infinite;}
 @keyframes glowBlue{0%,100%{box-shadow:0 0 10px 2px rgba(10,132,255,.40);}50%{box-shadow:0 0 24px 7px rgba(10,132,255,.75);}}
-@media (prefers-reduced-motion:reduce){.obj-card.glow-red,.obj-card.glow-blue{animation:none;}}
+@media (prefers-reduced-motion:reduce){.obj-card.glow-red,.obj-card.glow-blue,.obj-card.glow-green{animation:none;}}
 .obj-card-num{font-size:11px;color:var(--text4);margin-bottom:1px;}
 .obj-card-name{
   font-size:15px;font-weight:600;color:var(--text);
@@ -1043,11 +1045,11 @@ body.readonly .card-checklist-body { display: none !important; }
           <input type="checkbox" id="f-flag-kanban-closed" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer">
           <span style="color:var(--blue)">🔵 канбан — виконано (прибрати підсвічування)</span></label>
         <label id="f-flag-payment-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
-          <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
-          <span style="color:var(--red)">🔴 платіж — виконано (прибрати підсвічування)</span></label>
+          <input type="checkbox" id="f-flag-payment-closed" style="width:15px;height:15px;accent-color:#34c759;cursor:pointer">
+          <span style="color:#1f9d48">🟢 платіж — виконано (прибрати підсвічування)</span></label>
         <label id="f-flag-furn-row" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer">
-          <input type="checkbox" id="f-flag-furn-closed" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer">
-          <span style="color:var(--red)">🔴 меблі — гроші взято (прибрати підсвічування)</span></label>
+          <input type="checkbox" id="f-flag-furn-closed" style="width:15px;height:15px;accent-color:#34c759;cursor:pointer">
+          <span style="color:#1f9d48">🟢 меблі — гроші взято (прибрати підсвічування)</span></label>
       </div>
     </div>
 
@@ -1854,16 +1856,25 @@ function _furnZone(o){
   if(due&&_isEditor){z.querySelector('.obj-furn-money').onclick=ev=>{ev.stopPropagation();toggleFlag(o,'furn','');};z.querySelector('.obj-furn-money').title='Гроші взято — прибрати підсвічування';}
   return z;
 }
+// Дедлайн: до дати завершення робіт лишилося менше 7 днів (або дата вже минула)
+function _deadlineSoon(o){
+  if(!o||o.completed||!o.dateEnd)return false;
+  const raw=String(o.dateEnd),m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  let d=m?new Date(+m[1],+m[2]-1,+m[3]):new Date(raw);if(isNaN(d))return false;
+  d=new Date(d.getFullYear(),d.getMonth(),d.getDate());const t=new Date();t.setHours(0,0,0,0);
+  return Math.round((d-t)/86400000)<7;
+}
 function _glowKind(o){
   if(!o||o.closed||isOwnCard(o))return '';
-  if(_watchLow(o))return 'red';
+  if(_deadlineSoon(o))return 'red';
+  if(_watchLow(o))return 'green';
   const pv=o._progressValue,num=pv?parseFloat(String(pv).replace('%','').replace(',','.')):NaN;
   const cl=o._closedFlags||{};
-  if(_furnDue(o)&&!cl.furn)return 'red';
+  if(_furnDue(o)&&!cl.furn)return 'green';
   if(isNaN(num))return '';
   if(o.paymentPct){
     const th=parseFloat(String(o.paymentPct).replace('%','').replace(',','.'));
-    if(!isNaN(th)&&num>=th&&!cl.payment)return 'red';
+    if(!isNaN(th)&&num>=th&&!cl.payment)return 'green';
   }
   const kk=_kanbanKey(num);
   if(kk&&!cl[kk])return 'blue';
@@ -1874,6 +1885,7 @@ function applyWatchGlow(){
   document.querySelectorAll('.obj-card[data-objid]').forEach(c=>{
     const o=objects.find(x=>String(x.id)===c.dataset.objid),k=o?_glowKind(o):'';
     c.classList.toggle('glow-red',k==='red');
+    c.classList.toggle('glow-green',k==='green');
     c.classList.toggle('glow-blue',k==='blue');
   });
 }
