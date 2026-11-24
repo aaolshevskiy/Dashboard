@@ -249,7 +249,7 @@ body{
 .obj-furn-hint{opacity:.7}
 .obj-furn.due .obj-furn-date{color:var(--red,#ff3b30);font-weight:600}
 .obj-furn-money{margin-left:auto;font-weight:600;color:var(--red,#ff3b30);cursor:pointer}
-/* Червоний: гроші (мало коштів / час платежу / меблі). Фінішний прапорець біля назви: до дедлайну менше 7 днів */
+/* Червоний: гроші (мало коштів / час платежу / меблі). Фінішний прапорець біля назви: до дедлайну менше 10 днів */
 .fin-flag{display:none;width:22px;height:22px;flex-shrink:0;overflow:visible}
 .obj-card.finish .fin-flag{display:block}
 .fin-cal{display:none;flex-shrink:0;width:21px;height:23px;margin-left:-2px;border-radius:4px;background:#fff;border:1px solid rgba(0,0,0,.22);box-shadow:0 1px 2px rgba(0,0,0,.18);overflow:hidden;flex-direction:column;align-items:stretch;font-style:normal}
@@ -1865,7 +1865,7 @@ function _furnZone(o){
   if(due&&_isEditor){z.querySelector('.obj-furn-money').onclick=ev=>{ev.stopPropagation();toggleFlag(o,'furn','');};z.querySelector('.obj-furn-money').title='Гроші взято — прибрати підсвічування';}
   return z;
 }
-// Дедлайн: до дати завершення робіт лишилося менше 7 днів (або дата вже минула)
+// Дедлайн: до дати завершення робіт лишилося менше 10 днів (або дата вже минула)
 function _deadlineDays(o){
   if(!o||o.completed||!o.dateEnd)return null;
   const raw=String(o.dateEnd),m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
@@ -1873,7 +1873,7 @@ function _deadlineDays(o){
   d=new Date(d.getFullYear(),d.getMonth(),d.getDate());const t=new Date();t.setHours(0,0,0,0);
   return Math.round((d-t)/86400000);
 }
-function _deadlineSoon(o){const n=_deadlineDays(o);return n!==null&&n<7;}
+function _deadlineSoon(o){const n=_deadlineDays(o);return n!==null&&n<10;}
 function _glowKind(o){
   if(!o||o.closed||isOwnCard(o))return '';
   if(_watchLow(o))return 'red';
@@ -2081,7 +2081,7 @@ function buildCard(o,i){
   { // фінішний прапорець: видно лише коли картка має клас finish (див. _deadlineSoon)
     const sq=[];for(let r=0;r<3;r++)for(let c=0;c<4;c++)sq.push('<rect x="'+(3+c*2.75)+'" y="'+(2+r*2.4)+'" width="2.75" height="2.4" fill="'+((r+c)%2?'#fff':'#111')+'"/>');
     const holder=document.createElement('span');
-    holder.innerHTML='<svg class="fin-flag" viewBox="0 0 16 16" aria-label="Фінішна пряма"><title>До дедлайну менше 7 днів</title><line x1="2.6" y1="1.5" x2="2.6" y2="15" stroke="#555" stroke-width="1.3" stroke-linecap="round"/><g class="fl">'+sq.join('')+'<rect x="3" y="2" width="11" height="7.2" fill="none" stroke="#111" stroke-width=".5"/></g></svg>';
+    holder.innerHTML='<svg class="fin-flag" viewBox="0 0 16 16" aria-label="Фінішна пряма"><title>До дедлайну менше 10 днів</title><line x1="2.6" y1="1.5" x2="2.6" y2="15" stroke="#555" stroke-width="1.3" stroke-linecap="round"/><g class="fl">'+sq.join('')+'<rect x="3" y="2" width="11" height="7.2" fill="none" stroke="#111" stroke-width=".5"/></g></svg>';
     name.style.display='flex';name.style.alignItems='center';name.style.gap='6px';
     const tx=document.createElement('span');tx.style.cssText='min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     tx.textContent=(o.inwork?'★ ':'')+(o.name||'—');
