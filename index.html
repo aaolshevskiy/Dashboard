@@ -1855,6 +1855,7 @@ function _furnDays(o){
 function _furnDue(o){const n=_furnDays(o);return n!==null&&n<=2;}
 function _furnZone(o){
   const z=document.createElement('div');z.className='obj-furn';
+  if(!o.furniture){z.innerHTML='<span class="obj-furn-lbl">Меблі</span><span class="obj-furn-date">робимо не ми</span>';return z;}
   const n=_furnDays(o),due=_furnDue(o)&&!(o._closedFlags||{}).furn;
   if(due)z.classList.add('due');
   const ds=n===null?'':fmtDate(o.furnDate);
@@ -2389,7 +2390,7 @@ function buildCard(o,i){
     card.appendChild(nl);
   }
 
-  if(o.furniture&&!isOwnCard(o)){const fz=_furnZone(o);fz.id='furn-zone-'+o.id;card.appendChild(fz);}
+  if(!isOwnCard(o)){const fz=_furnZone(o);fz.id='furn-zone-'+o.id;card.appendChild(fz);}
 
   // Add note input
   const addRow=document.createElement('div');addRow.className='obj-add-note';
