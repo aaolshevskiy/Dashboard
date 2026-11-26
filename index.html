@@ -244,11 +244,16 @@ body{
 .obj-card.completed{opacity:.5;}
 .obj-card.not-inwork{background:#f2f2f7;}
 .obj-card.has-overdue{background:#fff0ef;}
-.obj-furn{margin-top:8px;padding-top:7px;border-top:1px solid var(--border,rgba(128,128,128,.25));display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--text3,#6c6c70)}
-.obj-furn-lbl{font-weight:600;color:var(--text2,#3a3a3c)}
-.obj-furn-hint{opacity:.7}
-.obj-furn.due .obj-furn-date{color:var(--red,#ff3b30);font-weight:600}
-.obj-furn-money{margin-left:auto;font-weight:600;color:var(--red,#ff3b30);cursor:pointer}
+/* Усі пункти чек-листа виконані: зелена картка, замість заміток — «ЗАКІНЧЕНО ✓» */
+.cl-done-banner{display:none;align-items:center;justify-content:center;gap:10px;margin:14px 0 8px;font-size:20px;font-weight:800;letter-spacing:.12em;color:#1f9d48}
+.cl-done-banner svg{width:28px;height:28px;flex-shrink:0}
+.obj-card.cl-complete,.obj-card.cl-complete.has-overdue,.obj-card.cl-complete.not-inwork{background:#e6f6ea!important;animation:none!important;box-shadow:0 0 0 1px rgba(52,199,89,.35)!important}
+.obj-card.cl-complete .cl-done-banner{display:flex}
+.obj-card.cl-complete .obj-notes-list,.obj-card.cl-complete .obj-add-note>:not(.edit-only),.obj-card.cl-complete .fin-flag,.obj-card.cl-complete .fin-cal{display:none!important}
+.obj-card.cl-complete .obj-add-note{justify-content:flex-end}
+.obj-furn{margin-left:auto;font-size:12px;color:var(--text3,#6c6c70);white-space:nowrap;flex-shrink:0}
+.obj-furn.none{opacity:.55}
+.obj-furn.due{color:var(--red,#ff3b30);font-weight:700}
 /* Червоний: гроші (мало коштів / час платежу / меблі). Фінішний прапорець біля назви: до дедлайну менше 10 днів */
 .fin-flag{display:none;width:22px;height:22px;flex-shrink:0;overflow:visible}
 .obj-card.finish .fin-flag{display:block}
@@ -1854,16 +1859,14 @@ function _furnDays(o){
 }
 function _furnDue(o){const n=_furnDays(o);return n!==null&&n<=2;}
 function _furnZone(o){
-  const z=document.createElement('div');z.className='obj-furn';
-  if(!o.furniture){z.innerHTML='<span class="obj-furn-lbl">Меблі</span><span class="obj-furn-date">робимо не ми</span>';return z;}
+  // Іконка стільчика + дата монтажу меблів — справа в рядку дат (напроти «старт → дедлайн»)
+  const z=document.createElement('span');z.className='obj-furn';
+  if(!o.furniture){z.classList.add('none');z.textContent='🪑 робимо не ми';return z;}
   const n=_furnDays(o),due=_furnDue(o)&&!(o._closedFlags||{}).furn;
   if(due)z.classList.add('due');
-  const ds=n===null?'':fmtDate(o.furnDate);
-  let hint='';
-  if(n!==null){hint=n<0?'· минуло '+(-n)+' дн.':n===0?'· сьогодні':n===1?'· завтра':'· через '+n+' дн.';}
-  z.innerHTML='<span class="obj-furn-lbl">Меблі</span><span class="obj-furn-date">'+(n===null?'дата монтажу не вказана':'монтаж готовий: '+ds+' <span class="obj-furn-hint">'+hint+'</span>')+'</span>'
-    +(due?'<span class="obj-furn-money">💰 взяти гроші</span>':'');
-  if(due&&_isEditor){z.querySelector('.obj-furn-money').onclick=ev=>{ev.stopPropagation();toggleFlag(o,'furn','');};z.querySelector('.obj-furn-money').title='Гроші взято — прибрати підсвічування';}
+  z.textContent='🪑 '+(n===null?'—':fmtDate(o.furnDate));
+  z.title=n===null?'Дату монтажу меблів не вказано':'Монтаж меблів: '+(n<0?'минуло '+(-n)+' дн.':n===0?'сьогодні':n===1?'завтра':'через '+n+' дн.')+(due?(_isEditor?'. Натисніть, якщо гроші взято':''):'');
+  if(due&&_isEditor){z.style.cursor='pointer';z.onclick=ev=>{ev.stopPropagation();toggleFlag(o,'furn','');};}
   return z;
 }
 // Дедлайн: до дати завершення робіт лишилося менше 10 днів (або дата вже минула)
@@ -2146,6 +2149,7 @@ function buildCard(o,i){
     const prog=document.createElement('span');
     prog.className='card-checklist-progress';
     prog.innerHTML=_clRing(doneCount,total);
+    card.classList.toggle('cl-complete',doneCount===total);
     prog.style.display='inline-flex';
     toggle.setAttribute('aria-label','Чек-лист');
 
@@ -2172,6 +2176,7 @@ function buildCard(o,i){
       const updateProgress=()=>{
         const newDone=_clItems.filter(it=>clGetChecks(o.id)[it.id]).length;
         prog.innerHTML=_clRing(newDone,total);
+        card.classList.toggle('cl-complete',newDone===total);
       };
 
       cb.onchange=()=>{
@@ -2332,7 +2337,7 @@ function buildCard(o,i){
     const hasDates=!!(ds||de);
     const row=document.createElement('div');
     row.id='flags-wrap-'+o.id;
-    const _showRow=flags.length||hasDates;
+    const _showRow=true;
     row.style.cssText='display:'+(_showRow?'flex':'none')
       +';align-items:center;flex-wrap:wrap;gap:5px;margin-top:'+(_showRow?'4px':'0')+'';
 
@@ -2356,6 +2361,7 @@ function buildCard(o,i){
       dates.innerHTML=(ds||'')+(ds&&de?' <span style="opacity:.45">→</span> ':'')+(de||'');
       row.appendChild(dates);
     }
+    {const fz=_furnZone(o);fz.id='furn-zone-'+o.id;row.appendChild(fz);}
     card.appendChild(row);
   }
 
@@ -2390,7 +2396,9 @@ function buildCard(o,i){
     card.appendChild(nl);
   }
 
-  if(!isOwnCard(o)){const fz=_furnZone(o);fz.id='furn-zone-'+o.id;card.appendChild(fz);}
+  { const bn=document.createElement('div');bn.className='cl-done-banner';
+    bn.innerHTML='<span>ЗАКІНЧЕНО</span><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#34c759"/><path d="M8 14.5l4 4 8-9" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    card.appendChild(bn); }
 
   // Add note input
   const addRow=document.createElement('div');addRow.className='obj-add-note';
@@ -3255,7 +3263,7 @@ function updateProgressFlags(o){
   const ds=fmtDate(o.dateStart),de=fmtDate(o.dateEnd);
   const hasDates=!!(ds||de);
   // Очищаємо тільки прапорці, не чіпаємо .obj-card-dates
-  Array.from(row.children).forEach(ch=>{ if(!ch.classList.contains('obj-card-dates')) ch.remove(); });
+  Array.from(row.children).forEach(ch=>{ if(!ch.classList.contains('obj-card-dates')&&!ch.classList.contains('obj-furn')) ch.remove(); });
   // Вставляємо прапорці перед датами (або в кінець якщо дат немає)
   const datesEl=row.querySelector('.obj-card-dates');
   flags.forEach(f=>row.insertBefore(buildFlagTag(o,f), datesEl||null));
@@ -3265,10 +3273,10 @@ function updateProgressFlags(o){
     dates.className='obj-card-dates';
     dates.style.cssText='margin-left:auto;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap';
     dates.innerHTML=(ds?'<span style="color:#888;font-size:10px">→</span> '+ds:'')+(ds&&de?' <span style="opacity:.4">→</span> ':'')+(de?'<span style="filter:grayscale(1)">🏁</span> '+de:'');
-    row.appendChild(dates);
+    row.insertBefore(dates,row.querySelector('.obj-furn'));
   }
-  row.style.display=(flags.length||hasDates)?'flex':'none';
-  row.style.marginTop=(flags.length||hasDates)?'4px':'0';
+  row.style.display='flex';
+  row.style.marginTop='4px';
 }
 
 function toggleFlag(o,key,label){
